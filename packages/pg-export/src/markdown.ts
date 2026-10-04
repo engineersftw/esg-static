@@ -222,6 +222,8 @@ export function toMarkdownFiles(src: MarkdownSource, opts: MarkdownOptions): Mar
       hashtag: blankToNull(p.hashtag),
       category: p.playlist_category_id == null ? null : (categoryTitle.get(p.playlist_category_id) ?? null),
       slug: playlistSlugs[i],
+      // `active` is nullable in the database and defaults to true.
+      active: p.active !== false,
       videos: videosByPlaylist.get(p.id) ?? [],
       subPlaylists: subPlaylists.get(p.id) ?? [],
     };

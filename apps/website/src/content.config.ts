@@ -72,6 +72,7 @@ const playlist = defineCollection({
     hashtag: z.string().nullable(),
     category: z.string().nullable(),
     slug: z.string(),
+    active: z.boolean(),
     videos: z.array(reference('video')),
     subPlaylists: z.array(reference('playlist')),
   }),

@@ -7,14 +7,14 @@ import Footer from '../../../components/Footer.astro';
 import Pagination from '../../../components/Pagination.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../../consts';
 import FormattedDate from '../../../components/FormattedDate.astro';
-import { getConferencePages, listed } from '../../../helpers/collections';
+import { getConferencePages, listed, listedPlaylists } from '../../../helpers/collections';
 
 export async function getStaticPaths({ paginate }) {
   const conferences = await getConferencePages();
 
   return Promise.all(conferences.map(async ({ playlist, parent }) => {
     const videos = listed(await getEntries(playlist.data.videos));
-    const subPlaylists = await getEntries(playlist.data.subPlaylists);
+    const subPlaylists = listedPlaylists(await getEntries(playlist.data.subPlaylists));
     return paginate(videos, {
       params: { slug: playlist.data.slug },
       pageSize: 25,

@@ -89,6 +89,8 @@ export interface Playlist {
   /** Category title: "Conference", "Meetup", "Tutorial", "Training", "Shows" or "Conference Track". */
   category: string | null;
   slug: string;
+  /** False for playlists hidden on the old site; the site leaves them out. */
+  active: boolean;
   /** Video entry IDs, in playlist order. */
   videos: string[];
   /** Nested playlist entry IDs, in sequence order. */

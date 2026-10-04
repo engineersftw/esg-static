@@ -1,8 +1,9 @@
 ---
-import { type CollectionEntry, getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import { getActiveVideos } from "../../helpers/collections";
 
 export async function getStaticPaths() {
-  const videos = await getCollection("video");
+  const videos = await getActiveVideos();
   return videos.map((video) => ({
     params: { id: video.id },
     props: video,

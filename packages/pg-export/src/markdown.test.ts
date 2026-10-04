@@ -246,11 +246,17 @@ describe("toMarkdownFiles", () => {
         hashtag: "#fossasia",
         category: "Conference",
         slug: "playlist-30",
+        active: true,
         videos: ["1", "3"],
         subPlaylists: ["31", "32"],
       },
       body: "Talks from day one.",
     });
+  });
+
+  it("keeps inactive playlists with active false, and treats a null active as true", () => {
+    const out = files(source({ playlists: [playlist(30, { active: false }), playlist(31, { active: null }), playlist(32)] }));
+    expect(["30", "31", "32"].map((id) => out.get(`playlist/${id}.md`)!.data.active)).toEqual([false, true, true]);
   });
 
   it("breaks sort_order ties by item id and drops dangling playlist items", () => {

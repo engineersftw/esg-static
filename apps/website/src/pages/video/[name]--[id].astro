@@ -1,11 +1,11 @@
 ---
 // Old Rails URLs, /video/<name>--<id>, where <name> is the parameterized videoTitle. Only the
 // current title is known at build time, so a link made before a rename won't match.
-import { getCollection } from "astro:content";
+import { getActiveVideos } from "../../helpers/collections";
 import { parameterize } from "../../helpers/url_helpers";
 
 export async function getStaticPaths() {
-  const entries = await getCollection("video");
+  const entries = await getActiveVideos();
   return entries
     .map((entry) => ({
       params: { name: parameterize(entry.data.videoTitle), id: entry.id },

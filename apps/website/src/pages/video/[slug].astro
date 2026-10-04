@@ -1,14 +1,15 @@
 ---
-import { type CollectionEntry, getCollection, getEntries } from 'astro:content';
+import { type CollectionEntry, getEntries } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 import FormattedDate from '../../components/FormattedDate.astro';
 import { YouTube } from 'astro-embed';
+import { getActiveVideos } from '../../helpers/collections';
 
 export async function getStaticPaths() {
-  const videos = await getCollection('video');
+  const videos = await getActiveVideos();
   return videos.map((video) => ({
     params: { slug: video.data.slug },
     props: video,

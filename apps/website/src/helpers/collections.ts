@@ -3,22 +3,32 @@ import { type CollectionEntry, getCollection, getEntries } from 'astro:content';
 const newestFirst = (a: CollectionEntry<'video'>, b: CollectionEntry<'video'>) =>
   b.data.publishedAt.localeCompare(a.data.publishedAt) || Number(b.id) - Number(a.id);
 
+/**
+ * Every active video. Use this, not `getCollection('video')`, for anything that lists or builds a
+ * page for videos: inactive (unlisted) ones are left out of the site entirely.
+ */
+export const getActiveVideos = () => getCollection('video', (video) => video.data.active);
+
 /** Videos shown in listings: newest first, without inactive (unlisted) ones. */
 export async function getListedVideos() {
-  return (await getCollection('video', (video) => video.data.active)).sort(newestFirst);
+  return (await getActiveVideos()).sort(newestFirst);
 }
 
 /** Drop inactive videos from resolved references, keeping their order. */
 export const listed = (videos: CollectionEntry<'video'>[]) => videos.filter((video) => video.data.active);
 
+/** Drop inactive playlists from resolved references, keeping their order. */
+export const listedPlaylists = (playlists: CollectionEntry<'playlist'>[]) =>
+  playlists.filter((playlist) => playlist.data.active);
+
 const newestPlaylistFirst = (a: CollectionEntry<'playlist'>, b: CollectionEntry<'playlist'>) =>
   (b.data.publishDate ?? '').localeCompare(a.data.publishDate ?? '') || Number(b.id) - Number(a.id);
 
-/** Playlists in the "Conference" category, newest first. */
+/** Active playlists in the "Conference" category, newest first. */
 export async function getConferences() {
-  return (await getCollection('playlist', (playlist) => playlist.data.category === 'Conference')).sort(
-    newestPlaylistFirst,
-  );
+  return (
+    await getCollection('playlist', (playlist) => playlist.data.active && playlist.data.category === 'Conference')
+  ).sort(newestPlaylistFirst);
 }
 
 /**
@@ -31,7 +41,7 @@ export async function getConferencePages() {
   for (let next = queue.shift(); next; next = queue.shift()) {
     if (pages.has(next.playlist.id)) continue;
     pages.set(next.playlist.id, next);
-    for (const sub of await getEntries(next.playlist.data.subPlaylists)) queue.push({ playlist: sub, parent: next.playlist });
+    for (const sub of listedPlaylists(await getEntries(next.playlist.data.subPlaylists))) queue.push({ playlist: sub, parent: next.playlist });
   }
   return [...pages.values()];
 }
