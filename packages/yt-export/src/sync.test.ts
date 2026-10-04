@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Playlist as PlaylistEntry, Video as VideoEntry } from "@esg/db-types/content";
-import { parseEntry, serializeEntry, type Entry } from "./content.js";
+import { parseEntry, serializeEntry, type Entry } from "@esg/content";
 import { item, playlist, raw, video } from "./fixtures.js";
 import { planSync, type ExistingContent, type SyncWrite } from "./sync.js";
 
@@ -562,6 +562,56 @@ describe("planSync: excludeVideos", () => {
 
   it("excludes nothing by default", () => {
     expect(planSync(raw({ videos }), content()).videos).toMatchObject({ created: 3, excluded: [] });
+  });
+});
+
+describe("planSync: one-sided links", () => {
+  it("adds a playlist that lists a video by hand to the video, also when neither is fetched", () => {
+    const plan = planSync(raw({}), content([videoEntry("10", "yt1", { playlists: ["1"] })], [playlistEntry("3", "PLx", { videos: ["10"] })]));
+
+    expect(plan.writes.map((w) => w.path)).toEqual(["video/10.md"]);
+    const w = find(plan.writes, "video/10.md");
+    expect(w.entry.data.playlists).toEqual(["1", "3"]);
+    expect(w.changed).toEqual(["playlists"]);
+    expect(plan.videos).toMatchObject({ updated: 0, unchanged: 0, notFetched: 1, linked: 1 });
+  });
+
+  it("adds a video that lists a playlist by hand to the end of the playlist", () => {
+    const plan = planSync(
+      raw({ videos: [video("yt1", "2023-01-01T00:00:00Z")] }),
+      content([videoEntry("10", "yt1", { videoTitle: "Video yt1", playlists: ["3"] })], [playlistEntry("3", null, { videos: ["11"] })]),
+    );
+
+    expect(find(plan.writes, "playlist/3.md").entry.data.videos).toEqual(["11", "10"]);
+    expect(plan.playlists).toMatchObject({ linked: 1 });
+  });
+
+  it("completes links of refreshed entries in the same write", () => {
+    const plan = planSync(
+      raw({ playlists: [playlist("PLx", "PyCon", "2019-01-01T00:00:00Z")], videos: [video("yt1", "2023-01-01T00:00:00Z")] }),
+      content([videoEntry("10", "yt1")], [playlistEntry("3", "PLx", { videos: ["10"] })]),
+    );
+
+    const w = find(plan.writes, "video/10.md");
+    expect(w.entry.data.playlists).toEqual(["3"]);
+    expect(w.changed).toContain("playlists");
+    expect(plan.videos).toMatchObject({ updated: 1, linked: 0 });
+  });
+
+  it("leaves dangling IDs and excluded videos alone", () => {
+    const plan = planSync(
+      raw({}),
+      content([videoEntry("10", "yt1", { playlists: ["99"] })], [playlistEntry("3", "PLx", { videos: ["10", "98"] })]),
+      { excludeVideos: ["yt1"] },
+    );
+
+    expect(plan.writes).toEqual([]);
+  });
+
+  it("writes nothing when every link is two-way", () => {
+    const plan = planSync(raw({}), content([videoEntry("10", "yt1", { playlists: ["3"] })], [playlistEntry("3", "PLx", { videos: ["10"] })]));
+
+    expect(plan.writes).toEqual([]);
   });
 });
 

@@ -7,12 +7,14 @@
  * - Playlist membership is additive: a video YouTube lists in a playlist is added to the playlist's
  *   `videos` and the video's `playlists` if missing. Nothing is ever removed, and nothing is deleted
  *   for content YouTube no longer returns (those are reported instead).
+ * - Every link between a video and a playlist ends up on both sides, whether it came from YouTube or
+ *   was made on one side only, e.g. by hand (see `reconcileLinks`).
  *
  * No I/O here, so it can be unit tested and run from a saved raw.json.
  */
 import type { Playlist as PlaylistEntry, Video as VideoEntry } from "@esg/db-types/content";
-import { serializeEntry, toBody, type Entry } from "./content.js";
-import { slugify, thumb, type RawExport } from "./transform.js";
+import { reconcileLinks, serializeEntry, slugAllocator, toBody, type Entry } from "@esg/content";
+import { thumb, type RawExport } from "./transform.js";
 import type { YtPlaylist, YtVideo } from "./youtube.js";
 
 export interface ExistingContent {
@@ -50,6 +52,11 @@ export interface CollectionSummary {
   notFetched: number;
   /** Missing entries set to `active: false` (`deactivateMissing`); also counted in neither updated nor unchanged. */
   deactivated: number;
+  /**
+   * Entries otherwise left alone (not fetched, not on YouTube, not a YouTube entry) that were written
+   * only to complete a one-sided playlist link.
+   */
+  linked: number;
   /** Titles of new entries not created because they would be empty (playlists with no available videos). */
   skipped: string[];
   /** YouTube IDs left out of the sync on request (`excludeVideos`) that matched a fetched video or an entry. */
@@ -88,20 +95,8 @@ function changedFields(before: object, after: object, bodyBefore: string, bodyAf
   return bodyBefore === bodyAfter ? fields : [...fields, "body"];
 }
 
-/** Slugs unique within a collection: existing ones are reserved, collisions get -2, -3, … */
-function slugAllocator(existing: string[]) {
-  const used = new Set(existing);
-  return (text: string, fallback: string) => {
-    const base = slugify(text, fallback);
-    let slug = base;
-    for (let n = 2; used.has(slug); n++) slug = `${base}-${n}`;
-    used.add(slug);
-    return slug;
-  };
-}
-
 function summarize(): CollectionSummary {
-  return { created: 0, updated: 0, unchanged: 0, notOnYouTube: [], notFetched: 0, deactivated: 0, skipped: [], excluded: [] };
+  return { created: 0, updated: 0, unchanged: 0, notOnYouTube: [], notFetched: 0, deactivated: 0, linked: 0, skipped: [], excluded: [] };
 }
 
 export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOptions = {}): SyncPlan {
@@ -152,54 +147,47 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
     }
   }
 
-  const writes: SyncWrite[] = [];
+  // Every entry's final state, so the links can be reconciled across all of them before anything is
+  // written. `before` is the file it replaces (none for a new entry); `outcome` is how it counts in
+  // the summary. Excluded videos get no draft, so nothing touches them.
+  const videoDrafts: Draft<VideoEntry>[] = [];
+  const playlistDrafts: Draft<PlaylistEntry>[] = [];
   const videoSummary = summarize();
   const playlistSummary = summarize();
 
   // --- Videos -----------------------------------------------------------------------------------
   for (const e of existing.videos) {
-    if (e.data.videoSite !== "youtube" || excluded.has(e.data.videoId)) continue;
+    if (e.data.videoSite === "youtube" && excluded.has(e.data.videoId)) continue;
+    if (e.data.videoSite !== "youtube") {
+      videoDrafts.push(keep(e));
+      continue;
+    }
     const v = videos.get(e.data.videoId);
     if (!v) {
       if (!requestedVideos.has(e.data.videoId)) {
         videoSummary.notFetched++;
+        videoDrafts.push(keep(e));
         continue;
       }
       videoSummary.notOnYouTube.push({ entry: e.id, youtubeId: e.data.videoId, title: e.data.videoTitle, active: e.data.active });
-      if (opts.deactivateMissing && e.data.active) {
-        videoSummary.deactivated++;
-        writes.push({
-          kind: "update",
-          path: e.path,
-          content: serializeEntry({ ...e.data, active: false }, e.body),
-          title: e.data.videoTitle,
-          changed: ["active"],
-        });
-      }
+      videoDrafts.push(opts.deactivateMissing && e.data.active ? deactivate(e) : keep(e));
       continue;
     }
     const t = v.snippet.thumbnails;
-    const data: VideoEntry = {
-      ...e.data,
-      videoTitle: v.snippet.title,
-      thumbnailDefault: thumb(t, "default") ?? e.data.thumbnailDefault,
-      thumbnailMedium: thumb(t, "medium") ?? e.data.thumbnailMedium,
-      thumbnailHigh: thumb(t, "high") ?? e.data.thumbnailHigh,
-      playlists: appendMissing(e.data.playlists, playlistsByVideo.get(e.id)),
-    };
-    const body = toBody(v.snippet.description);
-    const content = serializeEntry(data, body);
-    if (content === e.text) {
-      videoSummary.unchanged++;
-      continue;
-    }
-    videoSummary.updated++;
-    writes.push({
-      kind: "update",
+    videoDrafts.push({
+      id: e.id,
+      before: e,
       path: e.path,
-      content,
-      title: data.videoTitle,
-      changed: changedFields(e.data, data, e.body, body),
+      outcome: "refresh",
+      data: {
+        ...e.data,
+        videoTitle: v.snippet.title,
+        thumbnailDefault: thumb(t, "default") ?? e.data.thumbnailDefault,
+        thumbnailMedium: thumb(t, "medium") ?? e.data.thumbnailMedium,
+        thumbnailHigh: thumb(t, "high") ?? e.data.thumbnailHigh,
+        playlists: appendMissing(e.data.playlists, playlistsByVideo.get(e.id)),
+      },
+      body: toBody(v.snippet.description),
     });
   }
 
@@ -207,105 +195,140 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
   for (const v of newVideos) {
     const id = videoEntryId.get(v.id)!;
     const t = v.snippet.thumbnails;
-    const data: VideoEntry = {
+    videoDrafts.push({
       id,
-      videoId: v.id,
-      videoTitle: v.snippet.title,
-      publishedAt: v.snippet.publishedAt,
-      thumbnailDefault: thumb(t, "default"),
-      thumbnailMedium: thumb(t, "medium"),
-      thumbnailHigh: thumb(t, "high"),
-      slug: videoSlug(v.snippet.title, `video-${id}`),
-      organizations: [],
-      presenters: [],
-      playlists: [...(playlistsByVideo.get(id) ?? [])].sort((a, b) => Number(a) - Number(b)),
-      active: v.status.privacyStatus === "public",
-      videoSite: "youtube",
-    };
-    videoSummary.created++;
-    writes.push({
-      kind: "create",
       path: `video/${id}.md`,
-      content: serializeEntry(data, toBody(v.snippet.description)),
-      title: data.videoTitle,
-      changed: [],
+      outcome: "create",
+      data: {
+        id,
+        videoId: v.id,
+        videoTitle: v.snippet.title,
+        publishedAt: v.snippet.publishedAt,
+        thumbnailDefault: thumb(t, "default"),
+        thumbnailMedium: thumb(t, "medium"),
+        thumbnailHigh: thumb(t, "high"),
+        slug: videoSlug(v.snippet.title, `video-${id}`),
+        organizations: [],
+        presenters: [],
+        playlists: [...(playlistsByVideo.get(id) ?? [])].sort((a, b) => Number(a) - Number(b)),
+        active: v.status.privacyStatus === "public",
+        videoSite: "youtube",
+      },
+      body: toBody(v.snippet.description),
     });
   }
 
   // --- Playlists --------------------------------------------------------------------------------
   for (const e of existing.playlists) {
-    if (!e.data.playlistId) continue;
+    if (!e.data.playlistId) {
+      playlistDrafts.push(keep(e));
+      continue;
+    }
     const p = playlists.get(e.data.playlistId);
     if (!p) {
       if (!requestedPlaylists.has(e.data.playlistId)) {
         playlistSummary.notFetched++;
+        playlistDrafts.push(keep(e));
         continue;
       }
       playlistSummary.notOnYouTube.push({ entry: e.id, youtubeId: e.data.playlistId, title: e.data.playlistTitle, active: e.data.active });
-      if (opts.deactivateMissing && e.data.active) {
-        playlistSummary.deactivated++;
-        writes.push({
-          kind: "update",
-          path: e.path,
-          content: serializeEntry({ ...e.data, active: false }, e.body),
-          title: e.data.playlistTitle,
-          changed: ["active"],
-        });
-      }
+      playlistDrafts.push(opts.deactivateMissing && e.data.active ? deactivate(e) : keep(e));
       continue;
     }
-    const data: PlaylistEntry = {
-      ...e.data,
-      playlistTitle: p.snippet.title,
-      image: thumb(p.snippet.thumbnails, "high", "medium", "default") ?? e.data.image,
-      videos: appendMissing(e.data.videos, videosByPlaylist.get(e.id)),
-    };
-    const body = toBody(p.snippet.description);
-    const content = serializeEntry(data, body);
-    if (content === e.text) {
-      playlistSummary.unchanged++;
-      continue;
-    }
-    playlistSummary.updated++;
-    writes.push({
-      kind: "update",
+    playlistDrafts.push({
+      id: e.id,
+      before: e,
       path: e.path,
-      content,
-      title: data.playlistTitle,
-      changed: changedFields(e.data, data, e.body, body),
+      outcome: "refresh",
+      data: {
+        ...e.data,
+        playlistTitle: p.snippet.title,
+        image: thumb(p.snippet.thumbnails, "high", "medium", "default") ?? e.data.image,
+        videos: appendMissing(e.data.videos, videosByPlaylist.get(e.id)),
+      },
+      body: toBody(p.snippet.description),
     });
   }
 
   const playlistSlug = slugAllocator(existing.playlists.map((e) => e.data.slug));
   for (const p of newPlaylists) {
     const id = playlistEntryId.get(p.id)!;
-    const data: PlaylistEntry = {
+    playlistDrafts.push({
       id,
-      playlistId: p.id,
-      playlistTitle: p.snippet.title,
-      // YouTube's creation date; the curated event date isn't known.
-      publishDate: p.snippet.publishedAt.slice(0, 10),
-      image: thumb(p.snippet.thumbnails, "high", "medium", "default"),
-      website: null,
-      hashtag: null,
-      category: null,
-      slug: playlistSlug(p.snippet.title, `playlist-${id}`),
-      active: (p.status?.privacyStatus ?? "public") === "public",
-      videos: videosByPlaylist.get(id) ?? [],
-      subPlaylists: [],
-    };
-    playlistSummary.created++;
-    writes.push({
-      kind: "create",
       path: `playlist/${id}.md`,
-      content: serializeEntry(data, toBody(p.snippet.description)),
-      title: data.playlistTitle,
-      changed: [],
+      outcome: "create",
+      data: {
+        id,
+        playlistId: p.id,
+        playlistTitle: p.snippet.title,
+        // YouTube's creation date; the curated event date isn't known.
+        publishDate: p.snippet.publishedAt.slice(0, 10),
+        image: thumb(p.snippet.thumbnails, "high", "medium", "default"),
+        website: null,
+        hashtag: null,
+        category: null,
+        slug: playlistSlug(p.snippet.title, `playlist-${id}`),
+        active: (p.status?.privacyStatus ?? "public") === "public",
+        videos: videosByPlaylist.get(id) ?? [],
+        subPlaylists: [],
+      },
+      body: toBody(p.snippet.description),
     });
   }
+
+  // --- Links: whatever one side lists, the other lists too ----------------------------------------
+  reconcileLinks(
+    "playlists",
+    new Map(videoDrafts.map((d) => [d.id, d.data])),
+    new Map(playlistDrafts.map((d) => [d.id, d.data])),
+  );
+
+  const writes: SyncWrite[] = [];
+  emit(writes, videoDrafts, videoSummary, (d) => d.videoTitle);
+  emit(writes, playlistDrafts, playlistSummary, (d) => d.playlistTitle);
 
   videoSummary.excluded = [...excluded].filter((id) => videoEntries.has(id) || raw.videos.some((v) => v.id === id));
   playlistSummary.skipped = unseenPlaylists.filter((p) => !hasVideos(p)).map((p) => p.snippet.title);
 
   return { writes, videos: videoSummary, playlists: playlistSummary };
+}
+
+interface Draft<T extends object> {
+  /** Entry ID, the file name without `.md`. */
+  id: string;
+  before?: Entry<T>;
+  path: string;
+  data: T;
+  body: string;
+  /** "refresh": matched on YouTube; "keep": not, left as it was apart from links. */
+  outcome: "create" | "refresh" | "deactivate" | "keep";
+}
+
+/** A copy of the entry as it is, so reconciling its links doesn't change the entry. */
+const keep = <T extends object>(e: Entry<T>): Draft<T> => ({ id: e.id, before: e, path: e.path, data: { ...e.data }, body: e.body, outcome: "keep" });
+
+const deactivate = <T extends { active: boolean }>(e: Entry<T>): Draft<T> => ({ ...keep(e), data: { ...e.data, active: false }, outcome: "deactivate" });
+
+/** Push a write for each draft that creates or changes a file, and count it in the summary. */
+function emit<T extends object>(writes: SyncWrite[], drafts: Draft<T>[], summary: CollectionSummary, title: (data: T) => string) {
+  for (const d of drafts) {
+    const content = serializeEntry(d.data, d.body);
+    if (!d.before) {
+      summary.created++;
+      writes.push({ kind: "create", path: d.path, content, title: title(d.data), changed: [] });
+      continue;
+    }
+    const changed = content !== d.before.text;
+    if (d.outcome === "refresh") summary[changed ? "updated" : "unchanged"]++;
+    else if (d.outcome === "deactivate") summary.deactivated++;
+    else if (changed) summary.linked++;
+    if (!changed) continue;
+    writes.push({
+      kind: "update",
+      path: d.path,
+      content,
+      title: title(d.data),
+      changed: changedFields(d.before.data, d.data, d.before.body, d.body),
+    });
+  }
 }

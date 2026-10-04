@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseEntry, readEntries, serializeEntry, toBody, writeEntryFiles } from "./content.js";
+import { parseEntry, readEntries, serializeEntry, toBody, writeEntryFiles } from "./files.js";
 
 // A file exactly as pg-export writes it.
 const FILE = `---

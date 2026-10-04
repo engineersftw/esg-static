@@ -3,7 +3,10 @@
  * No I/O here, so it can be unit tested and re-run from a saved raw.json.
  */
 import { VideoSite, type DateString, type Episode, type Playlist, type PlaylistItem, type Timestamp } from "@esg/db-types";
+import { slugify } from "@esg/content";
 import type { YtChannel, YtPlaylist, YtPlaylistItem, YtThumbnails, YtVideo } from "./youtube.js";
+
+export { slugify };
 
 /** Everything fetched from the API; saved as <out>/raw.json. */
 export interface RawExport {
@@ -36,16 +39,6 @@ export function toPgTimestamp(value: string | Date): Timestamp {
 /** ISO 8601 → Postgres `date` text in UTC ("2021-10-23"). */
 export function toPgDate(value: string | Date): DateString {
   return new Date(value).toISOString().slice(0, 10);
-}
-
-export function slugify(title: string, fallback = "playlist"): string {
-  const slug = title
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "") // strip diacritics
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return slug || fallback;
 }
 
 /** Slugify each title, suffixing -2, -3, … on collisions (first occurrence keeps the bare slug). */
