@@ -8,8 +8,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "check_query": "node check_query.js",
-    "deploy": "wrangler pages deploy ./dist --project-name esg-remake",
-    "deploy:production": "wrangler pages deploy ./dist --project-name esg-remake --branch production"
+    "deploy": "wrangler pages deploy ./dist --project-name esg-static",
+    "deploy:production": "wrangler pages deploy ./dist --project-name esg-static --branch production"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.2",
