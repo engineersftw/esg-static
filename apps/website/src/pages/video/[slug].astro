@@ -1,5 +1,5 @@
 ---
-import { type CollectionEntry, getCollection } from 'astro:content';
+import { type CollectionEntry, getCollection, getEntries } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
@@ -17,6 +17,8 @@ export async function getStaticPaths() {
 type Props = CollectionEntry<'video'>;
 
 const video = Astro.props;
+const organizations = await getEntries(video.data.organizations);
+const presenters = await getEntries(video.data.presenters);
 ---
 
 <html lang="en">
@@ -93,12 +95,12 @@ const video = Astro.props;
             <h1>{video.data.videoTitle}</h1>
             <hr />
           </div>
-          <p class="videoDescr">{video.data.videoDescription}</p>
+          <p class="videoDescr">{video.body}</p>
 
-          {video.data.organizations.length > 0 && <h4>Organizations</h4>}
+          {organizations.length > 0 && <h4>Organizations</h4>}
           <ul>
             {
-              video.data.organizations.map((org) => (
+              organizations.map((org) => (
                 <li key={org.id}>
                   <h5>
                     <a
@@ -107,14 +109,14 @@ const video = Astro.props;
                       rel="noopener noreferrer"
                     >
                       <img
-                        src={org.logoImage}
-                        alt={org.orgTitle}
+                        src={org.data.logoImage}
+                        alt={org.data.orgTitle}
                         width={100}
                         height={100}
                         loading="lazy"
                       />
                       &nbsp;
-                      {org.orgTitle}
+                      {org.data.orgTitle}
                     </a>
                   </h5>
                 </li>
@@ -122,10 +124,10 @@ const video = Astro.props;
             }
           </ul>
 
-          {video.data.presenters.length > 0 && <h4>Presenters</h4>}
+          {presenters.length > 0 && <h4>Presenters</h4>}
           <ul>
             {
-              video.data.presenters.map((person) => (
+              presenters.map((person) => (
                 <li key={person.id}>
                   <h5>
                     <a
@@ -134,14 +136,14 @@ const video = Astro.props;
                       rel="noopener noreferrer"
                     >
                       <img
-                        src={person.imageUrl}
-                        alt={person.presenterName}
+                        src={person.data.imageUrl}
+                        alt={person.data.presenterName}
                         width={100}
                         height={100}
                         loading="lazy"
                       />
                       &nbsp;
-                      {person.presenterName}
+                      {person.data.presenterName}
                     </a>
                   </h5>
                 </li>

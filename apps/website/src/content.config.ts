@@ -1,101 +1,80 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import 'dotenv/config';
-import { defineCollection, z } from 'astro:content';
-import { fetchESGAllVideos, fetchESGAllOrgs, fetchESGAllPresenters } from "@engineersftw/esg-data"
+import { defineCollection, reference } from 'astro:content';
+import { glob } from 'astro/loaders';
+import { z } from 'astro/zod';
+
+// Markdown written by pg-export (`-f markdown`), one <id>.md per entry; frontmatter types are in
+// @esg/db-types/content. The glob loader would otherwise use the frontmatter `slug` as the entry
+// ID, but references between collections use the database ID, which is the file name.
+const fromContent = (collection: string) =>
+  glob({
+    pattern: '*.md',
+    base: `./content/${collection}`,
+    generateId: ({ entry }) => entry.replace(/\.md$/, ''),
+  });
 
 const video = defineCollection({
-  loader: async () => await fetchESGAllVideos(),
+  loader: fromContent('video'),
   schema: z.object({
     id: z.string(),
     videoId: z.string(),
     videoTitle: z.string(),
-    videoDescription: z.string(),
     publishedAt: z.string(),
     thumbnailDefault: z.string().nullable(),
     thumbnailMedium: z.string().nullable(),
     thumbnailHigh: z.string().nullable(),
     slug: z.string(),
-    organizations: z.array(
-      z.object({
-        id: z.string(),
-        orgTitle: z.string(),
-        orgDescription: z.string().nullable(),
-        website: z.string().nullable(),
-        twitter: z.string().nullable(),
-        logoImage: z.string().nullable(),
-        contactPerson: z.string().nullable(),
-        slug: z.string(),
-      })
-    ),
-    presenters: z.array(
-      z.object({
-        id: z.string(),
-        presenterName: z.string(),
-        presenterDescription: z.string().nullable(),
-        presenterByline: z.string().nullable(),
-        twitter: z.string().nullable(),
-        email: z.string().nullable(),
-        website: z.string().nullable(),
-        imageUrl: z.string().nullable(),
-        slug: z.string(),
-      })
-    ),
+    organizations: z.array(reference('organization')),
+    presenters: z.array(reference('presenter')),
+    playlists: z.array(reference('playlist')),
+    active: z.boolean(),
+    videoSite: z.enum(['youtube', 'vimeo']),
   }),
 });
 
 const organization = defineCollection({
-  loader: async () => await fetchESGAllOrgs(),
+  loader: fromContent('organization'),
   schema: z.object({
     id: z.string(),
     orgTitle: z.string(),
-    orgDescription: z.string().nullable(),
     website: z.string().nullable(),
     twitter: z.string().nullable(),
     logoImage: z.string().nullable(),
     contactPerson: z.string().nullable(),
     slug: z.string(),
-    videos: z.array(
-      z.object({
-        id: z.string(),
-        videoId: z.string(),
-        videoTitle: z.string(),
-        videoDescription: z.string(),
-        publishedAt: z.string(),
-        thumbnailDefault: z.string().nullable(),
-        thumbnailMedium: z.string().nullable(),
-        thumbnailHigh: z.string().nullable(),
-        slug: z.string(),
-      })
-    ),
+    videos: z.array(reference('video')),
   }),
 });
 
 const presenter = defineCollection({
-  loader: async () => await fetchESGAllPresenters(),
+  loader: fromContent('presenter'),
   schema: z.object({
     id: z.string(),
     presenterName: z.string(),
-    presenterDescription: z.string().nullable(),
     presenterByline: z.string().nullable(),
     twitter: z.string().nullable(),
     email: z.string().nullable(),
     website: z.string().nullable(),
     imageUrl: z.string().nullable(),
     slug: z.string(),
-    videos: z.array(
-      z.object({
-        id: z.string(),
-        videoId: z.string(),
-        videoTitle: z.string(),
-        videoDescription: z.string(),
-        publishedAt: z.string(),
-        thumbnailDefault: z.string().nullable(),
-        thumbnailMedium: z.string().nullable(),
-        thumbnailHigh: z.string().nullable(),
-        slug: z.string(),
-      })
-    ),
+    videos: z.array(reference('video')),
   }),
 });
 
-export const collections = { video, organization, presenter };
+const playlist = defineCollection({
+  loader: fromContent('playlist'),
+  schema: z.object({
+    id: z.string(),
+    playlistId: z.string().nullable(),
+    playlistTitle: z.string(),
+    publishDate: z.string().nullable(),
+    image: z.string().nullable(),
+    website: z.string().nullable(),
+    hashtag: z.string().nullable(),
+    category: z.string().nullable(),
+    slug: z.string(),
+    videos: z.array(reference('video')),
+    subPlaylists: z.array(reference('playlist')),
+  }),
+});
+
+export const collections = { video, organization, presenter, playlist };

@@ -1,22 +1,24 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection, getEntries } from 'astro:content';
 
 import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../../consts';
 import FormattedDate from '../../../components/FormattedDate.astro';
+import { listed } from '../../../helpers/collections';
 
 export async function getStaticPaths({ paginate }) {
   const organizations = await getCollection('organization');
 
-  return organizations.flatMap((organization) => {
-    return paginate(organization.data.videos, {
+  return Promise.all(organizations.map(async (organization) => {
+    const videos = listed(await getEntries(organization.data.videos));
+    return paginate(videos, {
       params: { slug: organization.data.slug },
       pageSize: 25,
       props: { organization },
     });
-  });
+  })).then((pages) => pages.flat());
 }
 
 const { page, organization } = Astro.props;
@@ -132,7 +134,7 @@ const { page, organization } = Astro.props;
             <h1>{organization.data.orgTitle}</h1>
             <hr />
           </div>
-          <p class="orgDescr">{organization.data.orgDescription}</p>
+          <p class="orgDescr">{organization.body}</p>
         </div>
 
         <h2>Videos ({page.total})</h2>
@@ -145,12 +147,12 @@ const { page, organization } = Astro.props;
                     <img
                       width={720}
                       height={360}
-                      src={video.thumbnailHigh}
-                      alt={video.videoTitle}
+                      src={video.data.thumbnailHigh}
+                      alt={video.data.videoTitle}
                     />
-                    <h4 class="title">{video.videoTitle}</h4>
+                    <h4 class="title">{video.data.videoTitle}</h4>
                     <p class="date">
-                      <FormattedDate date={video.publishedAt} />
+                      <FormattedDate date={video.data.publishedAt} />
                     </p>
                   </a>
                 </li>
