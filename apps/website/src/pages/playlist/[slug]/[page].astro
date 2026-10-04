@@ -2,23 +2,23 @@
 import { getEntries } from 'astro:content';
 
 import PlaylistPage from '../../../components/PlaylistPage.astro';
-import { getConferencePages, listed, listedPlaylists } from '../../../helpers/collections';
+import { getPlaylistPages, listed, listedPlaylists } from '../../../helpers/collections';
 
 export async function getStaticPaths({ paginate }) {
-  const conferences = await getConferencePages();
+  const playlists = await getPlaylistPages();
 
-  return Promise.all(conferences.map(async ({ playlist, parent }) => {
+  return Promise.all(playlists.map(async ({ playlist, parent }) => {
     const videos = listed(await getEntries(playlist.data.videos));
     const subPlaylists = listedPlaylists(await getEntries(playlist.data.subPlaylists));
     return paginate(videos, {
       params: { slug: playlist.data.slug },
       pageSize: 25,
-      props: { conference: playlist, parent, subPlaylists },
+      props: { playlist, parent, subPlaylists },
     });
   })).then((pages) => pages.flat());
 }
 
-const { page, conference, parent, subPlaylists } = Astro.props;
+const { page, playlist, parent, subPlaylists } = Astro.props;
 ---
 
-<PlaylistPage page={page} playlist={conference} parent={parent} subPlaylists={subPlaylists} basePath="/conference" />
+<PlaylistPage page={page} playlist={playlist} parent={parent} subPlaylists={subPlaylists} basePath="/playlist" />

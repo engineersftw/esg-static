@@ -1,0 +1,23 @@
+---
+// Old Rails URL /playlist/:id served every playlist. Conference playlists (and their tracks) live
+// under /conference, so those redirect there; the rest are the first page of their /playlist page.
+import { getConferencePages, getPlaylistPages } from "../../../helpers/collections";
+
+export async function getStaticPaths() {
+  const conferences = (await getConferencePages()).map(({ playlist }) => ({
+    params: { slug: playlist.data.slug },
+    props: { redirectTo: `/conference/${playlist.data.slug}` },
+  }));
+  const playlists = (await getPlaylistPages()).map(({ playlist }) => ({
+    params: { slug: playlist.data.slug },
+    props: { redirectTo: undefined },
+  }));
+  return [...conferences, ...playlists];
+}
+
+const { slug } = Astro.params;
+const { redirectTo } = Astro.props;
+
+if (redirectTo) return Astro.redirect(redirectTo, 301);
+return Astro.rewrite(`/playlist/${slug}/1`);
+---

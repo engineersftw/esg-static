@@ -59,3 +59,20 @@ export async function getConferencePages() {
   }
   return [...pages.values()];
 }
+
+/**
+ * Every active playlist that gets a /playlist page: those without a /conference page (meetups,
+ * uncategorised playlists), each with the active playlist it is nested under, if any. Conference
+ * playlists and their tracks keep their /conference page as the only one.
+ */
+export async function getPlaylistPages() {
+  const conferenceIds = new Set((await getConferencePages()).map(({ playlist }) => playlist.id));
+  const playlists = await getCollection('playlist', (playlist) => playlist.data.active);
+  const parentOf = new Map<string, CollectionEntry<'playlist'>>();
+  for (const playlist of playlists) {
+    for (const sub of playlist.data.subPlaylists) if (!parentOf.has(sub.id)) parentOf.set(sub.id, playlist);
+  }
+  return playlists
+    .filter((playlist) => !conferenceIds.has(playlist.id))
+    .map((playlist) => ({ playlist, parent: parentOf.get(playlist.id) }));
+}

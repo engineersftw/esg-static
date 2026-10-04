@@ -9,7 +9,7 @@ export default defineConfig({
   integrations: [mdx(), sitemap()],
   redirects: {
     "/episodes": "/videos",
-    "/organizations/[id]": "/organization/[id]",
+    "/episodes/[id]": "/v/[id]",
     "/org/[id]": "/organization/[id]",
     "/o/[id]": "/organization/[id]",
     "/presenters/[id]": "/presenter/[id]",

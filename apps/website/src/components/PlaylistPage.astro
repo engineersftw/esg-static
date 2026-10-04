@@ -1,0 +1,207 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import type { Page } from 'astro';
+
+import BaseHead from './BaseHead.astro';
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+import Pagination from './Pagination.astro';
+import FormattedDate from './FormattedDate.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+
+interface Props {
+  page: Page<CollectionEntry<'video'>>;
+  playlist: CollectionEntry<'playlist'>;
+  parent?: CollectionEntry<'playlist'>;
+  subPlaylists: CollectionEntry<'playlist'>[];
+  /** URL prefix for this page and its parent/sub-playlist links: "/conference" or "/playlist". */
+  basePath: string;
+}
+
+const { page, playlist: conference, parent, subPlaylists, basePath } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+    <style>
+      main {
+        width: 960px;
+      }
+      .hero-image {
+        width: 100%;
+      }
+      .hero-image img {
+        display: block;
+        margin: 0 auto;
+        border-radius: 12px;
+        box-shadow: var(--box-shadow);
+      }
+      .prose {
+        max-width: calc(100% - 2em);
+        margin: auto;
+        padding: 1em;
+        color: rgb(var(--gray-dark));
+      }
+      .videos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+      .videos li {
+        width: calc(50% - 1rem);
+      }
+      .videos li * {
+        text-decoration: none;
+        transition: 0.2s ease;
+      }
+      .videos li:first-child {
+        width: 100%;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+      .videos li:first-child img {
+        width: 100%;
+      }
+      .videos li:first-child .title {
+        font-size: 2.369rem;
+      }
+      .videos li img {
+        margin-bottom: 0.5rem;
+        border-radius: 12px;
+      }
+      .videos li a {
+        display: block;
+      }
+      .title {
+        margin: 0;
+        color: rgb(var(--black));
+        line-height: 1;
+      }
+      .date {
+        margin: 0;
+        color: rgb(var(--gray));
+      }
+      .videos li a:hover h4,
+      .videos li a:hover .date {
+        color: rgb(var(--accent));
+      }
+      .videos a:hover img {
+        box-shadow: var(--box-shadow);
+      }
+      .playlistDescr {
+        white-space: pre-line;
+      }
+      .meta {
+        color: rgb(var(--gray));
+      }
+      @media (max-width: 720px) {
+        .videos {
+          gap: 0.5em;
+        }
+        .videos li {
+          width: 100%;
+          text-align: center;
+        }
+        .videos li:first-child {
+          margin-bottom: 0;
+        }
+        .videos li:first-child .title {
+          font-size: 1.563em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <Header />
+    <main>
+      <article>
+        {
+          conference.data.image && (
+            <div class="hero-image">
+              <img
+                src={conference.data.image}
+                alt={conference.data.playlistTitle}
+              />
+            </div>
+          )
+        }
+        <div class="prose">
+          <div class="title">
+            <h1>{conference.data.playlistTitle}</h1>
+            <hr />
+          </div>
+          {
+            parent && (
+              <p class="meta">
+                Part of{' '}
+                <a href={`${basePath}/${parent.data.slug}`}>
+                  {parent.data.playlistTitle}
+                </a>
+              </p>
+            )
+          }
+          {
+            (conference.data.publishDate || conference.data.website) && (
+              <p class="meta">
+                {conference.data.publishDate && (
+                  <FormattedDate date={conference.data.publishDate} />
+                )}
+                {conference.data.publishDate && conference.data.website && ' · '}
+                {conference.data.website && (
+                  <a href={conference.data.website} target="_blank" rel="noopener noreferrer">
+                    {conference.data.website}
+                  </a>
+                )}
+              </p>
+            )
+          }
+          <p class="playlistDescr">{conference.body}</p>
+          {
+            subPlaylists.length > 0 && (
+              <>
+                <h4>Tracks</h4>
+                <ul class="tracks">
+                  {subPlaylists.map((sub) => (
+                    <li>
+                      <a href={`${basePath}/${sub.data.slug}`}>{sub.data.playlistTitle}</a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )
+          }
+        </div>
+
+        <h2>Videos ({page.total})</h2>
+        <section>
+          <ul class="videos">
+            {
+              page.data.map((video) => (
+                <li>
+                  <a href={`/v/${video.id}/`}>
+                    <img
+                      width={720}
+                      height={360}
+                      src={video.data.thumbnailHigh}
+                      alt={video.data.videoTitle}
+                    />
+                    <h4 class="title">{video.data.videoTitle}</h4>
+                    <p class="date">
+                      <FormattedDate date={video.data.publishedAt} />
+                    </p>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </section>
+        <Pagination page={page} />
+      </article>
+    </main>
+    <Footer />
+  </body>
+</html>
