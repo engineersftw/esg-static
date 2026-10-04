@@ -1,8 +1,0 @@
-{
-  "name": "esg-website",
-  "targets": {
-    "build": {
-      "cache": true
-    }
-  }
-}
