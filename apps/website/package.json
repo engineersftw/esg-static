@@ -1,5 +1,5 @@
 {
-  "name": "esg-website",
+  "name": "@esg/static-website",
   "type": "module",
   "version": "0.0.1",
   "scripts": {

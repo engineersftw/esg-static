@@ -1,0 +1,14 @@
+---
+import { getConferencePages } from "../../../helpers/collections";
+
+export async function getStaticPaths() {
+  const pages = await getConferencePages();
+  return pages.map(({ playlist }) => ({
+    params: { slug: playlist.data.slug },
+  }));
+}
+
+const { slug } = Astro.params;
+
+return Astro.rewrite(`/conference/${slug}/1`);
+---

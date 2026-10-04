@@ -1,0 +1,121 @@
+---
+import type { Page } from 'astro';
+
+interface Props {
+  page: Page;
+  /** How many page numbers to show on each side of the current one. */
+  window?: number;
+}
+
+const { page, window = 2 } = Astro.props;
+const { currentPage, lastPage } = page;
+
+// Page URLs end in the page number (/videos/3, /organization/hackware/2), so swap it.
+const urlFor = (n: number) => page.url.current.replace(/\/\d+\/?$/, `/${n}`);
+
+const start = Math.max(1, currentPage - window);
+const end = Math.min(lastPage, currentPage + window);
+const numbers = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+---
+
+{
+  lastPage > 1 && (
+    <nav class="pagination" aria-label="Pagination">
+      <div class="steps">
+        {page.url.first ? <a href={page.url.first} aria-label="First page">« First</a> : <span aria-disabled="true">« First</span>}
+        {page.url.prev ? <a href={page.url.prev} rel="prev" aria-label="Previous page">‹ Prev</a> : <span aria-disabled="true">‹ Prev</span>}
+      </div>
+      <ol class="numbers">
+        {start > 1 && <li class="gap">…</li>}
+        {numbers.map((n) => (
+          <li>
+            {n === currentPage ? (
+              <span class="current" aria-current="page">{n}</span>
+            ) : (
+              <a href={urlFor(n)} aria-label={`Page ${n}`}>{n}</a>
+            )}
+          </li>
+        ))}
+        {end < lastPage && <li class="gap">…</li>}
+      </ol>
+      <div class="steps">
+        {page.url.next ? <a href={page.url.next} rel="next" aria-label="Next page">Next ›</a> : <span aria-disabled="true">Next ›</span>}
+        {page.url.last ? <a href={page.url.last} aria-label="Last page">Last »</a> : <span aria-disabled="true">Last »</span>}
+      </div>
+      <p class="summary">Page {currentPage} of {lastPage}</p>
+    </nav>
+  )
+}
+
+<style>
+  .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem 1rem;
+    margin: 3rem 0 1rem;
+    font-size: 0.9rem;
+  }
+  .steps,
+  .numbers {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+  .numbers {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  a,
+  span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgb(var(--gray-light));
+    background: #fff;
+    color: rgb(var(--gray-dark));
+    text-decoration: none;
+    line-height: 1;
+    box-sizing: border-box;
+    transition: 0.2s ease;
+  }
+  a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 2px 6px rgba(var(--gray), 25%);
+  }
+  .current {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 700;
+  }
+  [aria-disabled='true'] {
+    color: rgba(var(--gray), 50%);
+    background: transparent;
+  }
+  .gap {
+    color: rgb(var(--gray));
+    padding: 0 0.25rem;
+  }
+  .summary {
+    flex-basis: 100%;
+    margin: 0;
+    text-align: center;
+    color: rgb(var(--gray));
+    font-size: 0.8rem;
+  }
+  @media (max-width: 720px) {
+    .numbers {
+      order: -1;
+      flex-basis: 100%;
+      justify-content: center;
+    }
+  }
+</style>

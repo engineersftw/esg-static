@@ -1,5 +1,5 @@
 ---
-import { getCollection, getEntries } from 'astro:content';
+import { getEntries } from 'astro:content';
 
 import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
@@ -7,22 +7,23 @@ import Footer from '../../../components/Footer.astro';
 import Pagination from '../../../components/Pagination.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../../consts';
 import FormattedDate from '../../../components/FormattedDate.astro';
-import { listed } from '../../../helpers/collections';
+import { getConferencePages, listed } from '../../../helpers/collections';
 
 export async function getStaticPaths({ paginate }) {
-  const organizations = await getCollection('organization');
+  const conferences = await getConferencePages();
 
-  return Promise.all(organizations.map(async (organization) => {
-    const videos = listed(await getEntries(organization.data.videos));
+  return Promise.all(conferences.map(async ({ playlist, parent }) => {
+    const videos = listed(await getEntries(playlist.data.videos));
+    const subPlaylists = await getEntries(playlist.data.subPlaylists);
     return paginate(videos, {
-      params: { slug: organization.data.slug },
+      params: { slug: playlist.data.slug },
       pageSize: 25,
-      props: { organization },
+      props: { conference: playlist, parent, subPlaylists },
     });
   })).then((pages) => pages.flat());
 }
 
-const { page, organization } = Astro.props;
+const { page, conference, parent, subPlaylists } = Astro.props;
 ---
 
 <html lang="en">
@@ -47,7 +48,7 @@ const { page, organization } = Astro.props;
         padding: 1em;
         color: rgb(var(--gray-dark));
       }
-      ul {
+      .videos {
         display: flex;
         flex-wrap: wrap;
         gap: 2rem;
@@ -55,29 +56,29 @@ const { page, organization } = Astro.props;
         margin: 0;
         padding: 0;
       }
-      ul li {
+      .videos li {
         width: calc(50% - 1rem);
       }
-      ul li * {
+      .videos li * {
         text-decoration: none;
         transition: 0.2s ease;
       }
-      ul li:first-child {
+      .videos li:first-child {
         width: 100%;
         margin-bottom: 1rem;
         text-align: center;
       }
-      ul li:first-child img {
+      .videos li:first-child img {
         width: 100%;
       }
-      ul li:first-child .title {
+      .videos li:first-child .title {
         font-size: 2.369rem;
       }
-      ul li img {
+      .videos li img {
         margin-bottom: 0.5rem;
         border-radius: 12px;
       }
-      ul li a {
+      .videos li a {
         display: block;
       }
       .title {
@@ -89,28 +90,31 @@ const { page, organization } = Astro.props;
         margin: 0;
         color: rgb(var(--gray));
       }
-      ul li a:hover h4,
-      ul li a:hover .date {
+      .videos li a:hover h4,
+      .videos li a:hover .date {
         color: rgb(var(--accent));
       }
-      ul a:hover img {
+      .videos a:hover img {
         box-shadow: var(--box-shadow);
       }
-      .orgDescr {
+      .playlistDescr {
         white-space: pre-line;
       }
+      .meta {
+        color: rgb(var(--gray));
+      }
       @media (max-width: 720px) {
-        ul {
+        .videos {
           gap: 0.5em;
         }
-        ul li {
+        .videos li {
           width: 100%;
           text-align: center;
         }
-        ul li:first-child {
+        .videos li:first-child {
           margin-bottom: 0;
         }
-        ul li:first-child .title {
+        .videos li:first-child .title {
           font-size: 1.563em;
         }
       }
@@ -121,26 +125,65 @@ const { page, organization } = Astro.props;
     <main>
       <article>
         {
-          organization.data.logoImage && (
+          conference.data.image && (
             <div class="hero-image">
               <img
-                src={organization.data.logoImage}
-                alt={organization.data.orgTitle}
+                src={conference.data.image}
+                alt={conference.data.playlistTitle}
               />
             </div>
           )
         }
         <div class="prose">
           <div class="title">
-            <h1>{organization.data.orgTitle}</h1>
+            <h1>{conference.data.playlistTitle}</h1>
             <hr />
           </div>
-          <p class="orgDescr">{organization.body}</p>
+          {
+            parent && (
+              <p class="meta">
+                Part of{' '}
+                <a href={`/conference/${parent.data.slug}`}>
+                  {parent.data.playlistTitle}
+                </a>
+              </p>
+            )
+          }
+          {
+            (conference.data.publishDate || conference.data.website) && (
+              <p class="meta">
+                {conference.data.publishDate && (
+                  <FormattedDate date={conference.data.publishDate} />
+                )}
+                {conference.data.publishDate && conference.data.website && ' · '}
+                {conference.data.website && (
+                  <a href={conference.data.website} target="_blank" rel="noopener noreferrer">
+                    {conference.data.website}
+                  </a>
+                )}
+              </p>
+            )
+          }
+          <p class="playlistDescr">{conference.body}</p>
+          {
+            subPlaylists.length > 0 && (
+              <>
+                <h4>Tracks</h4>
+                <ul class="tracks">
+                  {subPlaylists.map((sub) => (
+                    <li>
+                      <a href={`/conference/${sub.data.slug}`}>{sub.data.playlistTitle}</a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )
+          }
         </div>
 
         <h2>Videos ({page.total})</h2>
         <section>
-          <ul>
+          <ul class="videos">
             {
               page.data.map((video) => (
                 <li>

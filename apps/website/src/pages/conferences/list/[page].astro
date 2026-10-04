@@ -1,17 +1,15 @@
 ---
-import { getCollection } from "astro:content";
-
 import BaseHead from "../../../components/BaseHead.astro";
 import Header from "../../../components/Header.astro";
 import Footer from "../../../components/Footer.astro";
 import Pagination from "../../../components/Pagination.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../../../consts";
+import FormattedDate from "../../../components/FormattedDate.astro";
+import { getConferences } from "../../../helpers/collections";
 
 export async function getStaticPaths({ paginate }) {
-  const organizations = (await getCollection("organization")).sort((a, b) =>
-    a.data.orgTitle.trim().localeCompare(b.data.orgTitle.trim())
-  );
-  return paginate(organizations, { pageSize: 50 });
+  const conferences = await getConferences();
+  return paginate(conferences, { pageSize: 50 });
 }
 
 const { page } = Astro.props;
@@ -56,7 +54,7 @@ const { page } = Astro.props;
       ul li a:hover .date {
         color: rgb(var(--accent));
       }
-      .orgImage {
+      .playlistImage {
         width: auto;
         min-height: 250px;
         background-size: contain;
@@ -67,7 +65,7 @@ const { page } = Astro.props;
         transition: 0.2s ease;
       }
 
-      .orgImage:hover {
+      .playlistImage:hover {
         box-shadow: var(--box-shadow);
       }
       @media (max-width: 720px) {
@@ -84,18 +82,23 @@ const { page } = Astro.props;
   <body>
     <Header />
     <main>
-      <h1>Organizations</h1>
+      <h1>Conferences</h1>
       <section>
         <ul>
           {
-            page.data.map((organization) => (
+            page.data.map((conference) => (
               <li>
-                <a href={`/organization/${organization.id}`}>
+                <a href={`/conference/${conference.data.slug}`}>
                   <div
-                    class="orgImage"
-                    style={`background-image: url(${organization.data.logoImage});`}
+                    class="playlistImage"
+                    style={`background-image: url(${conference.data.image});`}
                   />
-                  <h4 class="title">{organization.data.orgTitle}</h4>
+                  <h4 class="title">{conference.data.playlistTitle}</h4>
+                  {conference.data.publishDate && (
+                    <p class="date">
+                      <FormattedDate date={conference.data.publishDate} />
+                    </p>
+                  )}
                 </a>
               </li>
             ))
