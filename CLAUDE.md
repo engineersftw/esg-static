@@ -66,6 +66,9 @@ pnpm exec vitest run -t "playlist_items"  # run tests matching a name
 pnpm typecheck
 YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --playlist <PL…> -o out
 pnpm export --from-raw out/raw.json       # re-run the transform only, no API calls
+# Sync into the Astro content (see below); --dry-run first to see what would change
+YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/website/content --dry-run
+pnpm export --from-raw out/raw.json --content ../../apps/website/content   # no API calls
 ```
 
 - `src/youtube.ts` is a thin `fetch` client that authenticates with an API key, so it only sees public and unlisted content. Each list call costs 1 quota unit.
@@ -75,6 +78,13 @@ pnpm export --from-raw out/raw.json       # re-run the transform only, no API ca
   - Private and deleted videos are dropped, and unlisted ones get `active: false`.
   - `sort_order` is the YouTube position, so it can have gaps.
   - `slug` is generated from the title, and the curated fields (`website`, `hashtag`, `playlist_category_id`) are null.
+- `--content <dir>` switches to syncing into the Astro content collections instead of writing the JSON tables (`--dry-run` writes nothing, `-o` is then only needed to keep `raw.json`). `src/sync.ts` is the pure planner, `src/content.ts` reads and writes the `.md` files (byte-identical to pg-export's format, so unchanged files are never rewritten), and `src/sync.test.ts` covers the rules:
+  - It also fetches the playlists and videos the content already references, since many aren't on the channel (about 1,000 of the 4k videos), so their entries get refreshed too.
+  - Entries are matched on `videoId` (YouTube entries only, not Vimeo) and `playlistId`. A match gets its title, description (the body) and thumbnails (playlists: `image`) refreshed. A missing YouTube thumbnail keeps the existing one. Everything else (slug, `active`, `publishDate`, `category`, `website`, organizations, presenters, …) is kept.
+  - No match creates a file with the next free ID (after the highest existing one, oldest first) and a slug that is unique in the collection. New videos are `active` only if public, with empty `organizations`/`presenters`. New playlists are `active` only if public, get YouTube's creation date as `publishDate`, and have null `category`/`website`/`hashtag`. Playlists with no available videos are skipped.
+  - Membership is additive: videos YouTube lists in a playlist are appended to the playlist's `videos` and the playlist is added to the video's `playlists`. Nothing is removed, so curated order and links survive.
+  - Nothing is ever deleted: entries YouTube no longer returns (private or deleted) are counted in the summary and left as they are.
+  - `--exclude-video <youtube-id>` (repeatable) leaves a video out entirely: it isn't created, an existing file isn't updated or reported missing, and it isn't added to playlists (a new playlist left with no videos is skipped). Use YouTube IDs, since new entries have no ID yet. An ID that matches nothing gets a warning.
 - Row types and `VideoSite` come from `@esg/db-types` (a `workspace:*` dependency). Relative imports use the `.js` extension (NodeNext), which tsx and Vitest resolve to the `.ts` file.
 
 ## pg-export

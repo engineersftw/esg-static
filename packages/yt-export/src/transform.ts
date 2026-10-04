@@ -33,14 +33,14 @@ export function toPgDate(value: string | Date): DateString {
   return new Date(value).toISOString().slice(0, 10);
 }
 
-export function slugify(title: string): string {
+export function slugify(title: string, fallback = "playlist"): string {
   const slug = title
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "") // strip diacritics
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return slug || "playlist";
+  return slug || fallback;
 }
 
 /** Slugify each title, suffixing -2, -3, … on collisions (first occurrence keeps the bare slug). */
@@ -58,7 +58,8 @@ export function uniqueSlugs(titles: string[]): string[] {
 const byPublishedThenId = (a: { id: string; snippet: { publishedAt: string } }, b: typeof a) =>
   a.snippet.publishedAt.localeCompare(b.snippet.publishedAt) || a.id.localeCompare(b.id);
 
-const thumb = (t: YtThumbnails, ...sizes: (keyof YtThumbnails)[]) =>
+/** URL of the first available thumbnail size, or null. */
+export const thumb = (t: YtThumbnails, ...sizes: (keyof YtThumbnails)[]) =>
   sizes.map((s) => t[s]?.url).find(Boolean) ?? null;
 
 export function transform(raw: RawExport, now: Date): ExportData {
