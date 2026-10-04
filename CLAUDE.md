@@ -33,9 +33,11 @@ An Astro 7 static site (MDX, sitemap and RSS integrations, `astro-embed` for the
 pnpm dev                 # astro dev, http://localhost:4321
 pnpm build               # astro build → dist/
 pnpm preview
-pnpm deploy              # wrangler pages deploy ./dist --project-name esg-remake (Cloudflare Pages)
+pnpm run deploy          # wrangler pages deploy ./dist --project-name esg-remake (Cloudflare Pages)
 pnpm deploy:production   # same, with --branch production
 ```
+
+The Cloudflare Pages project builds from GitHub, with root directory `apps/website` and output directory `dist`. The root directory matters: Cloudflare only finds `functions/` (the legacy redirects) in the root directory. Wrangler likewise compiles `functions/` from its working directory, so deploy by hand from `apps/website`. `pnpm deploy` is a pnpm built-in, so use `pnpm run deploy` for the preview script. `HOSTNAME` and `PUBLIC_GTM_ID` are build-time variables, so they belong in the Pages project's environment settings.
 
 There are no tests. `HOSTNAME` sets the site URL in `astro.config.mjs` (default `http://localhost:4321`), and `.env`/`.env.production` are git-ignored. A full build makes about 7k pages (7.1k files) in roughly 10 seconds. Cloudflare Pages allows at most 20,000 files per deployment, so don't add routes that make a page per entry just to redirect.
 
