@@ -57,6 +57,8 @@ export interface Organization {
   logoImage: string | null;
   contactPerson: string | null;
   slug: string;
+  /** False for organizations hidden on the old site; the site leaves them out. */
+  active: boolean;
   /** Video entry IDs, newest first. */
   videos: string[];
 }
@@ -72,6 +74,8 @@ export interface Presenter {
   website: string | null;
   imageUrl: string | null;
   slug: string;
+  /** False for presenters hidden on the old site; the site leaves them out. */
+  active: boolean;
   /** Video entry IDs, newest first. */
   videos: string[];
 }

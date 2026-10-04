@@ -1,5 +1,5 @@
 ---
-import { getCollection } from "astro:content";
+import { getActiveOrganizations } from "../../../helpers/collections";
 
 import BaseHead from "../../../components/BaseHead.astro";
 import Header from "../../../components/Header.astro";
@@ -8,7 +8,7 @@ import Pagination from "../../../components/Pagination.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../../../consts";
 
 export async function getStaticPaths({ paginate }) {
-  const organizations = (await getCollection("organization")).sort((a, b) =>
+  const organizations = (await getActiveOrganizations()).sort((a, b) =>
     a.data.orgTitle.trim().localeCompare(b.data.orgTitle.trim())
   );
   return paginate(organizations, { pageSize: 50 });

@@ -17,6 +17,20 @@ export async function getListedVideos() {
 /** Drop inactive videos from resolved references, keeping their order. */
 export const listed = (videos: CollectionEntry<'video'>[]) => videos.filter((video) => video.data.active);
 
+/** Every active organization. Use this, not `getCollection('organization')`. */
+export const getActiveOrganizations = () => getCollection('organization', (organization) => organization.data.active);
+
+/** Every active presenter. Use this, not `getCollection('presenter')`. */
+export const getActivePresenters = () => getCollection('presenter', (presenter) => presenter.data.active);
+
+/** Drop inactive organizations from resolved references, keeping their order. */
+export const listedOrganizations = (organizations: CollectionEntry<'organization'>[]) =>
+  organizations.filter((organization) => organization.data.active);
+
+/** Drop inactive presenters from resolved references, keeping their order. */
+export const listedPresenters = (presenters: CollectionEntry<'presenter'>[]) =>
+  presenters.filter((presenter) => presenter.data.active);
+
 /** Drop inactive playlists from resolved references, keeping their order. */
 export const listedPlaylists = (playlists: CollectionEntry<'playlist'>[]) =>
   playlists.filter((playlist) => playlist.data.active);

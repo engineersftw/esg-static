@@ -1,8 +1,8 @@
 ---
-import { getCollection } from "astro:content";
+import { getActiveOrganizations } from "../../../helpers/collections";
 
 export async function getStaticPaths() {
-  const organizations = await getCollection("organization");
+  const organizations = await getActiveOrganizations();
   return organizations.map((organization) => ({
     params: { slug: organization.data.slug },
     props: organization,

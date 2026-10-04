@@ -1,8 +1,8 @@
 ---
-import { getCollection } from "astro:content";
+import { getActivePresenters } from "../../../helpers/collections";
 
 export async function getStaticPaths() {
-  const presenters = await getCollection("presenter");
+  const presenters = await getActivePresenters();
   return presenters.map((presenter) => ({
     params: { slug: presenter.data.slug },
     props: presenter,

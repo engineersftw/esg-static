@@ -197,7 +197,7 @@ describe("toMarkdownFiles", () => {
   it("turns blank strings into null and keeps an existing organization slug", () => {
     const out = files(source({ organizations: [org(10, { slug: "org-ten", description: "We meet monthly.", image: " " })] }));
     expect(out.get("organization/10.md")).toEqual({
-      data: { id: "10", orgTitle: "Org 10", website: null, twitter: null, logoImage: null, contactPerson: null, slug: "org-ten", videos: ["3", "1"] },
+      data: { id: "10", orgTitle: "Org 10", website: null, twitter: null, logoImage: null, contactPerson: null, slug: "org-ten", active: true, videos: ["3", "1"] },
       body: "We meet monthly.",
     });
   });
@@ -252,6 +252,17 @@ describe("toMarkdownFiles", () => {
       },
       body: "Talks from day one.",
     });
+  });
+
+  it("keeps inactive organizations and presenters with active false, and treats a null active as true", () => {
+    const out = files(
+      source({
+        organizations: [org(10, { active: false }), org(11, { active: null }), org(12)],
+        presenters: [presenter(20, { active: false }), presenter(21, { active: null }), presenter(22)],
+      }),
+    );
+    expect(["10", "11", "12"].map((id) => out.get(`organization/${id}.md`)!.data.active)).toEqual([false, true, true]);
+    expect(["20", "21", "22"].map((id) => out.get(`presenter/${id}.md`)!.data.active)).toEqual([false, true, true]);
   });
 
   it("keeps inactive playlists with active false, and treats a null active as true", () => {

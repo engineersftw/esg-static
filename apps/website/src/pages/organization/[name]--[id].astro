@@ -1,11 +1,11 @@
 ---
 // Old Rails URLs, /organization/<name>--<id>, where <name> is the parameterized orgTitle. Only the
 // current title is known at build time, so a link made before a rename won't match.
-import { getCollection } from "astro:content";
+import { getActiveOrganizations } from "../../helpers/collections";
 import { parameterize } from "../../helpers/url_helpers";
 
 export async function getStaticPaths() {
-  const entries = await getCollection("organization");
+  const entries = await getActiveOrganizations();
   return entries
     .map((entry) => ({
       params: { name: parameterize(entry.data.orgTitle), id: entry.id },

@@ -41,6 +41,7 @@ const organization = defineCollection({
     logoImage: z.string().nullable(),
     contactPerson: z.string().nullable(),
     slug: z.string(),
+    active: z.boolean(),
     videos: z.array(reference('video')),
   }),
 });
@@ -56,6 +57,7 @@ const presenter = defineCollection({
     website: z.string().nullable(),
     imageUrl: z.string().nullable(),
     slug: z.string(),
+    active: z.boolean(),
     videos: z.array(reference('video')),
   }),
 });

@@ -189,6 +189,8 @@ export function toMarkdownFiles(src: MarkdownSource, opts: MarkdownOptions): Mar
       logoImage: blankToNull(o.image),
       contactPerson: blankToNull(o.contact_person),
       slug: orgSlugs[i],
+      // `active` is nullable in the database and defaults to true.
+      active: o.active !== false,
       videos: byNewest(videosByOrg.get(o.id) ?? []),
     };
     files.push(file(Collection.Organization, data.id, data, o.description));
@@ -205,6 +207,7 @@ export function toMarkdownFiles(src: MarkdownSource, opts: MarkdownOptions): Mar
       website: blankToNull(p.website),
       imageUrl: blankToNull(p.avatar_url),
       slug: presenterSlugs[i],
+      active: p.active !== false,
       videos: byNewest(videosByPresenter.get(p.id) ?? []),
     };
     files.push(file(Collection.Presenter, data.id, data, p.biography));
@@ -222,7 +225,6 @@ export function toMarkdownFiles(src: MarkdownSource, opts: MarkdownOptions): Mar
       hashtag: blankToNull(p.hashtag),
       category: p.playlist_category_id == null ? null : (categoryTitle.get(p.playlist_category_id) ?? null),
       slug: playlistSlugs[i],
-      // `active` is nullable in the database and defaults to true.
       active: p.active !== false,
       videos: videosByPlaylist.get(p.id) ?? [],
       subPlaylists: subPlaylists.get(p.id) ?? [],

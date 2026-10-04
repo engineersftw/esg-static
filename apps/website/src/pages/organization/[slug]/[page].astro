@@ -1,5 +1,5 @@
 ---
-import { getCollection, getEntries } from 'astro:content';
+import { getEntries } from 'astro:content';
 
 import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
@@ -7,10 +7,10 @@ import Footer from '../../../components/Footer.astro';
 import Pagination from '../../../components/Pagination.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../../consts';
 import FormattedDate from '../../../components/FormattedDate.astro';
-import { listed } from '../../../helpers/collections';
+import { getActiveOrganizations, listed } from '../../../helpers/collections';
 
 export async function getStaticPaths({ paginate }) {
-  const organizations = await getCollection('organization');
+  const organizations = await getActiveOrganizations();
 
   return Promise.all(organizations.map(async (organization) => {
     const videos = listed(await getEntries(organization.data.videos));
