@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Export a YouTube channel's playlists and videos to episodes.json, playlists.json and
- * playlist_items.json, shaped like types/db.ts and formatted like backup/.
+ * playlist_items.json, shaped like @esg/db-types and formatted like backup/.
  *
  * Raw API responses are saved to <out>/raw.json so the transform can be re-run with
  * --from-raw without spending API quota.

@@ -1,5 +1,5 @@
 {
-  "name": "yt-export",
+  "name": "@esg/yt-export",
   "version": "1.0.0",
   "private": true,
   "description": "Export a YouTube channel's playlists and videos as episodes/playlists/playlist_items rows matching types/db.ts",
@@ -18,5 +18,8 @@
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@esg/db-types": "workspace:*"
   }
 }

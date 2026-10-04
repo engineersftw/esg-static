@@ -1,0 +1,16 @@
+{
+  "name": "@esg/db-types",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Row types for every table in backup/schema.json",
+  "type": "module",
+  "exports": {
+    ".": "./src/db.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

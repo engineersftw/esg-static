@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { VideoSite } from "../../types/db.js";
+import { VideoSite } from "@esg/db-types";
 import { slugify, toPgDate, toPgTimestamp, transform, uniqueSlugs, type RawExport } from "./transform.js";
 import type { YtPlaylist, YtPlaylistItem, YtPrivacyStatus, YtVideo } from "./youtube.js";
 

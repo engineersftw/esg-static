@@ -5,8 +5,8 @@ Exports a Heroku Postgres database to **one file per table** (CSV, JSON, or NDJS
 ## Setup
 
 ```bash
-npm install
-npm run build        # or skip and use `npm run export -- ...` (runs via tsx)
+pnpm install         # from the repo root (pnpm workspace)
+pnpm build           # or skip and use `pnpm export ...` (runs via tsx)
 ```
 
 ## Usage
@@ -16,7 +16,7 @@ npm run build        # or skip and use `npm run export -- ...` (runs via tsx)
 node dist/export.js --app my-heroku-app
 
 # Or pass the URL directly / via env
-DATABASE_URL=postgres://... node dist/export.js -f json -o ./backup
+DATABASE_URL=postgres://... node dist/export.js -f json -o ./output/backup
 
 # Several schemas, only some tables
 node dist/export.js --app my-app -s public -s billing -t users -t billing.invoices

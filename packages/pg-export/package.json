@@ -1,5 +1,5 @@
 {
-  "name": "heroku-pg-export",
+  "name": "@esg/pg-export",
   "version": "1.0.0",
   "description": "Export a Heroku Postgres database to one CSV/JSON file per table, plus schema.json",
   "type": "module",
@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc",
     "export": "tsx src/export.ts",
-    "start": "node dist/export.js"
+    "start": "node dist/export.js",
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": ">=18.3"
@@ -26,5 +27,6 @@
     "@types/pg-cursor": "^2.7.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
-  }
+  },
+  "private": true
 }

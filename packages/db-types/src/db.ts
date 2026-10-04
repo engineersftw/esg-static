@@ -1,7 +1,7 @@
 /**
- * Row types for the Engineers.SG Postgres database, derived from backup/schema.json.
+ * Row types for the Engineers.SG Postgres database, derived from output/backup/schema.json.
  *
- * Each type matches one row of backup/<table>.json as written by pg-export:
+ * Each type matches one row of output/backup/<table>.json as written by pg-export:
  * - `timestamp without time zone` columns are raw Postgres text in UTC, e.g. "2015-05-07 15:32:29.127974"
  * - `date` columns are "YYYY-MM-DD"
  * - `inet` columns are text, e.g. "203.0.113.7"

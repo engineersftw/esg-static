@@ -1,8 +1,8 @@
 /**
- * Pure transform from raw YouTube API responses to rows shaped like types/db.ts.
+ * Pure transform from raw YouTube API responses to rows shaped like @esg/db-types.
  * No I/O here, so it can be unit tested and re-run from a saved raw.json.
  */
-import { VideoSite, type DateString, type Episode, type Playlist, type PlaylistItem, type Timestamp } from "../../types/db.js";
+import { VideoSite, type DateString, type Episode, type Playlist, type PlaylistItem, type Timestamp } from "@esg/db-types";
 import type { YtChannel, YtPlaylist, YtPlaylistItem, YtThumbnails, YtVideo } from "./youtube.js";
 
 /** Everything fetched from the API; saved as <out>/raw.json. */
