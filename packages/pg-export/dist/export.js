@@ -3,19 +3,23 @@
  * Export a (Heroku) Postgres database to one CSV / JSON / NDJSON file per table,
  * plus a schema.json describing tables, columns, keys, indexes, enums, views and sequences.
  *
+ * `--format markdown` instead writes the Engineers.SG content as Astro content collections
+ * (see markdown.ts), from the database or, with --from-json, from an earlier JSON export.
+ *
  * All tables are read inside one REPEATABLE READ, READ ONLY transaction, so the
  * export is a consistent snapshot even while the app keeps writing.
  */
 process.env.TZ = "UTC"; // keep any Date parsing deterministic
 import { execFileSync } from "node:child_process";
-import { createWriteStream, mkdirSync, writeFileSync } from "node:fs";
+import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { once } from "node:events";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { parseArgs } from "node:util";
 import pg from "pg";
 import Cursor from "pg-cursor";
 import { to as copyTo } from "pg-copy-streams";
+import { MARKDOWN_TABLES, toMarkdownFiles } from "./markdown.js";
 // ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
@@ -29,7 +33,7 @@ Connection (first match wins):
   DATABASE_URL env var
 
 Output:
-  -f, --format <fmt>    csv | json | ndjson (default: csv)
+  -f, --format <fmt>    csv | json | ndjson | markdown (default: csv)
   -o, --out <dir>       Output directory (default: ./export-<timestamp>)
   -s, --schema <name>   Schema to export; repeatable (default: public)
   -t, --table <name>    Only export these tables; repeatable ("users" or "public.users")
@@ -38,13 +42,18 @@ Output:
       --batch-size <n>  Rows per fetch for JSON/NDJSON (default: 5000)
       --no-ssl          Disable SSL (for a local database)
   -h, --help
+
+Markdown (Astro content collections video/, organization/, presenter/; one <id>.md per row):
+      --from-json <dir>  Read the tables from a JSON export instead of a database
+                         (implies --format markdown)
+      --include-emails   Write presenters' email addresses (default: email is null)
 `;
 const { values: args } = parseArgs({
     options: {
         url: { type: "string" },
         app: { type: "string" },
         "config-var": { type: "string", default: "DATABASE_URL" },
-        format: { type: "string", short: "f", default: "csv" },
+        format: { type: "string", short: "f" },
         out: { type: "string", short: "o" },
         schema: { type: "string", short: "s", multiple: true },
         table: { type: "string", short: "t", multiple: true },
@@ -52,6 +61,8 @@ const { values: args } = parseArgs({
         "schema-only": { type: "boolean", default: false },
         "batch-size": { type: "string", default: "5000" },
         "no-ssl": { type: "boolean", default: false },
+        "from-json": { type: "string" },
+        "include-emails": { type: "boolean", default: false },
         help: { type: "boolean", short: "h", default: false },
     },
 });
@@ -59,9 +70,11 @@ if (args.help) {
     console.log(HELP);
     process.exit(0);
 }
-const format = args.format;
-if (!["csv", "json", "ndjson"].includes(format))
+const format = (args.format ?? (args["from-json"] ? "markdown" : "csv"));
+if (!["csv", "json", "ndjson", "markdown"].includes(format))
     fail(`Unknown --format "${format}"`);
+if (args["from-json"] && format !== "markdown")
+    fail("--from-json only works with --format markdown");
 const batchSize = Number(args["batch-size"]);
 if (!Number.isInteger(batchSize) || batchSize <= 0)
     fail("--batch-size must be a positive integer");
@@ -314,9 +327,45 @@ async function exportJson(client, sql, path, ndjson) {
     return count;
 }
 // ---------------------------------------------------------------------------
+// Markdown export
+// ---------------------------------------------------------------------------
+// These tables are small (a few thousand rows), so they are read whole rather than streamed.
+async function readMarkdownTables(client) {
+    const src = {};
+    for (const table of MARKDOWN_TABLES) {
+        const sql = `SELECT * FROM ${quoteIdent(schemas[0])}.${quoteIdent(table)} ORDER BY id`;
+        src[table] = (await client.query({ text: sql, types: typeOverrides })).rows;
+    }
+    return src;
+}
+function readJsonExport(dir) {
+    const src = {};
+    for (const table of MARKDOWN_TABLES)
+        src[table] = JSON.parse(readFileSync(join(dir, `${table}.json`), "utf8"));
+    return src;
+}
+function writeMarkdown(src) {
+    const files = toMarkdownFiles(src, { includeEmails: args["include-emails"] });
+    const counts = {};
+    for (const f of files) {
+        const path = join(outDir, f.path);
+        mkdirSync(dirname(path), { recursive: true });
+        writeFileSync(path, f.content);
+        const collection = f.path.split("/")[0];
+        counts[collection] = (counts[collection] ?? 0) + 1;
+    }
+    for (const [collection, n] of Object.entries(counts))
+        console.log(`- ${collection}: ${n} files`);
+}
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function main() {
+    if (args["from-json"]) {
+        writeMarkdown(readJsonExport(resolve(args["from-json"])));
+        console.log(`\nDone → ${outDir}`);
+        return;
+    }
     const url = new URL(getConnectionString());
     const sslmode = url.searchParams.get("sslmode");
     url.searchParams.delete("sslmode"); // we set SSL explicitly below
@@ -334,6 +383,13 @@ async function main() {
         await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
         await client.query("SET LOCAL TIME ZONE 'UTC'");
         await client.query("SET LOCAL statement_timeout = 0");
+        if (format === "markdown") {
+            const src = await readMarkdownTables(client);
+            await client.query("COMMIT");
+            writeMarkdown(src);
+            console.log(`\nDone in ${((Date.now() - started) / 1000).toFixed(1)}s → ${outDir}`);
+            return;
+        }
         const schema = await introspect(client);
         let tables = schema.tables;
         if (args.table?.length)

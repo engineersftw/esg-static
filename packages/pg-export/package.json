@@ -10,12 +10,14 @@
     "build": "tsc",
     "export": "tsx src/export.ts",
     "start": "node dist/export.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run"
   },
   "engines": {
     "node": ">=18.3"
   },
   "dependencies": {
+    "@esg/db-types": "workspace:*",
     "pg": "^8.23.0",
     "pg-copy-streams": "^7.0.0",
     "pg-cursor": "^2.22.0"
@@ -26,7 +28,8 @@
     "@types/pg-copy-streams": "^1.2.5",
     "@types/pg-cursor": "^2.7.2",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
   },
   "private": true
 }

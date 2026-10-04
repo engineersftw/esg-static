@@ -36,6 +36,17 @@ node dist/export.js --app my-app --schema-only
 | `--batch-size` | Rows per fetch for JSON/NDJSON (default 5000) |
 | `--no-ssl` | For a local database |
 
+## Markdown (Engineers.SG content)
+
+```bash
+pnpm export -f markdown --app my-app -o ../../output/content         # from the database
+node dist/export.js --from-json ../../output/backup -o ../../output/content   # from a JSON export
+```
+
+`-f markdown` writes Astro content collections instead of table dumps: `video/<id>.md`, `organization/<id>.md`, `presenter/<id>.md` and `playlist/<id>.md`. It reads `episodes`, `organizations`, `presenters`, `playlists`, `playlist_categories`, `playlist_items`, `sub_playlists`, `video_organizations` and `video_presenters` (in the first `--schema`) in the same snapshot transaction. `--from-json <dir>` reads those tables from an earlier `-f json` export and needs no database.
+
+Frontmatter types are in `@esg/db-types/content`. Relations are ID lists (`organizations`/`presenters`/`playlists` on a video; `videos`, newest first, on an organization or presenter; `videos` in playlist order and `subPlaylists` on a playlist) for Astro's `reference()`, and each description becomes the Markdown body. Presenter emails are written as `null` unless you pass `--include-emails`. Existing files in the output directory are overwritten but never deleted.
+
 ## Output
 
 ```

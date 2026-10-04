@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
-There is no application here yet. The repo holds the data from the existing Engineers.SG site (a Rails app on Heroku Postgres, with ActiveAdmin and Devise, going by its tables) and the tools used to export it.
+This is the rebuild of Engineers.SG. The repo holds the new Astro site (`apps/website`), the data from the existing site (a Rails app on Heroku Postgres, with ActiveAdmin and Devise, going by its tables) and the tools used to export it.
 
-It is a pnpm workspace (`pnpm-workspace.yaml` → `packages/*`, pnpm 10, Node 20+). Shared compiler options live in `tsconfig.base.json`, which each package's `tsconfig.json` extends.
+It is a pnpm workspace (`pnpm-workspace.yaml` → `apps/*` and `packages/*`, pnpm 10, Node 22.12+ for Astro 7). Shared compiler options live in `tsconfig.base.json`, which each package's `tsconfig.json` extends.
 
 - `output/` (git-ignored): generated data. `output/backup/` is below; yt-export runs also land here (e.g. `-o ../../output/yt-export-<timestamp>`).
-- `packages/pg-export/` (`@esg/pg-export`): a standalone TypeScript CLI that dumps a Postgres database to one file per table plus a `schema.json`.
+- `apps/website/` (`esg-website`): the Astro site, described under "apps/website" below.
+- `packages/pg-export/` (`@esg/pg-export`): a TypeScript CLI that dumps a Postgres database to one file per table plus a `schema.json`, or writes the Engineers.SG content as Markdown for Astro content collections.
 - `output/backup/`: a JSON export of the production database made with that tool on 2026-10-03 (Postgres 17.9).
-- `packages/db-types/` (`@esg/db-types`): row types for every table in `output/backup/schema.json`, in `src/db.ts`. Each type matches a row in the JSON dump, so timestamps are UTC text, not `Date`. It ships TypeScript source with no build step (`exports` points at `src/db.ts`), so consumers must run through tsx/Vitest or type-check with `tsc`.
+- `packages/db-types/` (`@esg/db-types`): row types for every table in `output/backup/schema.json`, in `src/db.ts`, and the frontmatter types of the Astro content collections in `src/content.ts` (`@esg/db-types/content`: `Video`, `Organization`, `Presenter`, `Playlist`). Each row type matches a row in the JSON dump, so timestamps are UTC text, not `Date`. It ships TypeScript source with no build step (`exports` points at the `.ts` files), so consumers must run through tsx/Vitest or type-check with `tsc`.
 - `packages/yt-export/` (`@esg/yt-export`): a CLI that builds `episodes`/`playlists`/`playlist_items` rows (typed by `@esg/db-types`) from the YouTube Data API.
 
 From the repo root:
@@ -20,9 +21,34 @@ From the repo root:
 pnpm install
 pnpm test          # every package's test script
 pnpm typecheck     # every package's typecheck script
-pnpm build         # pg-export only
+pnpm build         # website (astro build) and pg-export
 pnpm --filter @esg/yt-export <script>   # run one package's script from the root
 ```
+
+## apps/website
+
+An Astro 7 static site (MDX, sitemap and RSS integrations, `astro-embed` for the YouTube player) that was started from the Astro blog template. Run these from inside `apps/website/`:
+
+```bash
+pnpm dev                 # astro dev, http://localhost:4321
+pnpm build               # astro build → dist/
+pnpm preview
+pnpm deploy              # wrangler pages deploy ./dist --project-name esg-remake (Cloudflare Pages)
+pnpm deploy:production   # same, with --branch production
+```
+
+There are no tests. `HOSTNAME` sets the site URL in `astro.config.mjs` (default `http://localhost:4321`), and `.env`/`.env.production` are git-ignored.
+
+- **Data:** `src/content.config.ts` defines three content collections, `video`, `organization` and `presenter`. Each has a custom loader calling `fetchESGAllVideos`/`fetchESGAllOrgs`/`fetchESGAllPresenters` from `@engineersftw/esg-data`, and a zod schema in camelCase (`videoTitle`, `orgTitle`, `presenterName`, ...) with nested `organizations`/`presenters`/`videos` arrays. Pages read them with `getCollection()` and never talk to a database.
+- **Routes** (all static, from `getStaticPaths`; lists are paginated 25 per page): `/videos/[page]`, `/video/[slug]`, `/organizations/list/[page]`, `/organization/[slug]/[page]`, `/presenters/list/[page]`, `/presenter/[slug]/[page]`, plus `index` and `about`. The `index.astro` files under `/organization/[slug]`, `/presenter/[slug]`, `/videos`, `/organizations` and `/presenters` are thin entry points for the first page. `/v/[id]`, `/organization/[id]` and `/presenter/[id]` are old id-based URLs, with extra redirects in `astro.config.mjs`.
+- **Shared bits:** `src/consts.ts` (`SITE_TITLE`, `SITE_DESCRIPTION`, still the template placeholder text), `src/helpers/url_helpers.ts` (`toSlug`), and `src/components/` (`BaseHead`, `Header`, `Footer`, `HeaderLink`, `FormattedDate`). Styles are scoped per page plus `src/styles/global.css`.
+- `tsconfig.json` extends `astro/tsconfigs/strict` and the root `tsconfig.base.json`.
+
+Known problems as of this scan:
+- **The build is broken.** `@engineersftw/esg-data` is no longer in `package.json` (it was `*` and has just been removed), and nothing in the workspace provides it. The `video`/`organization`/`presenter` loaders need a replacement before `astro build` can work. The likely options are reading `output/backup/` through `@esg/db-types`, or a new workspace package.
+- `check_query.js` is a leftover scratch script (`pnpm check_query`) that queries Supabase, but `@supabase/supabase-js` is not a dependency and it needs `SUPABASE_URL`/`SUPABASE_KEY`. It does show the old table relationships (`episodes` ← `video_organizations`/`video_presenters`).
+- `project.json` is a leftover Nx config, and the README is the unchanged Astro blog template text. Neither is used.
+- Template leftovers are still in use: `about.astro` uses the `BlogPost.astro` layout, and `BaseHead` defaults its image to `/blog-placeholder-1.jpg`.
 
 ## yt-export
 
@@ -54,15 +80,27 @@ pnpm build                        # tsc → dist/export.js
 pnpm export --help                # run the TS source directly via tsx, no build step
 node dist/export.js --app <heroku-app> -f json -o ../../output/backup   # how output/backup/ was produced
 DATABASE_URL=postgres://... node dist/export.js --no-ssl -f json   # local DB
+pnpm export --from-json ../../output/backup -o ../../output/content   # Markdown content collections from the JSON dump
+pnpm test                         # vitest run (markdown.ts only)
+pnpm typecheck                    # includes the tests (tsconfig.test.json); the build excludes them
 ```
 
-There are no tests and no linter. Type-check with `pnpm typecheck`.
+There is no linter.
 
-All of the logic lives in `src/export.ts`, which is ESM with NodeNext resolution and needs Node 18.3 or newer. Design points to keep:
+The CLI and the table export live in `src/export.ts`, which is ESM with NodeNext resolution and needs Node 18.3 or newer. Design points to keep:
 - Everything (introspection and the data reads) runs in **one** `REPEATABLE READ READ ONLY` transaction on a single connection, so queries run one after another and all see the same snapshot. Keep new queries inside that transaction.
 - CSV goes through `COPY ... TO STDOUT` (pg-copy-streams). JSON and NDJSON use a server-side cursor (pg-cursor) that reads `--batch-size` rows at a time, so large tables are streamed rather than held in memory.
 - JSON output is meant to be lossless. Date and time OIDs are returned as raw Postgres text in UTC (`typeOverrides`), `bigint`/`numeric` stay as strings, and `bytea` becomes `\x…` hex.
 - Heroku needs SSL with `rejectUnauthorized: false`. Any `sslmode` in the URL is stripped and SSL is set explicitly.
+
+`-f markdown` (or `--from-json <dir>`, which implies it) is the Engineers.SG-specific mode. `src/markdown.ts` is pure and holds every mapping rule, and the unit tests cover it:
+- It writes one file per row at `video/<id>.md`, `organization/<id>.md`, `presenter/<id>.md` and `playlist/<id>.md`, with frontmatter typed by `@esg/db-types/content`. The description (or `biography`) is the Markdown body, with line endings normalized.
+- Entry IDs are the database IDs as strings. Relations are ID lists for Astro's `reference()`: a video's `organizations`/`presenters`/`playlists` follow join-row order, an organization's or presenter's `videos` are newest first, a playlist's `videos` follow `playlist_items.sort_order` (ties by item ID), and its `subPlaylists` follow `sub_playlists.sequence`. A playlist's `category` is the `playlist_categories` title. Join rows with nulls or dangling IDs are dropped.
+- Every frontmatter value is written as JSON, which is valid YAML, so timestamps and IDs stay strings. `publishedAt` is ISO 8601 UTC.
+- Slugs are generated from the title or name (organizations and playlists keep their existing `slug`) and are unique per collection, with `-2`, `-3`, ... on collisions in ID order, falling back to `<collection>-<id>` for titles with no ASCII.
+- Blank strings become null. Inactive videos are kept with `active: false`. Presenter emails are null unless `--include-emails` is passed.
+- The nine tables it needs (`MARKDOWN_TABLES`) are read whole (not streamed) inside the same snapshot transaction.
+- The site must load these with `glob({ ..., generateId: ({ entry }) => entry.replace(/\.md$/, "") })`. By default the glob loader uses the frontmatter `slug` as the entry ID, which breaks every reference.
 
 ## output/backup/ data model
 

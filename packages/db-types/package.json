@@ -5,7 +5,8 @@
   "description": "Row types for every table in backup/schema.json",
   "type": "module",
   "exports": {
-    ".": "./src/db.ts"
+    ".": "./src/db.ts",
+    "./content": "./src/content.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

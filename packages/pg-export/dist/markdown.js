@@ -1,0 +1,170 @@
+/**
+ * Pure transform from Engineers.SG database rows to Markdown files for Astro content
+ * collections: one file per video, organization, presenter and playlist, at `<collection>/<id>.md`.
+ * Frontmatter is shaped by @esg/db-types/content, and each description becomes the body.
+ */
+import { VideoSite, } from "@esg/db-types";
+import { Collection, } from "@esg/db-types/content";
+/** Tables the Markdown export reads, by table name. */
+export const MARKDOWN_TABLES = [
+    "episodes",
+    "organizations",
+    "presenters",
+    "video_organizations",
+    "video_presenters",
+    "playlists",
+    "playlist_categories",
+    "playlist_items",
+    "sub_playlists",
+];
+/** Postgres `timestamp` text in UTC ("2023-11-03 06:41:58[.ffffff]") → "2023-11-03T06:41:58[.fff]Z". */
+export function toIsoTimestamp(ts) {
+    const m = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})(?:\.(\d+))?$/.exec(ts);
+    if (!m)
+        throw new Error(`Unexpected timestamp "${ts}"`);
+    const ms = m[3] ? `.${m[3].slice(0, 3).padEnd(3, "0")}` : "";
+    return `${m[1]}T${m[2]}${ms}Z`;
+}
+/** Lowercase ASCII words joined by hyphens; "" when nothing is left (e.g. a title in Chinese). */
+export function slugify(text) {
+    return text
+        .normalize("NFKD")
+        .replace(/[̀-ͯ]/g, "") // strip diacritics
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+/**
+ * One slug per item, unique within the list. Existing slugs are kept and reserved first; the
+ * rest are slugified from `text`, falling back to `fallback`, with -2, -3, … on collisions.
+ */
+export function uniqueSlugs(items) {
+    const used = new Set(items.map((i) => i.existing).filter((s) => !!s));
+    return items.map((item) => {
+        if (item.existing)
+            return item.existing;
+        const base = slugify(item.text) || item.fallback;
+        let slug = base;
+        for (let n = 2; used.has(slug); n++)
+            slug = `${base}-${n}`;
+        used.add(slug);
+        return slug;
+    });
+}
+/** YAML frontmatter. Every value is written as JSON, which is valid YAML, so strings stay strings. */
+export function frontmatter(data) {
+    const lines = Object.entries(data).map(([k, v]) => `${k}: ${JSON.stringify(v)}`);
+    return `---\n${lines.join("\n")}\n---\n`;
+}
+/** Normalize line endings and trim; "" for null. */
+export function toBody(text) {
+    return (text ?? "").replace(/\r\n?/g, "\n").trim();
+}
+const blankToNull = (s) => (s?.trim() ? s.trim() : null);
+const file = (collection, id, data, body) => {
+    const text = toBody(body);
+    return { path: `${collection}/${id}.md`, content: frontmatter(data) + (text ? `\n${text}\n` : "") };
+};
+const byId = (a, b) => a.id - b.id;
+/** Group join rows into id → related ids, dropping nulls, dangling ids and repeats; keeps `order` (default: join row id). */
+function relate(rows, from, to, valid, order = byId) {
+    const map = new Map();
+    for (const r of [...rows].sort(order)) {
+        const f = from(r);
+        const t = to(r);
+        if (f == null || t == null || !valid.has(t))
+            continue;
+        const list = map.get(f) ?? [];
+        if (!list.includes(String(t)))
+            list.push(String(t));
+        map.set(f, list);
+    }
+    return map;
+}
+export function toMarkdownFiles(src, opts) {
+    const episodes = [...src.episodes].sort(byId);
+    const organizations = [...src.organizations].sort(byId);
+    const presenters = [...src.presenters].sort(byId);
+    const playlists = [...src.playlists].sort(byId);
+    const episodeIds = new Set(episodes.map((e) => e.id));
+    const orgsByEpisode = relate(src.video_organizations, (r) => r.episode_id, (r) => r.organization_id, new Set(organizations.map((o) => o.id)));
+    const presentersByEpisode = relate(src.video_presenters, (r) => r.episode_id, (r) => r.presenter_id, new Set(presenters.map((p) => p.id)));
+    const playlistIds = new Set(playlists.map((p) => p.id));
+    const playlistsByEpisode = relate(src.playlist_items, (r) => r.episode_id, (r) => r.playlist_id, playlistIds);
+    const videosByPlaylist = relate(src.playlist_items, (r) => r.playlist_id, (r) => r.episode_id, episodeIds, (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id);
+    const subPlaylists = relate(src.sub_playlists, (r) => r.playlist_id, (r) => r.sub_playlist_id, playlistIds, (a, b) => a.sequence - b.sequence || a.id - b.id);
+    const categoryTitle = new Map(src.playlist_categories.map((c) => [c.id, blankToNull(c.title)]));
+    // Reverse relations list videos newest first, as the site shows them.
+    const newestFirst = [...episodes].sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? "") || b.id - a.id);
+    const rank = new Map(newestFirst.map((e, i) => [String(e.id), i]));
+    const byNewest = (ids) => ids.sort((a, b) => rank.get(a) - rank.get(b));
+    const videosByOrg = relate(src.video_organizations, (r) => r.organization_id, (r) => r.episode_id, episodeIds);
+    const videosByPresenter = relate(src.video_presenters, (r) => r.presenter_id, (r) => r.episode_id, episodeIds);
+    const files = [];
+    const episodeSlugs = uniqueSlugs(episodes.map((e) => ({ text: e.title ?? "", fallback: `video-${e.id}` })));
+    episodes.forEach((e, i) => {
+        const data = {
+            id: String(e.id),
+            videoId: e.video_id ?? "",
+            videoTitle: e.title ?? "",
+            publishedAt: toIsoTimestamp(e.published_at ?? e.created_at),
+            thumbnailDefault: blankToNull(e.image1),
+            thumbnailMedium: blankToNull(e.image2),
+            thumbnailHigh: blankToNull(e.image3),
+            slug: episodeSlugs[i],
+            organizations: orgsByEpisode.get(e.id) ?? [],
+            presenters: presentersByEpisode.get(e.id) ?? [],
+            playlists: playlistsByEpisode.get(e.id) ?? [],
+            active: e.active,
+            videoSite: e.video_site === VideoSite.Vimeo ? "vimeo" : "youtube",
+        };
+        files.push(file(Collection.Video, data.id, data, e.description));
+    });
+    const orgSlugs = uniqueSlugs(organizations.map((o) => ({ existing: blankToNull(o.slug), text: o.title, fallback: `organization-${o.id}` })));
+    organizations.forEach((o, i) => {
+        const data = {
+            id: String(o.id),
+            orgTitle: o.title,
+            website: blankToNull(o.website),
+            twitter: blankToNull(o.twitter),
+            logoImage: blankToNull(o.image),
+            contactPerson: blankToNull(o.contact_person),
+            slug: orgSlugs[i],
+            videos: byNewest(videosByOrg.get(o.id) ?? []),
+        };
+        files.push(file(Collection.Organization, data.id, data, o.description));
+    });
+    const presenterSlugs = uniqueSlugs(presenters.map((p) => ({ text: p.name, fallback: `presenter-${p.id}` })));
+    presenters.forEach((p, i) => {
+        const data = {
+            id: String(p.id),
+            presenterName: p.name,
+            presenterByline: blankToNull(p.byline),
+            twitter: blankToNull(p.twitter),
+            email: opts.includeEmails ? blankToNull(p.email) : null,
+            website: blankToNull(p.website),
+            imageUrl: blankToNull(p.avatar_url),
+            slug: presenterSlugs[i],
+            videos: byNewest(videosByPresenter.get(p.id) ?? []),
+        };
+        files.push(file(Collection.Presenter, data.id, data, p.biography));
+    });
+    const playlistSlugs = uniqueSlugs(playlists.map((p) => ({ existing: blankToNull(p.slug), text: p.name ?? "", fallback: `playlist-${p.id}` })));
+    playlists.forEach((p, i) => {
+        const data = {
+            id: String(p.id),
+            playlistId: blankToNull(p.playlist_id),
+            playlistTitle: p.name ?? "",
+            publishDate: p.publish_date,
+            image: blankToNull(p.image),
+            website: blankToNull(p.website),
+            hashtag: blankToNull(p.hashtag),
+            category: p.playlist_category_id == null ? null : (categoryTitle.get(p.playlist_category_id) ?? null),
+            slug: playlistSlugs[i],
+            videos: videosByPlaylist.get(p.id) ?? [],
+            subPlaylists: subPlaylists.get(p.id) ?? [],
+        };
+        files.push(file(Collection.Playlist, data.id, data, p.description));
+    });
+    return files;
+}
