@@ -1,8 +1,10 @@
 ---
 import HeaderLink from "./HeaderLink.astro";
 import { SITE_TITLE } from "../consts";
+import GoogleTagManager from "./GoogleTagManager.astro";
 ---
 
+<GoogleTagManager part="body" />
 <header>
   <nav>
     <h2><a href="/">{SITE_TITLE}</a></h2>

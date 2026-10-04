@@ -1,0 +1,45 @@
+---
+// Google Tag Manager. Renders nothing unless PUBLIC_GTM_ID (e.g. GTM-ABC1234) is set at build
+// time, so dev and preview builds stay untracked. BaseHead renders the script in <head>, and
+// Header renders the <noscript> fallback, since every page's <body> starts with <Header />.
+interface Props {
+  /** "head" for the loader script, "body" for the <noscript> iframe. */
+  part: 'head' | 'body';
+}
+
+const { part } = Astro.props;
+const gtmId: string | undefined = import.meta.env.PUBLIC_GTM_ID?.trim();
+
+if (gtmId && !/^GTM-[A-Z0-9]+$/.test(gtmId)) {
+  throw new Error(`PUBLIC_GTM_ID should look like "GTM-ABC1234", got "${gtmId}"`);
+}
+---
+
+{
+  gtmId && part === 'head' && (
+    <script is:inline define:vars={{ gtmId }}>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != 'dataLayer' ? '&l=' + l : '';
+        j.async = true;
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, 'script', 'dataLayer', gtmId);
+    </script>
+  )
+}
+{
+  gtmId && part === 'body' && (
+    <noscript>
+      <iframe
+        src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden"
+      ></iframe>
+    </noscript>
+  )
+}
