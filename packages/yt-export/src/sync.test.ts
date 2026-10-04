@@ -120,13 +120,25 @@ describe("planSync: existing videos", () => {
     expect(find(plan.writes, "video/10.md").entry.body).toBe("");
   });
 
-  it("reports existing videos YouTube did not return and leaves them untouched", () => {
+  it("reports existing videos YouTube was asked about and did not return, and leaves them untouched", () => {
     const plan = planSync(
-      raw({ videos: [video("priv", "2020-01-01T00:00:00Z", { privacy: "private" })] }),
-      content([videoEntry("10", "gone"), videoEntry("11", "priv")]),
+      raw({
+        videos: [video("priv", "2020-01-01T00:00:00Z", { privacy: "private" })],
+        requested: { videos: ["gone", "priv"], playlists: [] },
+      }),
+      content([videoEntry("10", "gone", { videoTitle: "Gone video" }), videoEntry("11", "priv", { active: false })]),
     );
     expect(plan.writes).toEqual([]);
-    expect(plan.videos.notOnYouTube).toEqual(["gone", "priv"]);
+    expect(plan.videos.notOnYouTube).toEqual([
+      { entry: "10", youtubeId: "gone", title: "Gone video", active: true },
+      { entry: "11", youtubeId: "priv", title: "Old title", active: false },
+    ]);
+    expect(plan.videos.notFetched).toBe(0);
+  });
+
+  it("counts existing videos YouTube was never asked about as not fetched, not as missing", () => {
+    const plan = planSync(raw({ requested: { videos: [], playlists: [] } }), content([videoEntry("10", "never-asked")]));
+    expect(plan.videos).toMatchObject({ notOnYouTube: [], notFetched: 1 });
   });
 
   it("ignores Vimeo entries", () => {
@@ -316,10 +328,14 @@ describe("planSync: existing playlists", () => {
     expect(plan.writes.filter((w) => w.kind === "create")).toEqual([]);
   });
 
-  it("reports existing playlists YouTube did not return and leaves them and entries without a playlistId alone", () => {
-    const plan = planSync(raw({}), content([], [playlistEntry("5", "PLgone"), playlistEntry("6", null)]));
+  it("reports existing playlists YouTube was asked about and did not return, and leaves them and entries without a playlistId alone", () => {
+    const plan = planSync(
+      raw({ requested: { videos: [], playlists: ["PLgone"] } }),
+      content([], [playlistEntry("5", "PLgone", { playlistTitle: "Gone playlist" }), playlistEntry("6", null), playlistEntry("7", "PLnever")]),
+    );
     expect(plan.writes).toEqual([]);
-    expect(plan.playlists.notOnYouTube).toEqual(["PLgone"]);
+    expect(plan.playlists.notOnYouTube).toEqual([{ entry: "5", youtubeId: "PLgone", title: "Gone playlist", active: true }]);
+    expect(plan.playlists.notFetched).toBe(1);
   });
 });
 
@@ -418,6 +434,79 @@ describe("planSync: new playlists", () => {
     );
     expect(plan.writes.filter((w) => w.path.startsWith("playlist/")).map((w) => w.path)).toEqual(["playlist/1.md"]);
     expect(plan.playlists.skipped).toEqual(["Empty"]);
+  });
+});
+
+describe("planSync: missing entries", () => {
+  const raws = raw({
+    videos: [video("here", "2020-01-01T00:00:00Z")],
+    requested: { videos: ["here", "priv1", "priv2", "priv3"], playlists: ["PLgone"] },
+  });
+  const entries = () =>
+    content(
+      [
+        videoEntry("1", "priv1", { videoTitle: "Published private" }),
+        videoEntry("2", "priv2", { active: false }), // already hidden
+        videoEntry("3", "never", { videoTitle: "Published, never asked" }),
+        videoEntry("4", "priv3", { videoSite: "vimeo" }), // not a YouTube entry
+      ],
+      [playlistEntry("9", "PLgone"), playlistEntry("10", "PLnever")],
+    );
+
+  it("changes nothing by default", () => {
+    const plan = planSync(raws, entries());
+    expect(plan.videos.deactivated).toBe(0);
+    expect(plan.writes.filter((w) => w.changed.includes("active"))).toEqual([]);
+  });
+
+  it("with deactivateMissing, hides the published ones YouTube did not return", () => {
+    const plan = planSync(raws, entries(), { deactivateMissing: true });
+    const video1 = find(plan.writes, "video/1.md");
+    expect(video1.kind).toBe("update");
+    expect(video1.changed).toEqual(["active"]);
+    expect(video1.entry.data).toEqual({ ...videoEntry("1", "priv1", { videoTitle: "Published private" }).data, active: false });
+    expect(video1.entry.body).toBe("Old description");
+    expect(find(plan.writes, "playlist/9.md").entry.data.active).toBe(false);
+    expect(plan.videos.deactivated).toBe(1);
+    expect(plan.playlists.deactivated).toBe(1);
+  });
+
+  it("does not touch entries already inactive, never fetched, or not on YouTube", () => {
+    const plan = planSync(raws, entries(), { deactivateMissing: true });
+    for (const path of ["video/2.md", "video/3.md", "video/4.md", "playlist/10.md"]) {
+      expect(plan.writes.some((w) => w.path === path && w.changed.includes("active"))).toBe(false);
+    }
+    expect(plan.videos.notFetched).toBe(1);
+    expect(plan.playlists.notFetched).toBe(1);
+  });
+
+  it("is idempotent: once hidden, a second run finds nothing to deactivate", () => {
+    const first = planSync(raws, entries(), { deactivateMissing: true });
+    const files = first.writes.map((w) => parseEntry(w.path, w.content));
+    const second = planSync(
+      raws,
+      content(
+        [...files.filter((e) => e.path === "video/1.md"), videoEntry("2", "priv2", { active: false }), videoEntry("3", "never"), videoEntry("4", "priv3", { videoSite: "vimeo" })] as unknown as Entry<VideoEntry>[],
+        [...files.filter((e) => e.path === "playlist/9.md"), playlistEntry("10", "PLnever")] as unknown as Entry<PlaylistEntry>[],
+      ),
+      { deactivateMissing: true },
+    );
+    expect(second.videos.deactivated).toBe(0);
+    expect(second.playlists.deactivated).toBe(0);
+    expect(second.videos.notOnYouTube.find((m) => m.entry === "1")?.active).toBe(false);
+  });
+
+  it("an older raw file without a record of the requests still catches private videos listed in a playlist", () => {
+    const legacy = raw({
+      videos: [video("here", "2020-01-01T00:00:00Z")],
+      playlists: [playlist("PL1", "A", "2021-01-01T00:00:00Z")],
+      // A private video still appears in the playlist's items, but videos.list doesn't return it.
+      playlistItems: { PL1: [item("PL1", "here", 0), item("PL1", "priv1", 1)] },
+    });
+    const plan = planSync(legacy, content([videoEntry("1", "priv1"), videoEntry("3", "never")]), { deactivateMissing: true });
+    expect(plan.videos.notOnYouTube.map((m) => m.youtubeId)).toEqual(["priv1"]);
+    expect(plan.videos.notFetched).toBe(1);
+    expect(find(plan.writes, "video/1.md").entry.data.active).toBe(false);
   });
 });
 

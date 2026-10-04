@@ -30,12 +30,26 @@ export interface SyncWrite {
   changed: string[];
 }
 
+/** An existing entry YouTube was asked about and did not return: private or deleted there. */
+export interface MissingEntry {
+  /** Entry ID, the file name without `.md`. */
+  entry: string;
+  youtubeId: string;
+  title: string;
+  /** True if the site publishes it. */
+  active: boolean;
+}
+
 export interface CollectionSummary {
   created: number;
   updated: number;
   unchanged: number;
-  /** YouTube IDs of existing entries YouTube didn't return (private, deleted or not fetched). */
-  notOnYouTube: string[];
+  /** Existing entries YouTube was asked about and did not return (private or deleted). */
+  notOnYouTube: MissingEntry[];
+  /** Existing entries YouTube was never asked about (not in the data), so their state is unknown. */
+  notFetched: number;
+  /** Missing entries set to `active: false` (`deactivateMissing`); also counted in neither updated nor unchanged. */
+  deactivated: number;
   /** Titles of new entries not created because they would be empty (playlists with no available videos). */
   skipped: string[];
   /** YouTube IDs left out of the sync on request (`excludeVideos`) that matched a fetched video or an entry. */
@@ -43,6 +57,8 @@ export interface CollectionSummary {
 }
 
 export interface SyncOptions {
+  /** Set `active: false` on existing entries YouTube was asked about and did not return (private or deleted). */
+  deactivateMissing?: boolean;
   /** YouTube video IDs to leave out: not created, not updated, not added to any playlist. */
   excludeVideos?: Iterable<string>;
 }
@@ -85,7 +101,7 @@ function slugAllocator(existing: string[]) {
 }
 
 function summarize(): CollectionSummary {
-  return { created: 0, updated: 0, unchanged: 0, notOnYouTube: [], skipped: [], excluded: [] };
+  return { created: 0, updated: 0, unchanged: 0, notOnYouTube: [], notFetched: 0, deactivated: 0, skipped: [], excluded: [] };
 }
 
 export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOptions = {}): SyncPlan {
@@ -94,6 +110,16 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
     raw.videos.filter((v) => v.status.privacyStatus !== "private" && !excluded.has(v.id)).map((v) => [v.id, v]),
   );
   const playlists = new Map<string, YtPlaylist>(raw.playlists.map((p) => [p.id, p]));
+
+  // What YouTube was asked about. Older files don't record it: then a video counts as asked about if
+  // it is in a fetched playlist (a private one shows up there as "Private video") and every playlist
+  // in the data was returned.
+  const requestedVideos = new Set(
+    raw.requested?.videos ?? Object.values(raw.playlistItems).flatMap((items) => items.map((i) => i.contentDetails.videoId)),
+  );
+  for (const v of raw.videos) requestedVideos.add(v.id);
+  const requestedPlaylists = new Set(raw.requested?.playlists ?? []);
+  for (const p of raw.playlists) requestedPlaylists.add(p.id);
 
   const videoEntries = new Map(existing.videos.filter((e) => e.data.videoSite === "youtube").map((e) => [e.data.videoId, e]));
   const playlistEntries = new Map(existing.playlists.filter((e) => e.data.playlistId).map((e) => [e.data.playlistId!, e]));
@@ -135,7 +161,21 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
     if (e.data.videoSite !== "youtube" || excluded.has(e.data.videoId)) continue;
     const v = videos.get(e.data.videoId);
     if (!v) {
-      videoSummary.notOnYouTube.push(e.data.videoId);
+      if (!requestedVideos.has(e.data.videoId)) {
+        videoSummary.notFetched++;
+        continue;
+      }
+      videoSummary.notOnYouTube.push({ entry: e.id, youtubeId: e.data.videoId, title: e.data.videoTitle, active: e.data.active });
+      if (opts.deactivateMissing && e.data.active) {
+        videoSummary.deactivated++;
+        writes.push({
+          kind: "update",
+          path: e.path,
+          content: serializeEntry({ ...e.data, active: false }, e.body),
+          title: e.data.videoTitle,
+          changed: ["active"],
+        });
+      }
       continue;
     }
     const t = v.snippet.thumbnails;
@@ -197,7 +237,21 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
     if (!e.data.playlistId) continue;
     const p = playlists.get(e.data.playlistId);
     if (!p) {
-      playlistSummary.notOnYouTube.push(e.data.playlistId);
+      if (!requestedPlaylists.has(e.data.playlistId)) {
+        playlistSummary.notFetched++;
+        continue;
+      }
+      playlistSummary.notOnYouTube.push({ entry: e.id, youtubeId: e.data.playlistId, title: e.data.playlistTitle, active: e.data.active });
+      if (opts.deactivateMissing && e.data.active) {
+        playlistSummary.deactivated++;
+        writes.push({
+          kind: "update",
+          path: e.path,
+          content: serializeEntry({ ...e.data, active: false }, e.body),
+          title: e.data.playlistTitle,
+          changed: ["active"],
+        });
+      }
       continue;
     }
     const data: PlaylistEntry = {

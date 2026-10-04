@@ -15,6 +15,11 @@ export interface RawExport {
   playlistItems: Record<string, YtPlaylistItem[]>;
   /** Details of every video seen in any playlist or the uploads playlist. Private/deleted videos are absent. */
   videos: YtVideo[];
+  /**
+   * IDs asked of the API. One that is requested but missing from `videos` / `playlists` was not
+   * returned: it is private or deleted. Absent in files saved before this was recorded.
+   */
+  requested?: { videos: string[]; playlists: string[] };
 }
 
 export interface ExportData {

@@ -35,6 +35,10 @@ Usage: yt-export --channel <handle|id> [options]
       --exclude-video <id>
                         With --content: leave this YouTube video ID out of the sync (not created,
                         not updated, not added to playlists); repeatable
+      --deactivate-missing
+                        With --content: set active: false on videos and playlists YouTube was
+                        asked about and did not return (private or deleted), so the site stops
+                        publishing them. Ones never fetched are left alone.
       --dry-run         With --content: show what would change, write nothing
   -h, --help
 `;
@@ -48,6 +52,7 @@ const { values: args } = parseArgs({
     "from-raw": { type: "string" },
     content: { type: "string" },
     "exclude-video": { type: "string", multiple: true },
+    "deactivate-missing": { type: "boolean", default: false },
     "dry-run": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
@@ -111,22 +116,39 @@ async function fetchRaw(
   const videos = await client.getVideos(videoIds);
   console.log(`- ${videos.length} of ${videoIds.length} videos available`);
 
-  return { fetchedAt, channel, playlists, playlistItems, videos };
+  const requested = { videos: videoIds, playlists: [...new Set([...playlists.map((p) => p.id), ...missingExtras])] };
+  return { fetchedAt, channel, playlists, playlistItems, videos, requested };
 }
 
 /** Most new files listed per collection in the sync summary. */
 const LIST_LIMIT = 10;
 
-function printSummary(label: string, c: CollectionSummary) {
+function printSummary(label: string, c: CollectionSummary, collection: string, deactivating: boolean) {
   console.log(`${label}: ${c.created} new, ${c.updated} updated, ${c.unchanged} unchanged`);
-  if (c.notOnYouTube.length) console.log(`  ${c.notOnYouTube.length} not returned by YouTube (left untouched)`);
+  if (c.notFetched) console.log(`  ${c.notFetched} not fetched, so their state on YouTube is unknown (run with --channel and an API key)`);
+  if (c.notOnYouTube.length) {
+    const published = c.notOnYouTube.filter((m) => m.active);
+    console.log(`  ${c.notOnYouTube.length} not returned by YouTube (private or deleted), ${published.length} of them published`);
+    for (const m of published.slice(0, LIST_LIMIT)) {
+      console.log(`  ! ${collection}/${m.entry}.md  ${m.title}  (${m.youtubeId})${deactivating ? "  → active: false" : ""}`);
+    }
+    if (published.length > LIST_LIMIT) console.log(`  ! … and ${published.length - LIST_LIMIT} more`);
+    if (published.length && !deactivating) console.log("  (--deactivate-missing hides them)");
+  }
   if (c.skipped.length) console.log(`  skipped (no available videos): ${c.skipped.join(", ")}`);
   if (c.excluded.length) console.log(`  excluded: ${c.excluded.join(", ")}`);
 }
 
 /** Sync into the Astro content directory; returns the number of files written (0 on a dry run). */
-function syncContent(raw: RawExport, existing: ExistingContent, contentDir: string, dryRun: boolean, excludeVideos: string[]) {
-  const plan = planSync(raw, existing, { excludeVideos });
+function syncContent(
+  raw: RawExport,
+  existing: ExistingContent,
+  contentDir: string,
+  dryRun: boolean,
+  excludeVideos: string[],
+  deactivateMissing: boolean,
+) {
+  const plan = planSync(raw, existing, { excludeVideos, deactivateMissing });
   for (const id of excludeVideos.filter((id) => !plan.videos.excluded.includes(id))) {
     console.warn(`  ! --exclude-video ${id} matches no fetched video or entry`);
   }
@@ -140,8 +162,8 @@ function syncContent(raw: RawExport, existing: ExistingContent, contentDir: stri
     }
   }
 
-  printSummary("Videos", plan.videos);
-  printSummary("Playlists", plan.playlists);
+  printSummary("Videos", plan.videos, "video", deactivateMissing);
+  printSummary("Playlists", plan.playlists, "playlist", deactivateMissing);
   for (const [key, n] of Object.entries(changes).sort()) console.log(`  ${key}: ${n}`);
   for (const collection of ["playlist", "video"]) {
     const created = plan.writes.filter((w) => w.kind === "create" && w.path.startsWith(`${collection}/`));
@@ -161,6 +183,7 @@ async function main() {
   const contentDir = args.content ? resolve(args.content) : null;
   if (args["dry-run"] && !contentDir) fail("--dry-run needs --content");
   if (args["exclude-video"]?.length && !contentDir) fail("--exclude-video needs --content");
+  if (args["deactivate-missing"] && !contentDir) fail("--deactivate-missing needs --content");
   const existing: ExistingContent | null = contentDir
     ? {
         videos: readEntries(contentDir, "video"),
@@ -192,7 +215,7 @@ async function main() {
   }
 
   if (contentDir && existing) {
-    syncContent(raw, existing, contentDir, args["dry-run"], args["exclude-video"] ?? []);
+    syncContent(raw, existing, contentDir, args["dry-run"], args["exclude-video"] ?? [], args["deactivate-missing"]);
     if (quotaUsed !== null) console.log(`${quotaUsed} quota units used${outDir ? `; raw.json → ${outDir}` : ""}`);
     return;
   }
