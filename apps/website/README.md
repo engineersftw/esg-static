@@ -23,8 +23,9 @@ Run these from `apps/website/`:
 | Command | What it does |
 |---|---|
 | `pnpm dev` | Dev server at http://localhost:4321, reloading on changes |
-| `pnpm build` | Builds the static site into `dist/` (about 22k pages, roughly 15 seconds) |
-| `pnpm preview` | Serves `dist/` locally |
+| `pnpm build` | Builds the static site into `dist/` (about 7k pages, roughly 10 seconds) |
+| `pnpm preview` | Serves `dist/` locally, without the Pages Function (so no legacy redirects) |
+| `pnpm exec wrangler pages dev ./dist` | Serves `dist/` the way Cloudflare does, including the Pages Function, at http://localhost:8788 |
 | `pnpm deploy` | Uploads `dist/` to Cloudflare Pages as a preview deployment |
 | `pnpm deploy:production` | Uploads `dist/` to the production branch |
 | `pnpm astro …` | The Astro CLI, e.g. `pnpm astro sync` to regenerate content types |
@@ -60,16 +61,18 @@ apps/website/
     organization/<id>.md
     presenter/<id>.md
     playlist/<id>.md
-  public/               Static files, plus _headers for Cloudflare
+  public/               Static files, plus _headers and _routes.json for Cloudflare
   src/
     content.config.ts   The four content collections and their schemas
     helpers/
       collections.ts    Queries every page uses (active filtering, sorting)
-      url_helpers.ts    parameterize() for the old Rails URLs
+      url_helpers.ts    toSlug()
     components/         Header, Footer, BaseHead, Pagination, PlaylistPage, GoogleTagManager, ...
     pages/              One file per route (see "Routes")
     styles/global.css
-  astro.config.mjs      Site URL, integrations and simple redirects
+  functions/
+    _middleware.ts      Cloudflare Pages Function that redirects old Rails URLs
+  astro.config.mjs      Site URL, integrations and the /episodes redirect
 ```
 
 ### Content
@@ -132,26 +135,32 @@ Paginated pages use the shared `Pagination` component.
 | `/presenter/[slug]`, `/presenter/[slug]/[page]` | One presenter and their videos |
 | `/feed` | RSS feed of the 50 newest videos (`public/_headers` sets its content type) |
 | `/about` | About page |
+| `404` | Served by Cloudflare for any missing path |
 
 ### Old Rails URLs
 
-Links to the old site are kept working with redirects. Each is either a static page (`Astro.redirect`, which writes a meta-refresh page) or an entry in `redirects` in `astro.config.mjs`:
+Links to the old site keep working. A Cloudflare Pages Function, [`functions/_middleware.ts`](functions/_middleware.ts), sends a 301 to the new slug URL, keeping any query string:
 
-- `/v/:id`, `/:id` (e.g. `/601`), `/episodes/:id` and `/video/<name>--<id>` go to the video.
-- `/organization/:id`, `/organizations/:id-or-slug`, `/org/:id`, `/o/:id` and `/organization/<name>--<id>` go to the organization.
-- `/presenter/:id`, `/presenters/:id`, `/s/:id` and `/presenter/<name>--<id>` go to the presenter.
-- `/episodes` goes to `/videos`.
+- `/v/:id`, `/:id` (e.g. `/601`), `/episodes/:id` and `/video/<anything>--<id>` go to the video.
+- `/organization/:id`, `/organizations/:id`, `/organizations/<slug>`, `/org/:id`, `/o/:id` and `/organization/<anything>--<id>` go to the organization.
+- `/presenter/:id`, `/presenters/:id`, `/s/:id` and `/presenter/<anything>--<id>` go to the presenter.
+- `/episodes` goes to `/videos` (the one redirect left in `astro.config.mjs`).
 
-The `<name>--<id>` pages are generated from the **current** title using `parameterize()`, which copies Rails' `String#parameterize`. A link made before a title changed (e.g. `/organization/sg-hack-tell--184`) therefore 404s.
+As in Rails, only the ID matters in `<name>--<id>`, so links made before a title changed still work. Unknown and inactive IDs fall through to the 404 page.
 
-They are pages rather than Cloudflare `_redirects` rules because `_redirects` allows only 2,000 rules, and there are about 5,000 of these URLs.
+How it fits together:
+
+- **The map:** the function looks IDs up in `dist/legacy-redirects.json`, which `src/pages/legacy-redirects.json.ts` builds from the active entries. Wrangler bundles that file into the function when it deploys, so **always build before deploying.**
+- **Why a function:** these used to be static redirect pages, about 21,000 of them. That put the deployment over Cloudflare Pages' 20,000-file limit, so don't bring back routes that generate a page per entry just to redirect.
+- **Invocation cost:** `public/_routes.json` keeps the function off paths that can never redirect (assets, lists, conference and playlist pages). Every other request runs it, and those count against the Workers request quota (100,000 a day on the free plan). Static files don't.
+- **Testing:** `pnpm preview` doesn't run the function. Use `pnpm exec wrangler pages dev ./dist`.
 
 ### Adding a page
 
 - Start each page's `<head>` with `<BaseHead … />`. It loads the global styles, the meta tags and the GTM script.
 - Start each page's `<body>` with `<Header />`. It also renders the GTM `<noscript>` fallback, which has to come first in the body.
 - Get data through the helpers above, and pass paginated pages to `<Pagination page={page} />`. Its numbered links assume the page number is the last part of the URL.
-- If the new URL replaces an old Rails one, add a redirect (see above).
+- If the new URL replaces an old Rails one, add a rule to `RULES` in `functions/_middleware.ts` rather than a redirect page (see above).
 
 ## Updating the content
 

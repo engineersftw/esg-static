@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "include": [
+    "/*"
+  ],
+  "exclude": [
+    "/",
+    "/_astro/*",
+    "/fonts/*",
+    "/about",
+    "/about/",
+    "/404.html",
+    "/feed",
+    "/legacy-redirects.json",
+    "/sitemap-*",
+    "/favicon.svg",
+    "/videos",
+    "/videos/*",
+    "/conferences",
+    "/conferences/*",
+    "/conference/*",
+    "/playlist/*",
+    "/organizations/list/*",
+    "/presenters/list/*"
+  ]
+}

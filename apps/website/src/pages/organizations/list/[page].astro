@@ -90,7 +90,7 @@ const { page } = Astro.props;
           {
             page.data.map((organization) => (
               <li>
-                <a href={`/organization/${organization.id}`}>
+                <a href={`/organization/${organization.data.slug}`}>
                   <div
                     class="orgImage"
                     style={`background-image: url(${organization.data.logoImage});`}

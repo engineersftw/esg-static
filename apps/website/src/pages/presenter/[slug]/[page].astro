@@ -150,7 +150,7 @@ const { page, presenter } = Astro.props;
             {
               page.data.map((video) => (
                 <li>
-                  <a href={`/v/${video.id}/`}>
+                  <a href={`/video/${video.data.slug}`}>
                     <img
                       width={720}
                       height={360}

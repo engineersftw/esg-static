@@ -45,7 +45,7 @@ To run a script in one package from the root, use `pnpm --filter <name> <script>
 
 ## apps/website
 
-The public site: about 22k static pages covering videos, conferences, playlists, organizations and presenters, plus redirect pages that keep the old site's URLs working.
+The public site: about 7k static pages covering videos, conferences, playlists, organizations and presenters. A small Cloudflare Pages Function (`apps/website/functions/`) redirects the old site's URLs.
 
 ```bash
 cd apps/website

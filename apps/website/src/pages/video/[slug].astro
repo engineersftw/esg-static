@@ -105,7 +105,7 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
                 <li key={org.id}>
                   <h5>
                     <a
-                      href={`/organization/${org.id}`}
+                      href={`/organization/${org.data.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -132,7 +132,7 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
                 <li key={person.id}>
                   <h5>
                     <a
-                      href={`/presenter/${person.id}`}
+                      href={`/presenter/${person.data.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
