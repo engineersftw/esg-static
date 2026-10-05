@@ -9,7 +9,8 @@
     "astro": "astro",
     "check_query": "node check_query.js",
     "deploy": "wrangler pages deploy ./dist --project-name esg-static",
-    "deploy:production": "wrangler pages deploy ./dist --project-name esg-static --branch production"
+    "deploy:production": "wrangler pages deploy ./dist --project-name esg-static --branch production",
+    "typecheck": "astro check"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.2",
@@ -21,7 +22,9 @@
     "papaparse": "^5.5.2"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
     "@types/papaparse": "^5.3.15",
+    "typescript": "~6.0.3",
     "wrangler": "^4.18.0"
   }
 }

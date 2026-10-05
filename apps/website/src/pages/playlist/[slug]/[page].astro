@@ -1,10 +1,11 @@
 ---
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
 import { getEntries } from 'astro:content';
 
 import PlaylistPage from '../../../components/PlaylistPage.astro';
 import { getPlaylistPages, listed, listedPlaylists } from '../../../helpers/collections';
 
-export async function getStaticPaths({ paginate }) {
+export const getStaticPaths = (async ({ paginate }) => {
   const playlists = await getPlaylistPages();
 
   return Promise.all(playlists.map(async ({ playlist, parent }) => {
@@ -16,7 +17,9 @@ export async function getStaticPaths({ paginate }) {
       props: { playlist, parent, subPlaylists },
     });
   })).then((pages) => pages.flat());
-}
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 
 const { page, playlist, parent, subPlaylists } = Astro.props;
 ---

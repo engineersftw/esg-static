@@ -1,7 +1,9 @@
 {
-  "extends": ["astro/tsconfigs/strict", "../../tsconfig.base.json"],
+  // Astro's config last, so its bundler module settings override the packages' NodeNext ones.
+  "extends": ["../../tsconfig.base.json", "astro/tsconfigs/strict"],
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"],
+  // Exclude dist (build output) and functions/ (wrangler builds it separately, imports dist/legacy-redirects.json generated at build time)
+  "exclude": ["dist", "functions"],
   "compilerOptions": {
     "strictNullChecks": true
   }
