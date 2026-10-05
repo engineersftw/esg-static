@@ -14,6 +14,8 @@ It is a pnpm workspace (`pnpm-workspace.yaml` → `apps/*` and `packages/*`, pnp
 - `output/backup/`: a JSON export of the production database made with that tool on 2026-10-03 (Postgres 17.9).
 - `packages/db-types/` (`@esg/db-types`): row types for every table in `output/backup/schema.json`, in `src/db.ts`, and the frontmatter types of the Astro content collections in `src/content.ts` (`@esg/db-types/content`: `Video`, `Organization`, `Presenter`, `Playlist`). Each row type matches a row in the JSON dump, so timestamps are UTC text, not `Date`. It ships TypeScript source with no build step (`exports` points at the `.ts` files), so consumers must run through tsx/Vitest or type-check with `tsc`.
 - `packages/yt-export/` (`@esg/yt-export`): a CLI that builds `episodes`/`playlists`/`playlist_items` rows (typed by `@esg/db-types`) from the YouTube Data API.
+- `packages/content/` (`@esg/content`): shared code for the content `.md` files: reading and writing them (`files.ts`, byte-identical to pg-export's format), `slugify`/`slugAllocator` (`slug.ts`), and the two-sided link helpers (`links.ts`). TypeScript source with no build step, like `@esg/db-types`.
+- `packages/cms/` (`@esg/cms`): a CLI that edits the content: create presenters, and assign videos to presenters, organizations and playlists.
 
 From the repo root:
 
@@ -23,6 +25,7 @@ pnpm test          # every package's test script
 pnpm typecheck     # every package's typecheck script
 pnpm build         # website (astro build) and pg-export
 pnpm --filter @esg/yt-export <script>   # run one package's script from the root
+pnpm cms --help    # the content editor (see "cms" below)
 ```
 
 ## apps/website
@@ -94,10 +97,29 @@ pnpm export --from-raw out/raw.json --content ../../apps/website/content   # no 
   - Entries are matched on `videoId` (YouTube entries only, not Vimeo) and `playlistId`. A match gets its title, description (the body) and thumbnails (playlists: `image`) refreshed. A missing YouTube thumbnail keeps the existing one. Everything else (slug, `active`, `publishDate`, `category`, `website`, organizations, presenters, …) is kept.
   - No match creates a file with the next free ID (after the highest existing one, oldest first) and a slug that is unique in the collection. New videos are `active` only if public, with empty `organizations`/`presenters`. New playlists are `active` only if public, get YouTube's creation date as `publishDate`, and have null `category`/`website`/`hashtag`. Playlists with no available videos are skipped.
   - Membership is additive: videos YouTube lists in a playlist are appended to the playlist's `videos` and the playlist is added to the video's `playlists`. Nothing is removed, so curated order and links survive.
+  - After that, every playlist↔video link in the whole content is made two-way (`reconcileLinks`), including links made by hand on one side and entries that weren't fetched (counted as `linked` in the summary). Excluded videos are left alone.
   - Nothing is ever deleted. `raw.json` records which IDs were requested (`requested`), so an existing entry is either *not returned* (asked about, absent: private or deleted on YouTube) or *not fetched* (never asked, state unknown). The summary lists the published ones among the not-returned, and `--deactivate-missing` sets `active: false` on those (never on not-fetched ones), so a private video isn't shown. Older `raw.json` files lack `requested`: then a video counts as asked about if it is in a fetched playlist (a private one shows up there as "Private video").
   - Only a run with `--channel` and an API key fetches the content's own videos and playlists. A `raw.json` from a run without `--content` leaves most of them "not fetched", so check the summary before trusting it.
   - `--exclude-video <youtube-id>` (repeatable) leaves a video out entirely: it isn't created, an existing file isn't updated or reported missing, and it isn't added to playlists (a new playlist left with no videos is skipped). Use YouTube IDs, since new entries have no ID yet. An ID that matches nothing gets a warning.
-- Row types and `VideoSite` come from `@esg/db-types` (a `workspace:*` dependency). Relative imports use the `.js` extension (NodeNext), which tsx and Vitest resolve to the `.ts` file.
+- The `.md` reading and writing and `slugify` come from `@esg/content`. Row types and `VideoSite` come from `@esg/db-types` (a `workspace:*` dependency). Relative imports use the `.js` extension (NodeNext), which tsx and Vitest resolve to the `.ts` file.
+
+## cms
+
+Run it from the repo root with `pnpm cms <command>` (or `pnpm cms` inside `packages/cms/`). It runs through tsx; `pnpm test` and `pnpm typecheck` work as in yt-export.
+
+```bash
+pnpm cms find presenter yeo                  # look up IDs: find <video|presenter|organization|playlist> <text>
+pnpm cms presenter create --name "Jane Doe" --twitter @jane --video 4517 --dry-run
+pnpm cms assign --video 4517 --presenter jane-doe --organization 111 --playlist pyconsg-2019
+pnpm cms unassign --video 4517 --playlist 1
+pnpm cms check [--fix]                       # one-sided links in any relation
+```
+
+- `src/cms.ts` is pure (the `Cms` class works on an in-memory copy, and `changes()` returns the files to write), and `src/cms.test.ts` covers it. `src/cli.ts` does the argument parsing and I/O. `--content` defaults to `apps/website/content`; relative paths resolve against where `pnpm` was run (`INIT_CWD`).
+- A `<ref>` is an entry ID, slug, site URL or path, a YouTube video ID or URL (videos) or a YouTube playlist ID (playlists). An ambiguous or unknown ref fails the whole command before anything is written.
+- Every link is written on both sides: the video's `presenters`/`organizations`/`playlists` get the ID appended, a playlist's `videos` gets the video appended, and an organization's or presenter's `videos` gets it inserted newest first by `publishedAt`. Linking to an inactive entry warns, since the site won't show it.
+- `presenter create` takes the next free ID and a unique slug from the name (or `--slug`), strips `@` from `--twitter`, and refuses a name another presenter already has unless `--allow-duplicate`.
+- Only changed files are written, in the same format as pg-export, so they diff cleanly.
 
 ## pg-export
 

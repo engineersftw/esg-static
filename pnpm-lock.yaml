@@ -39,6 +39,44 @@ importers:
         specifier: ^4.18.0
         version: 4.147.0(@types/node@26.6.4)
 
+  packages/cms:
+    dependencies:
+      '@esg/content':
+        specifier: workspace:*
+        version: link:../content
+      '@esg/db-types':
+        specifier: workspace:*
+        version: link:../db-types
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15))
+
+  packages/content:
+    dependencies:
+      '@esg/db-types':
+        specifier: workspace:*
+        version: link:../db-types
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(@types/node@26.6.4)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15))
+
   packages/db-types:
     devDependencies:
       typescript:
@@ -84,6 +122,9 @@ importers:
 
   packages/yt-export:
     dependencies:
+      '@esg/content':
+        specifier: workspace:*
+        version: link:../content
       '@esg/db-types':
         specifier: workspace:*
         version: link:../db-types
