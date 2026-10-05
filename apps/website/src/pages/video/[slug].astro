@@ -102,7 +102,7 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
           <ul>
             {
               organizations.map((org) => (
-                <li key={org.id}>
+                <li>
                   <h5>
                     <a
                       href={`/organization/${org.data.slug}`}
@@ -129,7 +129,7 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
           <ul>
             {
               presenters.map((person) => (
-                <li key={person.id}>
+                <li>
                   <h5>
                     <a
                       href={`/presenter/${person.data.slug}`}

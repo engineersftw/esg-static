@@ -8,6 +8,8 @@ This is the rebuild of Engineers.SG. The repo holds the new Astro site (`apps/we
 
 It is a pnpm workspace (`pnpm-workspace.yaml` → `apps/*` and `packages/*`, pnpm 10, Node 22.12+ for Astro 7). Shared compiler options live in `tsconfig.base.json`, which each package's `tsconfig.json` extends.
 
+ESLint is configured once for the whole repo in the root `eslint.config.js` (flat config: `@eslint/js` and typescript-eslint recommended, plus eslint-plugin-astro for the site; Cloudflare `functions/` get Workers globals instead of Node's). The packages compile with TypeScript 7, which has no JavaScript API, so typescript-eslint uses the TypeScript 6.0 installed at the root; that is why the root `typescript` is pinned to `~6.0` while each package depends on `typescript@^7`. Keep it that way until typescript-eslint supports TypeScript 7. The website likewise depends on `typescript@~6.0`, because `astro check` (`@astrojs/check`) supports TypeScript 5 and 6 only. Rules are syntax-only, not type-aware, so they don't depend on the TypeScript version matching.
+
 - `output/` (git-ignored): generated data. `output/backup/` is below; yt-export runs also land here (e.g. `-o ../../output/yt-export-<timestamp>`).
 - `apps/website/` (`esg-website`): the Astro site, described under "apps/website" below.
 - `packages/pg-export/` (`@esg/pg-export`): a TypeScript CLI that dumps a Postgres database to one file per table plus a `schema.json`, or writes the Engineers.SG content as Markdown for Astro content collections.
@@ -23,10 +25,13 @@ From the repo root:
 pnpm install
 pnpm test          # every package's test script
 pnpm typecheck     # every package's typecheck script
+pnpm lint          # ESLint over the whole repo (pnpm lint:fix to autofix)
 pnpm build         # website (astro build) and pg-export
 pnpm --filter @esg/yt-export <script>   # run one package's script from the root
 pnpm cms --help    # the content editor (see "cms" below)
 ```
+
+`.github/workflows/ci.yml` runs `pnpm lint`, `pnpm typecheck` and `pnpm test` as three checks (`lint`, `typecheck`, `test`) on every pull request and push to `main`, after a `--frozen-lockfile` install, so a stale `pnpm-lock.yaml` fails too. `.github/workflows/sync-youtube.yml` is the daily yt-export sync (see `SYNC_YOUTUBE.md` next to it).
 
 ## apps/website
 
@@ -42,7 +47,7 @@ pnpm deploy:production   # same, with --branch production
 
 The Cloudflare Pages project builds from GitHub, with root directory `apps/website` and output directory `dist`. The root directory matters: Cloudflare only finds `functions/` (the legacy redirects) in the root directory. Wrangler likewise compiles `functions/` from its working directory, so deploy by hand from `apps/website`. `pnpm deploy` is a pnpm built-in, so use `pnpm run deploy` for the preview script. `HOSTNAME` and `PUBLIC_GTM_ID` are build-time variables, so they belong in the Pages project's environment settings.
 
-There are no tests. `HOSTNAME` sets the site URL in `astro.config.mjs` (default `http://localhost:4321`), and `.env`/`.env.production` are git-ignored. A full build makes about 7k pages (7.1k files) in roughly 10 seconds. Cloudflare Pages allows at most 20,000 files per deployment, so don't add routes that make a page per entry just to redirect.
+There are no tests. `pnpm typecheck` runs `astro check` (it is part of the root `pnpm typecheck` and CI). Pages with `getStaticPaths` declare it as `export const getStaticPaths = (async (…) => {…}) satisfies GetStaticPaths` with `type Props = InferGetStaticPropsType<typeof getStaticPaths>`, so `Astro.props` is typed. `HOSTNAME` sets the site URL in `astro.config.mjs` (default `http://localhost:4321`), and `.env`/`.env.production` are git-ignored. A full build makes about 7k pages (7.1k files) in roughly 10 seconds. Cloudflare Pages allows at most 20,000 files per deployment, so don't add routes that make a page per entry just to redirect.
 
 - **Data:** `src/content.config.ts` defines four content collections, `video`, `organization`, `presenter` and `playlist`. Each is a glob loader over `apps/website/content/<collection>/*.md`, the Markdown written by `pg-export -f markdown` (regenerate with `pnpm --filter @esg/pg-export export --from-json ../../output/backup -o ../../apps/website/content`). The zod schemas mirror `@esg/db-types/content`. `generateId` keeps the file name (the database ID) as the entry ID, because by default the glob loader would use the frontmatter `slug`.
 - **References:** relations are `reference()` ID lists. Pages resolve them with `getEntries()`: a video's `organizations`/`presenters`, and an organization's or presenter's `videos`. Descriptions are the entry `body`, shown as plain text with `white-space: pre-line` rather than rendered as Markdown.
@@ -63,7 +68,7 @@ There are no tests. `HOSTNAME` sets the site URL in `astro.config.mjs` (default 
 - **Feed:** `src/pages/feed.ts` is the old Rails `/feed` URL, now RSS 2.0 (`@astrojs/rss`), with the 50 newest active videos. It is a file with no extension, so `public/_headers` sets its Cloudflare content type. Its links come from `site`, so builds for deploy need `HOSTNAME`, or they point at localhost.
 - **Analytics:** Google Tag Manager is in `src/components/GoogleTagManager.astro`, which renders only when `PUBLIC_GTM_ID` (e.g. `GTM-ABC1234`) is set at build time, so dev and preview builds stay untracked. A malformed ID fails the build. `BaseHead` renders the loader script after the charset and viewport tags, and `Header` renders the `<noscript>` iframe. That works because every page's `<body>` starts with `<Header />`, so keep it that way on new pages.
 - **Shared bits:** `src/consts.ts` (`SITE_TITLE`, `SITE_DESCRIPTION`, still the template placeholder text), `src/helpers/url_helpers.ts` (`toSlug`), and `src/components/` (`BaseHead`, `Header`, `Footer`, `HeaderLink`, `FormattedDate`, and `Pagination`, used by every paginated page). Styles are scoped per page plus `src/styles/global.css`.
-- `tsconfig.json` extends `astro/tsconfigs/strict` and the root `tsconfig.base.json`.
+- `tsconfig.json` extends the root `tsconfig.base.json` and then `astro/tsconfigs/strict`. Keep that order: the later one wins, and the base's `NodeNext` module settings would otherwise replace Astro's `Bundler` resolution (making every extensionless relative import an error).
 
 Known problems as of this scan:
 - `check_query.js` is a leftover scratch script (`pnpm check_query`) that queries Supabase, but `@supabase/supabase-js` is not a dependency and it needs `SUPABASE_URL`/`SUPABASE_KEY`. It does show the old table relationships (`episodes` ← `video_organizations`/`video_presenters`).
@@ -134,8 +139,6 @@ pnpm export --from-json ../../output/backup -o ../../output/content   # Markdown
 pnpm test                         # vitest run (markdown.ts only)
 pnpm typecheck                    # includes the tests (tsconfig.test.json); the build excludes them
 ```
-
-There is no linter.
 
 The CLI and the table export live in `src/export.ts`, which is ESM with NodeNext resolution and needs Node 18.3 or newer. Design points to keep:
 - Everything (introspection and the data reads) runs in **one** `REPEATABLE READ READ ONLY` transaction on a single connection, so queries run one after another and all see the same snapshot. Keep new queries inside that transaction.

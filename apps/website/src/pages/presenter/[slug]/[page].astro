@@ -1,4 +1,5 @@
 ---
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
 import { getEntries } from 'astro:content';
 
 import BaseHead from '../../../components/BaseHead.astro';
@@ -9,7 +10,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../../../consts';
 import FormattedDate from '../../../components/FormattedDate.astro';
 import { getActivePresenters, listed } from '../../../helpers/collections';
 
-export async function getStaticPaths({ paginate }) {
+export const getStaticPaths = (async ({ paginate }) => {
   const presenters = await getActivePresenters();
 
   return Promise.all(presenters.map(async (presenter) => {
@@ -20,7 +21,9 @@ export async function getStaticPaths({ paginate }) {
       props: { presenter },
     });
   })).then((pages) => pages.flat());
-}
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 
 const { page, presenter } = Astro.props;
 ---

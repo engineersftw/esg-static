@@ -111,10 +111,10 @@ function getConnectionString(): string {
 // Return date/time types as the raw Postgres text instead of JS Dates (avoids
 // timezone shifts and precision loss). int8 and numeric are already strings in pg.
 const RAW_TEXT_OIDS = [1082 /* date */, 1083 /* time */, 1114 /* timestamp */, 1184 /* timestamptz */, 1266 /* timetz */];
-const typeOverrides = {
-  getTypeParser(oid: number, fmt?: any) {
+const typeOverrides: pg.CustomTypesConfig = {
+  getTypeParser(oid, fmt) {
     if (RAW_TEXT_OIDS.includes(oid)) return (v: string) => v;
-    return (pg.types.getTypeParser as any)(oid, fmt);
+    return pg.types.getTypeParser(oid, fmt);
   },
 };
 
