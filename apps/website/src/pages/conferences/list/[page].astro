@@ -58,11 +58,11 @@ const { page } = Astro.props;
         color: rgb(var(--accent));
       }
       .playlistImage {
-        width: auto;
-        min-height: 250px;
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        background-color: rgb(var(--gray-light));
         border-radius: 12px;
         margin-bottom: 0.5rem;
         transition: 0.2s ease;
@@ -92,9 +92,11 @@ const { page } = Astro.props;
             page.data.map((conference) => (
               <li>
                 <a href={`/conference/${conference.data.slug}`}>
-                  <div
+                  <img
                     class="playlistImage"
-                    style={`background-image: url(${conference.data.image});`}
+                    src={conference.data.image ?? undefined}
+                    alt=""
+                    loading="lazy"
                   />
                   <h4 class="title">{conference.data.playlistTitle}</h4>
                   {conference.data.publishDate && (
