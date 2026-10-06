@@ -7,8 +7,28 @@ import GoogleTagManager from "./GoogleTagManager.astro";
 <GoogleTagManager part="body" />
 <header>
   <nav>
-    <h2><a href="/">{SITE_TITLE}</a></h2>
-    <div class="internal-links">
+    <h2>
+      <a href="/" class="brand">
+        <img src="/engineerssg-logo.png" alt="" width="32" height="32" />
+        <span class="brand-text">{SITE_TITLE}</span>
+      </a>
+    </h2>
+    <button
+      type="button"
+      class="menu-toggle"
+      aria-label="Menu"
+      aria-expanded="false"
+      aria-controls="internal-links"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" width="28" height="28">
+        <path
+          d="M3 6h18M3 12h18M3 18h18"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"></path>
+      </svg>
+    </button>
+    <div class="internal-links" id="internal-links">
       <HeaderLink href="/">Home</HeaderLink>
       <HeaderLink href="/videos">Videos</HeaderLink>
       <HeaderLink href="/conferences">Conferences</HeaderLink>
@@ -38,6 +58,15 @@ import GoogleTagManager from "./GoogleTagManager.astro";
     </div>
   </nav>
 </header>
+<script>
+  document.querySelectorAll<HTMLButtonElement>(".menu-toggle").forEach((button) => {
+    const nav = button.closest("nav");
+    button.addEventListener("click", () => {
+      const open = nav?.classList.toggle("open") ?? false;
+      button.setAttribute("aria-expanded", String(open));
+    });
+  });
+</script>
 <style>
   header {
     margin: 0;
@@ -53,6 +82,16 @@ import GoogleTagManager from "./GoogleTagManager.astro";
   h2 a,
   h2 a.active {
     text-decoration: none;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    white-space: nowrap;
+  }
+  .brand img {
+    display: block;
+    flex: none;
   }
   nav {
     display: flex;
@@ -73,9 +112,46 @@ import GoogleTagManager from "./GoogleTagManager.astro";
   .social-links a {
     display: flex;
   }
+  .menu-toggle {
+    display: none;
+    padding: 0.5em;
+    color: rgb(var(--black));
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
   @media (max-width: 720px) {
-    .social-links {
+    .social-links,
+    .brand-text {
       display: none;
+    }
+    nav {
+      flex-wrap: wrap;
+    }
+    nav a.brand {
+      padding: 0.5em;
+    }
+    .menu-toggle {
+      display: block;
+    }
+    .internal-links {
+      display: none;
+      flex-direction: column;
+      order: 3;
+      width: 100%;
+      padding-bottom: 0.5em;
+    }
+    nav.open .internal-links {
+      display: flex;
+    }
+    nav .internal-links :global(a) {
+      padding: 0.75em 0.5em;
+      border-bottom: 0;
+      border-left: 4px solid transparent;
+    }
+    nav .internal-links :global(a.active) {
+      border-bottom-color: transparent;
+      border-left-color: var(--accent);
     }
   }
 </style>
