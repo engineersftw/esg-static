@@ -202,6 +202,14 @@ describe("toMarkdownFiles", () => {
     });
   });
 
+  it("moves a presenter's LinkedIn profile from website to linkedin", () => {
+    const out = files(
+      source({ presenters: [presenter(20, { website: "https://sg.linkedin.com/in/someone" }), presenter(21, { website: "https://example.com" })] }),
+    );
+    expect(out.get("presenter/20.md")!.data).toMatchObject({ website: null, linkedin: "https://sg.linkedin.com/in/someone" });
+    expect(out.get("presenter/21.md")!.data).toMatchObject({ website: "https://example.com", linkedin: null });
+  });
+
   it("leaves presenter emails out unless asked", () => {
     expect(files().get("presenter/20.md")!.data.email).toBeNull();
     expect(files(source(), true).get("presenter/20.md")!.data.email).toBe("person20@example.com");

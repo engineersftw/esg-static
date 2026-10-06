@@ -18,7 +18,8 @@ Commands:
                         Create a presenter (ID and slug are assigned)
       --byline <text>   Job title or affiliation
       --twitter <h>     Twitter/X handle, with or without @
-      --website <url>
+      --website <url>   A personal site
+      --linkedin <url>  LinkedIn profile URL
       --image <url>     Photo URL
       --email <email>   Not shown on the site
       --bio <text>      Biography (the Markdown body)
@@ -60,6 +61,7 @@ const { values: args, positionals } = parseArgs({
     byline: { type: "string" },
     twitter: { type: "string" },
     website: { type: "string" },
+    linkedin: { type: "string" },
     image: { type: "string" },
     email: { type: "string" },
     bio: { type: "string" },
@@ -110,6 +112,7 @@ function presenterCreate(cms: Cms) {
     byline: args.byline,
     twitter: args.twitter,
     website: args.website,
+    linkedin: args.linkedin,
     imageUrl: args.image,
     email: args.email,
     bio: args.bio,

@@ -107,6 +107,7 @@ export function toBody(text: string | null): string {
 }
 
 const blankToNull = (s: string | null) => (s?.trim() ? s.trim() : null);
+const isLinkedIn = (url: string) => /^(https?:\/\/)?([a-z]{2,3}\.)?linkedin\.com\//i.test(url);
 
 const file = (collection: Collection, id: string, data: object, body: string | null): MarkdownFile => {
   const text = toBody(body);
@@ -198,13 +199,17 @@ export function toMarkdownFiles(src: MarkdownSource, opts: MarkdownOptions): Mar
 
   const presenterSlugs = uniqueSlugs(presenters.map((p) => ({ text: p.name, fallback: `presenter-${p.id}` })));
   presenters.forEach((p, i) => {
+    // The old site kept LinkedIn profiles in the website column; the content has a field for them.
+    const site = blankToNull(p.website);
+    const linkedin = site && isLinkedIn(site) ? site : null;
     const data: PresenterEntry = {
       id: String(p.id),
       presenterName: p.name,
       presenterByline: blankToNull(p.byline),
       twitter: blankToNull(p.twitter),
       email: opts.includeEmails ? blankToNull(p.email) : null,
-      website: blankToNull(p.website),
+      website: linkedin ? null : site,
+      linkedin,
       imageUrl: blankToNull(p.avatar_url),
       slug: presenterSlugs[i],
       active: p.active !== false,

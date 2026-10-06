@@ -9,6 +9,7 @@ import Pagination from '../../../components/Pagination.astro';
 import EntityImage from '../../../components/EntityImage.astro';
 import FormattedDate from '../../../components/FormattedDate.astro';
 import { getActivePresenters, listed } from '../../../helpers/collections';
+import { twitterLink, websiteLink } from '../../../helpers/url_helpers';
 
 export const getStaticPaths = (async ({ paginate }) => {
   const presenters = await getActivePresenters();
@@ -26,6 +27,11 @@ export const getStaticPaths = (async ({ paginate }) => {
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 
 const { page, presenter } = Astro.props;
+const links = [
+  { kind: 'X', link: twitterLink(presenter.data.twitter) },
+  { kind: 'Website', link: websiteLink(presenter.data.website) },
+  { kind: 'LinkedIn', link: websiteLink(presenter.data.linkedin) },
+].filter((l) => l.link);
 ---
 
 <html lang="en">
@@ -106,6 +112,14 @@ const { page, presenter } = Astro.props;
       ul a:hover img {
         box-shadow: var(--box-shadow);
       }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5em 1.5em;
+      }
+      .links a {
+        overflow-wrap: anywhere;
+      }
       .presenterDescr {
         white-space: pre-line;
       }
@@ -146,6 +160,17 @@ const { page, presenter } = Astro.props;
           {
             presenter.data.presenterByline && (
               <h4>{presenter.data.presenterByline}</h4>
+            )
+          }
+          {
+            links.length > 0 && (
+              <p class="links">
+                {links.map(({ kind, link }) => (
+                  <span>
+                    {kind}: <a href={link!.href} rel="noopener">{link!.label}</a>
+                  </span>
+                ))}
+              </p>
             )
           }
           <p class="presenterDescr">{presenter.body}</p>
