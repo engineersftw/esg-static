@@ -12,7 +12,7 @@ export const getStaticPaths = (async ({ paginate }) => {
   const organizations = (await getActiveOrganizations()).sort((a, b) =>
     a.data.orgTitle.trim().localeCompare(b.data.orgTitle.trim())
   );
-  return paginate(organizations, { pageSize: 50 });
+  return paginate(organizations, { pageSize: 48 });
 }) satisfies GetStaticPaths;
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
