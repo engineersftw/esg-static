@@ -6,6 +6,7 @@ import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import Pagination from '../../../components/Pagination.astro';
+import EntityImage from '../../../components/EntityImage.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../../consts';
 import FormattedDate from '../../../components/FormattedDate.astro';
 import { getActiveOrganizations, listed } from '../../../helpers/collections';
@@ -123,16 +124,13 @@ const { page, organization } = Astro.props;
     <Header />
     <main>
       <article>
-        {
-          organization.data.logoImage && (
-            <div class="hero-image">
-              <img
-                src={organization.data.logoImage}
-                alt={organization.data.orgTitle}
-              />
-            </div>
-          )
-        }
+        <div class="hero-image">
+          <EntityImage
+            kind="organization"
+            src={organization.data.logoImage}
+            alt={organization.data.orgTitle}
+          />
+        </div>
         <div class="prose">
           <div class="title">
             <h1>{organization.data.orgTitle}</h1>

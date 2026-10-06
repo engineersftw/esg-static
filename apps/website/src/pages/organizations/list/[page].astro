@@ -6,6 +6,7 @@ import BaseHead from "../../../components/BaseHead.astro";
 import Header from "../../../components/Header.astro";
 import Footer from "../../../components/Footer.astro";
 import Pagination from "../../../components/Pagination.astro";
+import EntityImage from "../../../components/EntityImage.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../../../consts";
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -60,11 +61,10 @@ const { page } = Astro.props;
         color: rgb(var(--accent));
       }
       .orgImage {
-        width: auto;
-        min-height: 250px;
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
+        display: block;
+        width: 100%;
+        height: 250px;
+        object-fit: contain;
         border-radius: 12px;
         margin-bottom: 0.5rem;
         transition: 0.2s ease;
@@ -94,9 +94,12 @@ const { page } = Astro.props;
             page.data.map((organization) => (
               <li>
                 <a href={`/organization/${organization.data.slug}`}>
-                  <div
+                  <EntityImage
                     class="orgImage"
-                    style={`background-image: url(${organization.data.logoImage});`}
+                    kind="organization"
+                    src={organization.data.logoImage}
+                    alt=""
+                    loading="lazy"
                   />
                   <h4 class="title">{organization.data.orgTitle}</h4>
                 </a>
