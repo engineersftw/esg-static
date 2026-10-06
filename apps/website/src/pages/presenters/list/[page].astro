@@ -12,7 +12,7 @@ export const getStaticPaths = (async ({ paginate }) => {
   const presenters = (await getActivePresenters()).sort((a, b) =>
     a.data.presenterName.trim().localeCompare(b.data.presenterName.trim())
   );
-  return paginate(presenters, { pageSize: 50 });
+  return paginate(presenters, { pageSize: 48 });
 }) satisfies GetStaticPaths;
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
