@@ -3,18 +3,19 @@ import type { Page } from 'astro';
 
 interface Props {
   page: Page;
-  /** How many page numbers to show on each side of the current one. */
-  window?: number;
+  /** How many page numbers to show; the range shifts at either end so there are always this many. */
+  size?: number;
 }
 
-const { page, window = 2 } = Astro.props;
+const { page, size = 7 } = Astro.props;
 const { currentPage, lastPage } = page;
 
 // Page URLs end in the page number (/videos/3, /organization/hackware/2), so swap it.
 const urlFor = (n: number) => page.url.current.replace(/\/\d+\/?$/, `/${n}`);
 
-const start = Math.max(1, currentPage - window);
-const end = Math.min(lastPage, currentPage + window);
+const count = Math.min(size, lastPage);
+const start = Math.min(Math.max(1, currentPage - Math.floor((count - 1) / 2)), lastPage - count + 1);
+const end = start + count - 1;
 const numbers = Array.from({ length: end - start + 1 }, (_, i) => start + i);
 ---
 
