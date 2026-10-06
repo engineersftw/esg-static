@@ -2,18 +2,51 @@
 // Import the global.css file here so that it is included on
 // all pages through the use of the <BaseHead /> component.
 import '../styles/global.css';
-import { SITE_TITLE } from '../consts';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import GoogleTagManager from './GoogleTagManager.astro';
 
+// Every page passes its own title, description and image, so links shared on social media and
+// chat apps preview the page itself rather than the site.
 interface Props {
-	title: string;
-	description: string;
-	image?: string;
+	/** The page's own title; " | Engineers.SG" is added unless it already names the site. */
+	title?: string;
+	/** Plain text, e.g. an entry body: whitespace is collapsed and it is cut to about 200 characters. */
+	description?: string | null;
+	/** Path or absolute URL. Without one, the site logo is used with a small card. */
+	image?: string | null;
+	/** Which page of a paginated list this is; pages after the first get it in the title. */
+	pageNumber?: number;
+	/** Defaults to the large card when there is an image; pass "summary" for logos and headshots. */
+	card?: 'summary' | 'summary_large_image';
+	type?: 'website' | 'video.other' | 'profile';
 }
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const { title, description, image, pageNumber, card: cardProp, type = 'website' } = Astro.props;
 
-const { title, description, image = '/blog-placeholder-1.jpg' } = Astro.props;
+// The first page of a list is also served at its bare URL (e.g. /videos rewrites to /videos/1),
+// which is the one the site links to, so that is its canonical URL.
+const canonicalPath =
+	pageNumber === 1 ? Astro.url.pathname.replace(/\/1\/?$/, '/') : Astro.url.pathname;
+const canonicalURL = new URL(canonicalPath, Astro.site);
+
+const pageTitle = [title, pageNumber && pageNumber > 1 && `Page ${pageNumber}`].filter(Boolean).join(', ');
+const fullTitle = !pageTitle
+	? SITE_TITLE
+	: pageTitle.includes(SITE_TITLE)
+		? pageTitle
+		: `${pageTitle} | ${SITE_TITLE}`;
+
+const excerpt = (text: string, max = 200) => {
+	const flat = text.replace(/\s+/g, ' ').trim();
+	if (flat.length <= max) return flat;
+	const cut = flat.slice(0, max - 1);
+	return `${cut.slice(0, cut.lastIndexOf(' ') > max / 2 ? cut.lastIndexOf(' ') : cut.length)}…`;
+};
+const pageDescription = (description && excerpt(description)) || SITE_DESCRIPTION;
+
+// The square site logo looks better as a small card.
+const imageURL = new URL(image || '/engineerssg-logo.png', Astro.site);
+const card = cardProp ?? (image ? 'summary_large_image' : 'summary');
 ---
 
 <!-- Global Metadata -->
@@ -38,20 +71,21 @@ const { title, description, image = '/blog-placeholder-1.jpg' } = Astro.props;
 <link rel="canonical" href={canonicalURL} />
 
 <!-- Primary Meta Tags -->
-<title>{title}</title>
-<meta name="title" content={title} />
-<meta name="description" content={description} />
+<title>{fullTitle}</title>
+<meta name="title" content={fullTitle} />
+<meta name="description" content={pageDescription} />
 
 <!-- Open Graph / Facebook -->
-<meta property="og:type" content="website" />
-<meta property="og:url" content={Astro.url} />
-<meta property="og:title" content={title} />
-<meta property="og:description" content={description} />
-<meta property="og:image" content={new URL(image, Astro.url)} />
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={SITE_TITLE} />
+<meta property="og:url" content={canonicalURL} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={pageDescription} />
+<meta property="og:image" content={imageURL} />
 
 <!-- Twitter -->
-<meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:url" content={Astro.url} />
-<meta property="twitter:title" content={title} />
-<meta property="twitter:description" content={description} />
-<meta property="twitter:image" content={new URL(image, Astro.url)} />
+<meta name="twitter:card" content={card} />
+<meta name="twitter:url" content={canonicalURL} />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={pageDescription} />
+<meta name="twitter:image" content={imageURL} />

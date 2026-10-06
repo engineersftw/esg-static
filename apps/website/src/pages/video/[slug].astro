@@ -3,7 +3,6 @@ import { type CollectionEntry, getEntries } from 'astro:content';
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 import FormattedDate from '../../components/FormattedDate.astro';
 import EntityImage from '../../components/EntityImage.astro';
 import { YouTube } from 'astro-embed';
@@ -25,7 +24,14 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
 
 <html lang="en">
   <head>
-    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+    <BaseHead
+      title={video.data.videoTitle}
+      description={video.body || (presenters.length > 0
+        ? `A talk by ${presenters.map((presenter) => presenter.data.presenterName.trim()).join(', ')}, recorded by Engineers.SG.`
+        : undefined)}
+      image={video.data.thumbnailHigh ?? video.data.thumbnailMedium ?? video.data.thumbnailDefault}
+      type="video.other"
+    />
     <style>
       main {
         width: calc(100% - 2em);
