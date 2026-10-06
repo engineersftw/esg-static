@@ -71,7 +71,10 @@ export interface Presenter {
   twitter: string | null;
   /** Null unless pg-export ran with --include-emails. */
   email: string | null;
+  /** A personal site; LinkedIn profiles go in `linkedin`. */
   website: string | null;
+  /** LinkedIn profile URL. */
+  linkedin: string | null;
   imageUrl: string | null;
   slug: string;
   /** False for presenters hidden on the old site; the site leaves them out. */

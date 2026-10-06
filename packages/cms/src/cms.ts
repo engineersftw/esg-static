@@ -51,6 +51,7 @@ export interface NewPresenter {
   twitter?: string | null;
   email?: string | null;
   website?: string | null;
+  linkedin?: string | null;
   imageUrl?: string | null;
   /** The biography, the Markdown body. */
   bio?: string | null;
@@ -165,6 +166,7 @@ export class Cms {
       twitter: blank(input.twitter)?.replace(/^@/, "") ?? null,
       email: blank(input.email),
       website: blank(input.website),
+      linkedin: blank(input.linkedin),
       imageUrl: blank(input.imageUrl),
       slug,
       active: input.active ?? true,

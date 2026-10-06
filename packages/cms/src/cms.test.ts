@@ -32,6 +32,7 @@ function presenter(id: string, name: string, over: Partial<Presenter> = {}): Ent
     twitter: null,
     email: null,
     website: null,
+    linkedin: null,
     imageUrl: null,
     slug: name.toLowerCase().replace(/ /g, "-"),
     active: true,
@@ -136,6 +137,7 @@ presenterByline: null
 twitter: "jtan"
 email: null
 website: null
+linkedin: null
 imageUrl: null
 slug: "john-tan-2"
 active: true

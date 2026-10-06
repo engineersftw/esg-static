@@ -55,6 +55,7 @@ const presenter = defineCollection({
     twitter: z.string().nullable(),
     email: z.string().nullable(),
     website: z.string().nullable(),
+    linkedin: z.string().nullable(),
     imageUrl: z.string().nullable(),
     slug: z.string(),
     active: z.boolean(),
