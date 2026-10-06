@@ -9,6 +9,8 @@ This repo holds the new site and the tools that moved the old site's data into i
 | `@esg/static-website` | [`apps/website`](apps/website) | The Astro site, built from Markdown content files |
 | `@esg/pg-export` | [`packages/pg-export`](packages/pg-export) | Dumps a Postgres database to JSON, CSV or NDJSON, or writes the Engineers.SG data as the site's Markdown content |
 | `@esg/yt-export` | [`packages/yt-export`](packages/yt-export) | Pulls videos and playlists from the YouTube Data API and syncs them into the site's content |
+| `@esg/cms` | [`packages/cms`](packages/cms) | Command-line editor for the content: create presenters, link videos to presenters, organizations and playlists |
+| `@esg/content` | [`packages/content`](packages/content) | Shared code for reading, writing, slugging and linking the content files |
 | `@esg/db-types` | [`packages/db-types`](packages/db-types) | Shared TypeScript types: the old database's rows, and the frontmatter of the content files |
 
 ## How the pieces fit
@@ -26,7 +28,7 @@ output/backup/*.json  ── pg-export -f markdown ─┐ │ yt-export --conten
                                     apps/website/dist/  ──  wrangler  ──▶  Cloudflare Pages
 ```
 
-The old database was exported once to `output/backup/`. `pg-export` turned that into the site's Markdown content, which is committed in `apps/website/content/`. From here on, `yt-export` keeps the content up to date with the YouTube channel, and the site is built from the content alone. Nothing talks to a database at build or run time.
+The old database was exported once to `output/backup/`. `pg-export` turned that into the site's Markdown content, which is committed in `apps/website/content/`. From here on, `yt-export` keeps the content up to date with the YouTube channel (daily, through a GitHub Action), `cms` is used to curate it (presenters, organizations, playlists), and the site is built from the content alone. Nothing talks to a database at build or run time.
 
 ## Getting started
 
@@ -37,9 +39,13 @@ nvm use
 pnpm install        # installs every package (pnpm workspace)
 
 pnpm test           # every package's tests
-pnpm typecheck      # every package's type-check
+pnpm typecheck      # every package's type-check (the website's is `astro check`)
+pnpm lint           # ESLint over the whole repo (pnpm lint:fix to autofix)
 pnpm build          # builds the website and pg-export
+pnpm cms --help     # the content editor
 ```
+
+ESLint is configured once for the whole repo in `eslint.config.js`. The packages compile with TypeScript 7, but the root and the website pin TypeScript `~6.0` because typescript-eslint and `astro check` don't support 7 yet; leave those pins until they do.
 
 To run a script in one package from the root, use `pnpm --filter <name> <script>`, e.g. `pnpm --filter @esg/yt-export test`. Or `cd` into the package and run `pnpm <script>`.
 
@@ -87,7 +93,26 @@ Useful sync options:
 - `--exclude-video <youtube-id>` leaves a video out of the sync entirely. You can repeat it.
 - `--playlist <id>` also fetches a playlist owned by another channel. You can repeat it.
 
-New videos arrive with no organizations or presenters, so add those to the frontmatter by hand. Every list call costs 1 unit of YouTube API quota. Get an API key from the Google Cloud console (YouTube Data API v3).
+New videos arrive with no organizations or presenters; link them with [`cms`](#packagescms). Every list call costs 1 unit of YouTube API quota. Get an API key from the Google Cloud console (YouTube Data API v3).
+
+## packages/cms
+
+A command-line editor for the content, run from the repo root with `pnpm cms`. Every link is written on both sides (the video's `presenters`/`organizations`/`playlists` and the other entry's `videos`), and only changed files are rewritten, in the same format as pg-export, so they diff cleanly.
+
+```bash
+pnpm cms find presenter yeo                  # look up entries: find <video|presenter|organization|playlist> <text>
+pnpm cms presenter create --name "Jane Doe" --twitter @jane --video 4517 --dry-run
+pnpm cms assign --video 4517 --presenter jane-doe --organization 111 --playlist pyconsg-2019
+pnpm cms unassign --video 4517 --playlist 1
+pnpm cms check [--fix]                       # find (and complete) links stored on one side only
+pnpm cms --help                              # all options
+```
+
+A `<ref>` can be an entry ID, a slug, a site URL or path (`/video/<slug>`), and for videos a YouTube video ID or URL, for playlists a YouTube playlist ID. An ambiguous or unknown ref fails the whole command before anything is written. `--dry-run` shows what would change, and `--content <dir>` points it at another content directory (default `apps/website/content`).
+
+## packages/content
+
+The shared code behind yt-export and cms: reading and writing the content `.md` files (byte-identical to pg-export's output, so unchanged files are never rewritten), `slugify` and unique slug allocation, and the helpers that keep two-sided links in sync. Like db-types, it ships TypeScript source with no build step.
 
 ## packages/pg-export
 
@@ -125,14 +150,25 @@ import type { Video } from "@esg/db-types/content";
 
 If you change a content field, update `content.ts`, the zod schema in `apps/website/src/content.config.ts`, and the tool that writes the field.
 
+## Automation
+
+GitHub Actions in `.github/workflows/`:
+
+- **CI** (`ci.yml`): runs `pnpm lint`, `pnpm typecheck` and `pnpm test` as three separate checks on every pull request and push to `main`, after a `pnpm install --frozen-lockfile`. Commit `pnpm-lock.yaml` with any dependency change, or the install fails.
+- **Sync YouTube** (`sync-youtube.yml`): runs yt-export against the channel daily at 02:00 UTC (10:00 Singapore time), or on demand from the Actions tab. If the content changed, it opens or updates a pull request from the `youtube-sync` branch, and can post a Telegram notification. It needs the `YOUTUBE_API_KEY` secret (and optionally `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`). Setup is in [SYNC_YOUTUBE.md](.github/workflows/SYNC_YOUTUBE.md).
+
 ## Repo layout
 
 ```
 apps/website/          the Astro site (content/ holds the data)
+packages/cms/          content editor CLI
+packages/content/      shared content file read/write, slugs and links
 packages/db-types/     shared types
 packages/pg-export/    Postgres export / Markdown generator
 packages/yt-export/    YouTube sync
 output/                generated data, git-ignored (backup/, yt-export runs, scratch exports)
+.github/workflows/     CI and the daily YouTube sync
+eslint.config.js       ESLint config for the whole repo
 tsconfig.base.json     compiler options every package extends
 CLAUDE.md              detailed notes for AI coding agents (also handy for humans)
 ```
