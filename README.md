@@ -1,4 +1,4 @@
-# esg-next
+# Engineers.SG Static Site
 
 The rebuild of [Engineers.SG](https://engineers.sg), the archive of Singapore tech meetup and conference talks. The old site was a Rails app on Heroku Postgres. The new one is a static Astro site on Cloudflare Pages.
 
