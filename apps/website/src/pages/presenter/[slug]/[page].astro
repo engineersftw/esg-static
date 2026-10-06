@@ -6,6 +6,7 @@ import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import Pagination from '../../../components/Pagination.astro';
+import EntityImage from '../../../components/EntityImage.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../../consts';
 import FormattedDate from '../../../components/FormattedDate.astro';
 import { getActivePresenters, listed } from '../../../helpers/collections';
@@ -123,16 +124,13 @@ const { page, presenter } = Astro.props;
     <Header />
     <main>
       <article>
-        {
-          presenter.data.imageUrl && (
-            <div class="hero-image">
-              <img
-                src={presenter.data.imageUrl}
-                alt={presenter.data.presenterName}
-              />
-            </div>
-          )
-        }
+        <div class="hero-image">
+          <EntityImage
+            kind="presenter"
+            src={presenter.data.imageUrl}
+            alt={presenter.data.presenterName}
+          />
+        </div>
         <div class="prose">
           <div class="title">
             <h1>{presenter.data.presenterName}</h1>

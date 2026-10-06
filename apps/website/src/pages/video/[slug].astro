@@ -5,6 +5,7 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 import FormattedDate from '../../components/FormattedDate.astro';
+import EntityImage from '../../components/EntityImage.astro';
 import { YouTube } from 'astro-embed';
 import { getActiveVideos, listedOrganizations, listedPresenters } from '../../helpers/collections';
 
@@ -109,7 +110,8 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <img
+                      <EntityImage
+                        kind="organization"
                         src={org.data.logoImage}
                         alt={org.data.orgTitle}
                         width={100}
@@ -136,7 +138,8 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <img
+                      <EntityImage
+                        kind="presenter"
                         src={person.data.imageUrl}
                         alt={person.data.presenterName}
                         width={100}

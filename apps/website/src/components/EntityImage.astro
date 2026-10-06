@@ -1,0 +1,21 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+// An organization logo or presenter photo. Falls back to a placeholder when
+// there is no URL, or when the URL fails to load (many old Twitter image
+// URLs now 404).
+interface Props extends Omit<HTMLAttributes<'img'>, 'src'> {
+  src: string | null | undefined;
+  kind: 'organization' | 'presenter';
+}
+
+const { src, kind, ...attrs } = Astro.props;
+
+const placeholder = `/placeholder-${kind}.svg`;
+---
+
+<img
+  src={src || placeholder}
+  onerror={`this.onerror=null;this.src='${placeholder}'`}
+  {...attrs}
+/>
