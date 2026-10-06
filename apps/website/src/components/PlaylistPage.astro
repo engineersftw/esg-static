@@ -7,7 +7,6 @@ import Header from './Header.astro';
 import Footer from './Footer.astro';
 import Pagination from './Pagination.astro';
 import FormattedDate from './FormattedDate.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
 interface Props {
   page: Page<CollectionEntry<'video'>>;
@@ -23,7 +22,12 @@ const { page, playlist: conference, parent, subPlaylists, basePath } = Astro.pro
 
 <html lang="en">
   <head>
-    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+    <BaseHead
+      title={conference.data.playlistTitle}
+      description={conference.body || `${page.total.toLocaleString('en')} ${page.total === 1 ? 'video' : 'videos'} from ${conference.data.playlistTitle.trim()}, recorded by Engineers.SG.`}
+      image={conference.data.image}
+      pageNumber={page.currentPage}
+    />
     <style>
       main {
         width: 960px;

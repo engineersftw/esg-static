@@ -7,7 +7,6 @@ import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import Pagination from '../../../components/Pagination.astro';
 import EntityImage from '../../../components/EntityImage.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../../../consts';
 import FormattedDate from '../../../components/FormattedDate.astro';
 import { getActiveOrganizations, listed } from '../../../helpers/collections';
 
@@ -31,7 +30,13 @@ const { page, organization } = Astro.props;
 
 <html lang="en">
   <head>
-    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+    <BaseHead
+      title={organization.data.orgTitle}
+      description={organization.body || `${page.total.toLocaleString('en')} ${page.total === 1 ? 'video' : 'videos'} from ${organization.data.orgTitle.trim()} meetups and events, recorded by Engineers.SG.`}
+      image={organization.data.logoImage}
+      card="summary"
+      pageNumber={page.currentPage}
+    />
     <style>
       main {
         width: 960px;
