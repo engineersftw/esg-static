@@ -89,9 +89,16 @@ import GoogleTagManager from "./GoogleTagManager.astro";
     gap: 0.5em;
     white-space: nowrap;
   }
+  nav a.brand {
+    padding: 0.5em;
+    gap: 0.65em;
+    font-size: 1.35em;
+  }
   .brand img {
     display: block;
     flex: none;
+    width: 48px;
+    height: 48px;
   }
   nav {
     display: flex;
@@ -130,6 +137,11 @@ import GoogleTagManager from "./GoogleTagManager.astro";
     }
     nav a.brand {
       padding: 0.5em;
+      font-size: 1em;
+    }
+    .brand img {
+      width: 32px;
+      height: 32px;
     }
     .menu-toggle {
       display: block;

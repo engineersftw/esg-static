@@ -68,7 +68,31 @@ const content = videos.slice(0, 9);
       ul a:hover img {
         box-shadow: var(--box-shadow);
       }
+      .more {
+        margin: 2rem 0 1rem;
+        text-align: center;
+      }
+      .button {
+        display: inline-block;
+        padding: 0.9em 2.2em;
+        color: white;
+        font-size: 1.15em;
+        font-weight: 700;
+        text-decoration: none;
+        background: var(--accent);
+        border-radius: 999px;
+        box-shadow: 0 4px 14px rgba(var(--black), 20%);
+        transition: 0.2s ease;
+      }
+      .button:hover,
+      .button:focus-visible {
+        background: var(--accent-dark);
+        transform: translateY(-2px);
+      }
       @media (max-width: 720px) {
+        .button {
+          display: block;
+        }
         ul {
           gap: 0.5em;
         }
@@ -110,7 +134,9 @@ const content = videos.slice(0, 9);
             ))
           }
         </ul>
-        <a href="/videos">More videos...</a>
+        <div class="more">
+          <a href="/videos" class="button">More videos <span aria-hidden="true">→</span></a>
+        </div>
       </section>
     </main>
     <Footer />
