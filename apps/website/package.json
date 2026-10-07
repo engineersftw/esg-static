@@ -13,18 +13,18 @@
     "typecheck": "astro check"
   },
   "dependencies": {
-    "@astrojs/mdx": "^8.0.2",
-    "@astrojs/rss": "^4.0.11",
-    "@astrojs/sitemap": "^3.3.1",
-    "astro": "^7.3.5",
+    "@astrojs/mdx": "^8.0.3",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^7.3.6",
     "astro-embed": "^0.14.0",
-    "dotenv": "^18.0.5",
+    "dotenv": "^18.0.6",
     "papaparse": "^5.5.2"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@types/papaparse": "^5.3.15",
     "typescript": "~6.0.3",
-    "wrangler": "^4.18.0"
+    "wrangler": "^4.148.0"
   }
 }

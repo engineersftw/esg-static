@@ -32,7 +32,7 @@ The old database was exported once to `output/backup/`. `pg-export` turned that 
 
 ## Getting started
 
-You need Node 22.12 or newer (`.nvmrc` pins 22.23.3) and pnpm 10.
+You need Node 24 (`.nvmrc` pins 24.21.0, the current LTS) and pnpm 10. `apps/website/.nvmrc` pins the same version for the Cloudflare Pages build, which only looks in the site's root directory, so keep the two in step.
 
 ```bash
 nvm use

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is the rebuild of Engineers.SG. The repo holds the new Astro site (`apps/website`), the data from the existing site (a Rails app on Heroku Postgres, with ActiveAdmin and Devise, going by its tables) and the tools used to export it.
 
-It is a pnpm workspace (`pnpm-workspace.yaml` → `apps/*` and `packages/*`, pnpm 10, Node 22.12+ for Astro 7). Shared compiler options live in `tsconfig.base.json`, which each package's `tsconfig.json` extends.
+It is a pnpm workspace (`pnpm-workspace.yaml` → `apps/*` and `packages/*`, pnpm 10, Node 24: `.nvmrc` pins 24.21.0 and every `engines` field says `>=24`). Shared compiler options live in `tsconfig.base.json` (target ES2024), which each package's `tsconfig.json` extends. `@types/node` is `^24` to match the runtime, so don't bump it to a newer major until the Node version moves. `apps/website/.nvmrc` is a copy of the root `.nvmrc` for the Cloudflare Pages build, which reads it from the site's root directory; CI and the sync workflow read the root one.
 
 ESLint is configured once for the whole repo in the root `eslint.config.js` (flat config: `@eslint/js` and typescript-eslint recommended, plus eslint-plugin-astro for the site; Cloudflare `functions/` get Workers globals instead of Node's). The packages compile with TypeScript 7, which has no JavaScript API, so typescript-eslint uses the TypeScript 6.0 installed at the root; that is why the root `typescript` is pinned to `~6.0` while each package depends on `typescript@^7`. Keep it that way until typescript-eslint supports TypeScript 7. The website likewise depends on `typescript@~6.0`, because `astro check` (`@astrojs/check`) supports TypeScript 5 and 6 only. Rules are syntax-only, not type-aware, so they don't depend on the TypeScript version matching.
 
@@ -142,7 +142,7 @@ pnpm test                         # vitest run (markdown.ts only)
 pnpm typecheck                    # includes the tests (tsconfig.test.json); the build excludes them
 ```
 
-The CLI and the table export live in `src/export.ts`, which is ESM with NodeNext resolution and needs Node 18.3 or newer. Design points to keep:
+The CLI and the table export live in `src/export.ts`, which is ESM with NodeNext resolution. `dist/` is committed, so run `pnpm build` after changing `src/`. Design points to keep:
 - Everything (introspection and the data reads) runs in **one** `REPEATABLE READ READ ONLY` transaction on a single connection, so queries run one after another and all see the same snapshot. Keep new queries inside that transaction.
 - CSV goes through `COPY ... TO STDOUT` (pg-copy-streams). JSON and NDJSON use a server-side cursor (pg-cursor) that reads `--batch-size` rows at a time, so large tables are streamed rather than held in memory.
 - JSON output is meant to be lossless. Date and time OIDs are returned as raw Postgres text in UTC (`typeOverrides`), `bigint`/`numeric` stay as strings, and `bytea` becomes `\x…` hex.

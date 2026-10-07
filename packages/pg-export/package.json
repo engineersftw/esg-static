@@ -14,7 +14,7 @@
     "test": "vitest run"
   },
   "engines": {
-    "node": ">=18.3"
+    "node": ">=24"
   },
   "dependencies": {
     "@esg/db-types": "workspace:*",
@@ -23,7 +23,7 @@
     "pg-cursor": "^2.22.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.3",
+    "@types/node": "^24.19.1",
     "@types/pg": "^8.23.1",
     "@types/pg-copy-streams": "^1.2.5",
     "@types/pg-cursor": "^2.7.2",
