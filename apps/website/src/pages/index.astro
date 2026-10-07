@@ -3,7 +3,7 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import FormattedDate from '../components/FormattedDate.astro';
+import VideoCard from '../components/VideoCard.astro';
 import { getListedVideos } from '../helpers/collections';
 
 const videos = await getListedVideos();
@@ -18,55 +18,6 @@ const content = videos.slice(0, 9);
     <style>
       main {
         width: 960px;
-      }
-      ul {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 2rem;
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
-      }
-      ul li {
-        width: calc(50% - 1rem);
-      }
-      ul li * {
-        text-decoration: none;
-        transition: 0.2s ease;
-      }
-      ul li:first-child {
-        width: 100%;
-        margin-bottom: 1rem;
-        text-align: center;
-      }
-      ul li:first-child img {
-        width: 100%;
-      }
-      ul li:first-child .title {
-        font-size: 2.369rem;
-      }
-      ul li img {
-        margin-bottom: 0.5rem;
-        border-radius: 12px;
-      }
-      ul li a {
-        display: block;
-      }
-      .title {
-        margin: 0;
-        color: rgb(var(--black));
-        line-height: 1;
-      }
-      .date {
-        margin: 0;
-        color: rgb(var(--gray));
-      }
-      ul li a:hover h4,
-      ul li a:hover .date {
-        color: rgb(var(--accent));
-      }
-      ul a:hover img {
-        box-shadow: var(--box-shadow);
       }
       .more {
         margin: 2rem 0 1rem;
@@ -93,19 +44,6 @@ const content = videos.slice(0, 9);
         .button {
           display: block;
         }
-        ul {
-          gap: 0.5em;
-        }
-        ul li {
-          width: 100%;
-          text-align: center;
-        }
-        ul li:first-child {
-          margin-bottom: 0;
-        }
-        ul li:first-child .title {
-          font-size: 1.563em;
-        }
       }
     </style>
   </head>
@@ -114,25 +52,8 @@ const content = videos.slice(0, 9);
     <main>
       <h1>Welcome to Engineers.SG</h1>
       <section>
-        <ul>
-          {
-            content.map((video) => (
-              <li>
-                <a href={`/video/${video.data.slug}`}>
-                  <img
-                    width={720}
-                    height={360}
-                    src={video.data.thumbnailHigh}
-                    alt={video.data.videoTitle}
-                  />
-                  <h4 class="title">{video.data.videoTitle}</h4>
-                  <p class="date">
-                    <FormattedDate date={video.data.publishedAt} />
-                  </p>
-                </a>
-              </li>
-            ))
-          }
+        <ul class="video-grid">
+          {content.map((video, i) => <VideoCard video={video} featured={i === 0} />)}
         </ul>
         <div class="more">
           <a href="/videos" class="button">More videos <span aria-hidden="true">→</span></a>

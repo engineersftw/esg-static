@@ -72,57 +72,11 @@ import Footer from '../components/Footer.astro';
         color: rgb(var(--gray));
       }
       .search-page .results {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 2rem;
-        list-style-type: none;
-        margin: 1em 0 0;
-        padding: 0;
-      }
-      .search-page .results li {
-        width: calc(50% - 1rem);
-      }
-      .search-page .results a {
-        display: block;
-        text-decoration: none;
-      }
-      .search-page .results img {
-        display: block;
-        width: 100%;
-        height: auto;
-        aspect-ratio: 16 / 9;
-        object-fit: cover;
-        margin-bottom: 0.5rem;
-        border-radius: 12px;
-        background: rgb(var(--gray-light));
-      }
-      .search-page .results .title {
-        margin: 0;
-        color: rgb(var(--black));
-        line-height: 1.2;
-      }
-      .search-page .results .meta {
-        margin: 0.25em 0 0;
-        color: rgb(var(--gray));
-        font-size: 0.9em;
-      }
-      .search-page .results a:hover .title {
-        color: rgb(var(--accent));
-      }
-      .search-page .results a:hover img {
-        box-shadow: var(--box-shadow);
+        margin-top: 1em;
       }
       .search-page .more {
         display: block;
         margin: 2em auto 1em;
-      }
-      @media (max-width: 720px) {
-        .search-page .results {
-          gap: 1.5em;
-        }
-        .search-page .results li {
-          width: 100%;
-        }
       }
     </style>
   </head>
@@ -159,7 +113,7 @@ import Footer from '../components/Footer.astro';
       </form>
       <p id="search-status" class="status" aria-live="polite"></p>
       <noscript><p>Search needs JavaScript. You can still <a href="/videos">browse every video</a>.</p></noscript>
-      <ul id="search-results" class="results"></ul>
+      <ul id="search-results" class="video-grid results"></ul>
       <button id="search-more" class="more" type="button" hidden>More results</button>
     </main>
     <Footer />
@@ -184,26 +138,35 @@ import Footer from '../components/Footer.astro';
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-us', { year: 'numeric', month: 'short', day: 'numeric' });
 
-  // Built with DOM APIs and textContent, so titles and names are never parsed as HTML.
+  // The same card as VideoCard.astro, with the same classes (styled in global.css). Built with DOM
+  // APIs and textContent, so titles and names are never parsed as HTML.
   function item(result: SearchResult): HTMLLIElement {
     const li = document.createElement('li');
+    li.className = 'video-card';
     const a = document.createElement('a');
     a.href = `/video/${result.slug}`;
-    const img = document.createElement('img');
-    img.width = 320;
-    img.height = 180;
-    img.loading = 'lazy';
-    img.alt = '';
-    if (result.thumbnail) img.src = result.thumbnail;
+    let image: HTMLElement;
+    if (result.thumbnail) {
+      const img = document.createElement('img');
+      img.width = 320;
+      img.height = 180;
+      img.loading = 'lazy';
+      img.alt = '';
+      img.src = result.thumbnail;
+      image = img;
+    } else {
+      image = document.createElement('div');
+    }
+    image.className = 'video-card-image';
     const title = document.createElement('h4');
-    title.className = 'title';
+    title.className = 'video-card-title';
     title.textContent = result.title;
     const meta = document.createElement('p');
-    meta.className = 'meta';
+    meta.className = 'video-card-meta';
     meta.textContent = [formatDate(result.date), [...result.presenters, ...result.organizations].join(', ')]
       .filter(Boolean)
       .join(' · ');
-    a.append(img, title, meta);
+    a.append(image, title, meta);
     li.append(a);
     return li;
   }

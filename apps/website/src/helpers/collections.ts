@@ -26,6 +26,28 @@ export const getActivePresenters = () => getCollection('presenter', (presenter) 
 /** Every active playlist. Use this, not `getCollection('playlist')`. */
 export const getActivePlaylists = () => getCollection('playlist', (playlist) => playlist.data.active);
 
+let peopleNames: Promise<{ presenters: Map<string, string>; organizations: Map<string, string> }> | undefined;
+
+// The names of every active presenter and organization by ID, looked up once per build.
+const getPeopleNames = () =>
+  (peopleNames ??= Promise.all([getActivePresenters(), getActiveOrganizations()]).then(([presenters, organizations]) => ({
+    presenters: new Map(presenters.map((p) => [p.id, p.data.presenterName.trim()])),
+    organizations: new Map(organizations.map((o) => [o.id, o.data.orgTitle.trim()])),
+  })));
+
+/**
+ * The names under a video's card: its active presenters, then its active organizations, comma
+ * separated. `without` leaves one name out, such as the organization whose page lists the video.
+ */
+export async function getVideoByline(video: CollectionEntry<'video'>, without?: string) {
+  const { presenters, organizations } = await getPeopleNames();
+  const names = [
+    ...video.data.presenters.flatMap(({ id }) => presenters.get(id) ?? []),
+    ...video.data.organizations.flatMap(({ id }) => organizations.get(id) ?? []),
+  ];
+  return names.filter((name) => name !== without?.trim()).join(', ');
+}
+
 /** Drop inactive organizations from resolved references, keeping their order. */
 export const listedOrganizations = (organizations: CollectionEntry<'organization'>[]) =>
   organizations.filter((organization) => organization.data.active);

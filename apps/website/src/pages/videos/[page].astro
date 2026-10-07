@@ -4,7 +4,7 @@ import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import Pagination from '../../components/Pagination.astro';
-import FormattedDate from '../../components/FormattedDate.astro';
+import VideoCard from '../../components/VideoCard.astro';
 import { getListedVideos } from '../../helpers/collections';
 
 // The newest video is shown large above the grid on the first page only, so it is left out of the
@@ -32,70 +32,6 @@ const shown = page.currentPage === 1 ? [featured, ...page.data] : page.data;
       main {
         width: 960px;
       }
-      ul {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 2rem;
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
-      }
-      ul li {
-        width: calc(50% - 1rem);
-      }
-      ul li * {
-        text-decoration: none;
-        transition: 0.2s ease;
-      }
-      ul li.featured {
-        width: 100%;
-        margin-bottom: 1rem;
-        text-align: center;
-      }
-      ul li.featured img {
-        width: 100%;
-      }
-      ul li.featured .title {
-        font-size: 2.369rem;
-      }
-      ul li img {
-        margin-bottom: 0.5rem;
-        border-radius: 12px;
-      }
-      ul li a {
-        display: block;
-      }
-      .title {
-        margin: 0;
-        color: rgb(var(--black));
-        line-height: 1;
-      }
-      .date {
-        margin: 0;
-        color: rgb(var(--gray));
-      }
-      ul li a:hover h4,
-      ul li a:hover .date {
-        color: rgb(var(--accent));
-      }
-      ul a:hover img {
-        box-shadow: var(--box-shadow);
-      }
-      @media (max-width: 720px) {
-        ul {
-          gap: 0.5em;
-        }
-        ul li {
-          width: 100%;
-          text-align: center;
-        }
-        ul li.featured {
-          margin-bottom: 0;
-        }
-        ul li.featured .title {
-          font-size: 1.563em;
-        }
-      }
     </style>
   </head>
   <body>
@@ -103,25 +39,8 @@ const shown = page.currentPage === 1 ? [featured, ...page.data] : page.data;
     <main>
       <h1>Videos</h1>
       <section>
-        <ul>
-          {
-            shown.map((video) => (
-              <li class:list={{ featured: video === featured }}>
-                <a href={`/video/${video.data.slug}`}>
-                  <img
-                    width={720}
-                    height={360}
-                    src={video.data.thumbnailMedium}
-                    alt={video.data.videoTitle}
-                  />
-                  <h4 class="title">{video.data.videoTitle}</h4>
-                  <p class="date">
-                    <FormattedDate date={video.data.publishedAt} />
-                  </p>
-                </a>
-              </li>
-            ))
-          }
+        <ul class="video-grid">
+          {shown.map((video) => <VideoCard video={video} featured={video === featured} />)}
         </ul>
       </section>
       <Pagination page={page} />
