@@ -118,11 +118,7 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
               organizations.map((org) => (
                 <li>
                   <h5>
-                    <a
-                      href={`/organization/${org.data.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={`/organization/${org.data.slug}`}>
                       <EntityImage
                         kind="organization"
                         src={org.data.logoImage}
@@ -146,11 +142,7 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
               presenters.map((person) => (
                 <li>
                   <h5>
-                    <a
-                      href={`/presenter/${person.data.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={`/presenter/${person.data.slug}`}>
                       <EntityImage
                         kind="presenter"
                         src={person.data.imageUrl}
