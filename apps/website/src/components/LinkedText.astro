@@ -1,0 +1,24 @@
+---
+import { linkify } from '../helpers/linkify';
+
+// Plain text (an entry's description) with the URLs in it as links, which open in a new tab. The
+// text keeps its line breaks, and everything is escaped: there is no raw HTML here.
+interface Props {
+  /** An entry's `body`, which is undefined when it has no description. */
+  text?: string | null;
+}
+
+const parts = linkify(Astro.props.text ?? '');
+---
+
+{
+  parts.map((part) =>
+    part.href ? (
+      <a href={part.href} target="_blank" rel="noopener noreferrer nofollow">
+        {part.text}
+      </a>
+    ) : (
+      part.text
+    ),
+  )
+}

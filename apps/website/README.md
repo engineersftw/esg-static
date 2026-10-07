@@ -30,7 +30,7 @@ Run these from `apps/website/`:
 | `pnpm deploy:production` | Uploads `dist/` to the production branch |
 | `pnpm astro …` | The Astro CLI, e.g. `pnpm astro sync` to regenerate content types |
 
-There are no tests for the site. The tools that produce its data have their own (`pnpm test` at the repo root).
+The site has Vitest tests for its pure helpers (`pnpm test`), such as the one that finds links in descriptions. The tools that produce its data have their own (`pnpm test` at the repo root runs all of them).
 
 ## Environment variables
 
@@ -69,6 +69,7 @@ apps/website/
     helpers/
       collections.ts    Queries every page uses (active filtering, sorting)
       url_helpers.ts    toSlug(), and profileLinkLabel() for presenter and organization links
+      linkify.ts        Finds the URLs in a description (with a test next to it)
     components/         Header, Footer, BaseHead, Pagination, PlaylistPage, EntityImage, GoogleTagManager, ...
     pages/              One file per route (see "Routes")
     styles/global.css
@@ -171,6 +172,10 @@ Every page passes its own `title`, `description` and `image` to `BaseHead`, so a
 Organization logos and presenter photos always go through `EntityImage`. It shows `public/placeholder-organization.svg` or `public/placeholder-presenter.svg` when the URL is null, or when the image fails to load (an inline `onerror` swaps it in; many old Twitter image URLs now 404). Don't use a plain `<img>` for them.
 
 Photos we host ourselves are in `public/images/presenters/<id>.jpg` (400×400), and the presenter's `imageUrl` is `/images/presenters/<id>.jpg`.
+
+### Links in descriptions
+
+Descriptions are plain text with their line breaks kept. `LinkedText.astro` shows the URLs in them (`http(s)://…` and `www.…`) as links that open in a new tab. Punctuation after a URL, as in "(see http://a.sg/x).", stays out of the link. A bare domain such as `tiny.tt/asm` isn't linked. Video, organization, presenter and playlist descriptions all use it.
 
 ### Presenter and organization links
 
