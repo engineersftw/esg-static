@@ -17,9 +17,11 @@ Commands:
   presenter create --name <name> [options]
                         Create a presenter (ID and slug are assigned)
       --byline <text>   Job title or affiliation
-      --twitter <h>     Twitter/X handle, with or without @
+      --x <h>           X handle (with or without @) or profile URL; --twitter also works
       --website <url>   A personal site
       --linkedin <url>  LinkedIn profile URL
+      --instagram <h>   Instagram handle or profile URL
+      --tiktok <h>      TikTok handle or profile URL
       --image <url>     Photo URL
       --email <email>   Not shown on the site
       --bio <text>      Biography (the Markdown body)
@@ -59,9 +61,12 @@ const { values: args, positionals } = parseArgs({
     // presenter create
     name: { type: "string" },
     byline: { type: "string" },
+    x: { type: "string" },
     twitter: { type: "string" },
     website: { type: "string" },
     linkedin: { type: "string" },
+    instagram: { type: "string" },
+    tiktok: { type: "string" },
     image: { type: "string" },
     email: { type: "string" },
     bio: { type: "string" },
@@ -110,9 +115,13 @@ function presenterCreate(cms: Cms) {
   const p = cms.createPresenter({
     name: args.name,
     byline: args.byline,
-    twitter: args.twitter,
-    website: args.website,
-    linkedin: args.linkedin,
+    links: {
+      x: args.x ?? args.twitter,
+      website: args.website,
+      linkedin: args.linkedin,
+      instagram: args.instagram,
+      tiktok: args.tiktok,
+    },
     imageUrl: args.image,
     email: args.email,
     bio: args.bio,

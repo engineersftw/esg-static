@@ -68,7 +68,7 @@ apps/website/
     content.config.ts   The four content collections and their schemas
     helpers/
       collections.ts    Queries every page uses (active filtering, sorting)
-      url_helpers.ts    toSlug(), and twitterLink()/websiteLink() for the presenter page
+      url_helpers.ts    toSlug(), and profileLinkLabel() for presenter and organization links
     components/         Header, Footer, BaseHead, Pagination, PlaylistPage, EntityImage, GoogleTagManager, ...
     pages/              One file per route (see "Routes")
     styles/global.css
@@ -174,7 +174,15 @@ Photos we host ourselves are in `public/images/presenters/<id>.jpg` (400×400), 
 
 ### Presenter and organization links
 
-`ProfileLinks.astro` shows a `twitter` handle (as an x.com link), `website` and `linkedin`, each with its icon (the X and LinkedIn logos, a globe for websites), stacked on mobile. The presenter page shows all three under the byline. The organization page shows `twitter` and `website`, after "Contact: …" when the organization has a `contactPerson`. `twitterLink()` and `websiteLink()` in `url_helpers.ts` tolerate the old data's `@handle`s, full twitter.com URLs and scheme-less sites, and skip values that aren't links. `website` is for a personal site only, and LinkedIn profiles go in `linkedin`.
+Presenters and organizations have a `links` list in their frontmatter, shown in that order:
+
+```yaml
+links: [{"type":"x","url":"https://x.com/ongchinhwee"},{"type":"website","url":"https://ongchinhwee.me/"}]
+```
+
+The types are `x`, `website` (a personal or group site), `linkedin`, `instagram` and `tiktok` (`PROFILE_LINK_TYPES` in `src/consts.ts`). `url` is always a full http(s) URL, and the build fails on one that isn't. `ProfileLinks.astro` shows each with its icon from `LinkIcon.astro` (the network's logo, or a globe for a website), stacked on mobile, and labels X, Instagram and TikTok links with the `@handle`. The presenter page shows them under the byline; the organization page after "Contact: …" when the organization has a `contactPerson`.
+
+To add a link type: add it to `ProfileLinkType` in `@esg/db-types/content`, `PROFILE_LINK_TYPES` and `PROFILE_LINK_NAMES` in `src/consts.ts`, an icon in `LinkIcon.astro`, its handle rules in `packages/content/src/profileLinks.ts`, and a flag in the cms.
 
 ### Header
 

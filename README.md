@@ -101,7 +101,7 @@ A command-line editor for the content, run from the repo root with `pnpm cms`. E
 
 ```bash
 pnpm cms find presenter yeo                  # look up entries: find <video|presenter|organization|playlist> <text>
-pnpm cms presenter create --name "Jane Doe" --twitter @jane --linkedin https://linkedin.com/in/jane --video 4517 --dry-run
+pnpm cms presenter create --name "Jane Doe" --x @jane --linkedin https://linkedin.com/in/jane --instagram jane.doe --video 4517 --dry-run
 pnpm cms assign --video 4517 --presenter jane-doe --organization 111 --playlist pyconsg-2019
 pnpm cms unassign --video 4517 --playlist 1
 pnpm cms check [--fix]                       # find (and complete) links stored on one side only
@@ -110,7 +110,7 @@ pnpm cms --help                              # all options
 
 A `<ref>` can be an entry ID, a slug, a site URL or path (`/video/<slug>`), and for videos a YouTube video ID or URL, for playlists a YouTube playlist ID. An ambiguous or unknown ref fails the whole command before anything is written. `--dry-run` shows what would change, and `--content <dir>` points it at another content directory (default `apps/website/content`).
 
-Presenters have a `website` (a personal site only) and a separate `linkedin` field. The presenter page shows both, plus the X handle, under the byline.
+Presenters and organizations have a `links` list of `{ "type", "url" }` entries, shown in that order with an icon each. The types are `x`, `website`, `linkedin`, `instagram` and `tiktok`, and `presenter create` has a flag for each (`--x` or `--twitter`, `--website`, `--linkedin`, `--instagram`, `--tiktok`) that takes a handle or URL.
 
 ## packages/content
 

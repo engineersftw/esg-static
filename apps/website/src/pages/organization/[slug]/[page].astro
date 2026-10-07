@@ -155,10 +155,7 @@ const { page, organization } = Astro.props;
               <p class="contact">Contact: {organization.data.contactPerson}</p>
             )
           }
-          <ProfileLinks
-            twitter={organization.data.twitter}
-            website={organization.data.website}
-          />
+          <ProfileLinks links={organization.data.links} />
           <p class="orgDescr">{organization.body}</p>
         </div>
 

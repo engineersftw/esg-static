@@ -48,12 +48,24 @@ export interface Video {
   videoSite: "youtube" | "vimeo";
 }
 
+/** The kinds of profile link a presenter or organization can have. */
+export type ProfileLinkType = "x" | "website" | "linkedin" | "instagram" | "tiktok";
+
+/**
+ * A presenter's or organization's link. `url` is always a full URL (an X handle is stored as
+ * `https://x.com/<handle>`), so the site only has to label it.
+ */
+export interface ProfileLink {
+  type: ProfileLinkType;
+  url: string;
+}
+
 /** `organization/<id>.md`; the body is the organization description. */
 export interface Organization {
   id: string;
   orgTitle: string;
-  website: string | null;
-  twitter: string | null;
+  /** In display order. */
+  links: ProfileLink[];
   logoImage: string | null;
   contactPerson: string | null;
   slug: string;
@@ -68,13 +80,10 @@ export interface Presenter {
   id: string;
   presenterName: string;
   presenterByline: string | null;
-  twitter: string | null;
+  /** In display order. A `website` link is a personal site; LinkedIn profiles are `linkedin` links. */
+  links: ProfileLink[];
   /** Null unless pg-export ran with --include-emails. */
   email: string | null;
-  /** A personal site; LinkedIn profiles go in `linkedin`. */
-  website: string | null;
-  /** LinkedIn profile URL. */
-  linkedin: string | null;
   imageUrl: string | null;
   slug: string;
   /** False for presenters hidden on the old site; the site leaves them out. */
