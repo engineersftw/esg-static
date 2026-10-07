@@ -68,8 +68,8 @@ apps/website/
     content.config.ts   The four content collections and their schemas
     helpers/
       collections.ts    Queries every page uses (active filtering, sorting)
-      url_helpers.ts    toSlug()
-    components/         Header, Footer, BaseHead, Pagination, PlaylistPage, GoogleTagManager, ...
+      url_helpers.ts    toSlug(), and twitterLink()/websiteLink() for the presenter page
+    components/         Header, Footer, BaseHead, Pagination, PlaylistPage, EntityImage, GoogleTagManager, ...
     pages/              One file per route (see "Routes")
     styles/global.css
   functions/
@@ -121,19 +121,19 @@ Don't call `getCollection()` directly in a page. The helpers apply the `active` 
 
 ### Routes
 
-Paginated pages use the shared `Pagination` component.
+Paginated pages use the shared `Pagination` component, which always shows 7 page numbers (the range shifts near either end). The list sizes are multiples of the grid's columns so that every row is full.
 
 | URL | Page |
 |---|---|
-| `/` | Latest videos |
-| `/videos`, `/videos/[page]` | All videos, 50 per page |
+| `/` | The latest videos, with a "More videos" button to `/videos` |
+| `/videos`, `/videos/[page]` | All videos, 50 per page in rows of 2. Page 1 also shows the newest video large above them, and leaves it out of the list |
 | `/video/[slug]` | One video, with its organizations and presenters |
-| `/conferences`, `/conferences/list/[page]` | Conference playlists |
+| `/conferences`, `/conferences/list/[page]` | Conference playlists, 50 per page, two per row on desktop |
 | `/conference/[slug]`, `/conference/[slug]/[page]` | One conference or track: its videos (25 per page) and tracks |
 | `/playlist/[slug]`, `/playlist/[slug]/[page]` | Any other playlist, on the same `PlaylistPage` component. The `/playlist/` URL of a conference redirects to its `/conference/` page |
-| `/organizations`, `/organizations/list/[page]` | Organizations, A–Z |
+| `/organizations`, `/organizations/list/[page]` | Organizations, A–Z, 48 per page (3 columns, 2 on mobile) |
 | `/organization/[slug]`, `/organization/[slug]/[page]` | One organization and its videos |
-| `/presenters`, `/presenters/list/[page]` | Presenters, A–Z |
+| `/presenters`, `/presenters/list/[page]` | Presenters, A–Z, 48 per page (3 columns, 2 on mobile) |
 | `/presenter/[slug]`, `/presenter/[slug]/[page]` | One presenter and their videos |
 | `/feed` | RSS feed of the 50 newest videos (`public/_headers` sets its content type) |
 | `/about` | About page |
@@ -157,9 +157,32 @@ How it fits together:
 - **Invocation cost:** `public/_routes.json` keeps the function off paths that can never redirect (assets, lists, conference and playlist pages). Every other request runs it, and those count against the Workers request quota (100,000 a day on the free plan). Static files don't.
 - **Testing:** `pnpm preview` doesn't run the function. Use `pnpm exec wrangler pages dev ./dist`.
 
+### Page metadata
+
+Every page passes its own `title`, `description` and `image` to `BaseHead`, so a link shared on social media or in chat previews that page rather than the site. `BaseHead` writes the `<title>`, description, canonical URL, Open Graph and Twitter tags:
+
+- It adds " | Engineers.SG" to the title, unless the title already names the site.
+- It collapses the description (usually the entry's body) to plain text and cuts it to about 200 characters. With no description it uses `SITE_DESCRIPTION`.
+- With no image it uses the square site logo (`public/engineerssg-logo.png`) as a small `summary` card. Video thumbnails and playlist images get the large card. Organization logos and presenter photos pass `card="summary"`.
+- Paginated pages pass `pageNumber`. Later pages get ", Page N" in the title, and page 1's canonical URL is the bare list URL (`/videos/`, not `/videos/1`), since the index pages rewrite to page 1.
+
+### Images
+
+Organization logos and presenter photos always go through `EntityImage`. It shows `public/placeholder-organization.svg` or `public/placeholder-presenter.svg` when the URL is null, or when the image fails to load (an inline `onerror` swaps it in; many old Twitter image URLs now 404). Don't use a plain `<img>` for them.
+
+Photos we host ourselves are in `public/images/presenters/<id>.jpg` (400×400), and the presenter's `imageUrl` is `/images/presenters/<id>.jpg`.
+
+### Presenter links
+
+The presenter page shows the `twitter` handle (as an x.com link), `website` and `linkedin` under the byline. `twitterLink()` and `websiteLink()` in `url_helpers.ts` tolerate the old data's `@handle`s, full twitter.com URLs and scheme-less sites, and skip values that aren't links. `website` is for a personal site only, and LinkedIn profiles go in `linkedin`.
+
+### Header
+
+`Header.astro` shows the logo and site name on the left, the section links, and the Twitter and GitHub icons. At 720px wide and under, the name, icons and links collapse: only the logo and a hamburger button show, and the button opens the links as a list below the header.
+
 ### Adding a page
 
-- Start each page's `<head>` with `<BaseHead … />`. It loads the global styles, the meta tags and the GTM script.
+- Start each page's `<head>` with `<BaseHead … />`, passing its `title`, `description` and `image`. It loads the global styles, the meta tags and the GTM script.
 - Start each page's `<body>` with `<Header />`. It also renders the GTM `<noscript>` fallback, which has to come first in the body.
 - Get data through the helpers above, and pass paginated pages to `<Pagination page={page} />`. Its numbered links assume the page number is the last part of the URL.
 - If the new URL replaces an old Rails one, add a rule to `RULES` in `functions/_middleware.ts` rather than a redirect page (see above).
@@ -176,7 +199,7 @@ YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/webs
 YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/website/content
 ```
 
-New videos come in with no organizations or presenters, so link those up by hand in the frontmatter. See the yt-export section of the repo's `CLAUDE.md` for the matching rules, and for `--deactivate-missing` and `--exclude-video`.
+New videos come in with no organizations or presenters. Link them with the `cms` tool (`pnpm cms assign --video <ref> --presenter <ref> --organization <ref>` from the repo root), which writes each link on both sides, instead of editing the frontmatter by hand. See the yt-export section of the repo's `CLAUDE.md` for the matching rules, and for `--deactivate-missing` and `--exclude-video`.
 
 **From the old database.** `packages/pg-export` regenerates every file from the Rails database's JSON export, which **overwrites** anything edited since. This is only for a fresh start:
 
@@ -190,6 +213,6 @@ After either one, run `pnpm build`. Broken references (an ID pointing at a missi
 
 ## Known leftovers
 
-- **Template remnants:** `src/consts.ts` still has the template's `SITE_DESCRIPTION`. `about.astro` uses the template's `BlogPost.astro` layout, and `BaseHead` falls back to `/blog-placeholder-1.jpg` for the share image.
+- **Template remnants:** `about.astro` still uses the template's `BlogPost.astro` layout, and `public/blog-placeholder-*.jpg` are unused.
 - **Unused files:** `check_query.js` is an old Supabase scratch script whose dependency isn't installed, and `project.json` is an unused Nx config.
 - **Not ported from the old site yet:** the static pages (`/events`, `/cal`, `/bookings`, `/live`, `/fb_live`, `/support_us`, `/screenshots`, `/terms`), search (`/episodes/search`, `/presenters/search`), newsletter signup, `/videos/:tag` and the `/api/*` JSON endpoints.

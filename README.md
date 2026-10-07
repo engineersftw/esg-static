@@ -51,7 +51,7 @@ To run a script in one package from the root, use `pnpm --filter <name> <script>
 
 ## apps/website
 
-The public site: about 7k static pages covering videos, conferences, playlists, organizations and presenters. A small Cloudflare Pages Function (`apps/website/functions/`) redirects the old site's URLs.
+The public site: about 7k static pages covering videos, conferences, playlists, organizations and presenters, with a hamburger menu on mobile. Every page has its own title, description and preview image for sharing, and organizations or presenters with no image (or a broken image URL) get a placeholder. A small Cloudflare Pages Function (`apps/website/functions/`) redirects the old site's URLs.
 
 ```bash
 cd apps/website
@@ -101,7 +101,7 @@ A command-line editor for the content, run from the repo root with `pnpm cms`. E
 
 ```bash
 pnpm cms find presenter yeo                  # look up entries: find <video|presenter|organization|playlist> <text>
-pnpm cms presenter create --name "Jane Doe" --twitter @jane --video 4517 --dry-run
+pnpm cms presenter create --name "Jane Doe" --twitter @jane --linkedin https://linkedin.com/in/jane --video 4517 --dry-run
 pnpm cms assign --video 4517 --presenter jane-doe --organization 111 --playlist pyconsg-2019
 pnpm cms unassign --video 4517 --playlist 1
 pnpm cms check [--fix]                       # find (and complete) links stored on one side only
@@ -109,6 +109,8 @@ pnpm cms --help                              # all options
 ```
 
 A `<ref>` can be an entry ID, a slug, a site URL or path (`/video/<slug>`), and for videos a YouTube video ID or URL, for playlists a YouTube playlist ID. An ambiguous or unknown ref fails the whole command before anything is written. `--dry-run` shows what would change, and `--content <dir>` points it at another content directory (default `apps/website/content`).
+
+Presenters have a `website` (a personal site only) and a separate `linkedin` field. The presenter page shows both, plus the X handle, under the byline.
 
 ## packages/content
 
