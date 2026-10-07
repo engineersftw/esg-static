@@ -26,8 +26,10 @@ import Footer from '../components/Footer.astro';
       }
       .search-page input[type='search'] {
         flex: 1;
+        box-sizing: border-box;
+        height: 3em;
         min-width: 0;
-        padding: 0.6em 0.8em;
+        padding: 0 0.8em;
         font: inherit;
         border: 1px solid rgb(var(--gray-light));
         border-radius: 8px;
@@ -37,7 +39,20 @@ import Footer from '../components/Footer.astro';
         outline: 2px solid var(--accent);
         outline-offset: 1px;
       }
-      .search-page form button,
+      .search-page form button {
+        display: grid;
+        flex: none;
+        place-items: center;
+        width: 3em;
+        height: 3em;
+        padding: 0;
+        font: inherit;
+        color: white;
+        background: var(--accent);
+        border: 0;
+        border-radius: 50%;
+        cursor: pointer;
+      }
       .search-page .more {
         padding: 0.6em 1.4em;
         font: inherit;
@@ -121,12 +136,26 @@ import Footer from '../components/Footer.astro';
           id="search-input"
           type="search"
           name="q"
-          placeholder="Titles, speakers, groups, descriptions…"
+          placeholder="Titles, speakers, groups…"
           autocomplete="off"
           maxlength="100"
           autofocus
         />
-        <button type="submit">Search</button>
+        <button type="submit" aria-label="Search" title="Search">
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            width="24"
+            height="24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.25"
+            stroke-linecap="round"
+          >
+            <circle cx="10.5" cy="10.5" r="6.5"></circle>
+            <path d="M15.5 15.5 21 21"></path>
+          </svg>
+        </button>
       </form>
       <p id="search-status" class="status" aria-live="polite"></p>
       <noscript><p>Search needs JavaScript. You can still <a href="/videos">browse every video</a>.</p></noscript>
