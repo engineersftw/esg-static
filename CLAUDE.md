@@ -17,7 +17,7 @@ ESLint is configured once for the whole repo in the root `eslint.config.js` (fla
 - `packages/db-types/` (`@esg/db-types`): row types for every table in `output/backup/schema.json`, in `src/db.ts`, and the frontmatter types of the Astro content collections in `src/content.ts` (`@esg/db-types/content`: `Video`, `Organization`, `Presenter`, `Playlist`). Each row type matches a row in the JSON dump, so timestamps are UTC text, not `Date`. It ships TypeScript source with no build step (`exports` points at the `.ts` files), so consumers must run through tsx/Vitest or type-check with `tsc`.
 - `packages/yt-export/` (`@esg/yt-export`): a CLI that builds `episodes`/`playlists`/`playlist_items` rows (typed by `@esg/db-types`) from the YouTube Data API.
 - `packages/content/` (`@esg/content`): shared code for the content `.md` files: reading and writing them (`files.ts`, byte-identical to pg-export's format), `slugify`/`slugAllocator` (`slug.ts`), the two-sided link helpers (`links.ts`), and `normalizeProfileLink`/`profileLinks` (`profileLinks.ts`), which turn a handle or URL into a stored profile link. TypeScript source with no build step, like `@esg/db-types`.
-- `packages/cms/` (`@esg/cms`): a CLI that edits the content: create presenters, edit presenters' and organizations' links, and assign videos to presenters, organizations and playlists.
+- `packages/cms/` (`@esg/cms`): a CLI that edits the content: create presenters and organizations, edit their links, and assign videos to presenters, organizations and playlists.
 
 From the repo root:
 
@@ -119,6 +119,7 @@ pnpm cms find presenter yeo                  # look up IDs: find <video|presente
 pnpm cms presenter create --name "Jane Doe" --x @jane --instagram jane.doe --video 4517 --dry-run
 pnpm cms assign --video 4517 --presenter jane-doe --organization 111 --playlist pyconsg-2019
 pnpm cms unassign --video 4517 --playlist 1
+pnpm cms organization create --name "Tech Circle" --website techcircle.sg --contact "Jane Doe" --video 4588 --dry-run
 pnpm cms links presenter jane-doe                            # show a presenter's or organization's links
 pnpm cms links organization 42 --instagram @golangsg --remove x
 pnpm cms check [--fix]                       # one-sided links in any relation
@@ -128,6 +129,7 @@ pnpm cms check [--fix]                       # one-sided links in any relation
 - A `<ref>` is an entry ID, slug, site URL or path, a YouTube video ID or URL (videos) or a YouTube playlist ID (playlists). An ambiguous or unknown ref fails the whole command before anything is written.
 - Every link is written on both sides: the video's `presenters`/`organizations`/`playlists` get the ID appended, a playlist's `videos` gets the video appended, and an organization's or presenter's `videos` gets it inserted newest first by `publishedAt`. Linking to an inactive entry warns, since the site won't show it.
 - `links <presenter|organization> <ref>` shows the entry's links, or edits them with the same link flags plus `--remove <type>` (repeatable): a flag replaces the link of its type in place (dropping any other link of that type) or appends one, so the curated order survives. `Cms.editLinks` checks every value before changing anything.
+- `organization create` works like `presenter create`, with `--logo`, `--contact` (the contact person, shown on its page) and `--description` (the body), and the same link flags, `--slug`, `--inactive`, `--allow-duplicate` and `--video`. Both share `Cms.prepareNew` for the name check, next ID, slug and links.
 - `presenter create` takes one flag per link type: `--x` (or `--twitter`), `--website` (a personal site), `--linkedin`, `--instagram` and `--tiktok`. Each goes through `normalizeProfileLink` in `@esg/content` (a handle with or without `@`, or a profile URL, becomes the stored URL), and a value that isn't a link of its type fails the command. It takes the next free ID and a unique slug from the name (or `--slug`), and refuses a name another presenter already has unless `--allow-duplicate`.
 - Only changed files are written, in the same format as pg-export, so they diff cleanly.
 

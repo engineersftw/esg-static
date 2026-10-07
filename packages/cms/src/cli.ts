@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Command line editor for the Astro content collections (apps/website/content): create presenters, edit
- * presenters' and organizations' links, and link videos to presenters, organizations and playlists,
+ * Command line editor for the Astro content collections (apps/website/content): create presenters and
+ * organizations, edit their links, and link videos to presenters, organizations and playlists,
  * writing both sides of each link.
  */
 import { resolve } from "node:path";
@@ -27,6 +27,17 @@ Commands:
       --inactive        Create it hidden from the site
       --allow-duplicate Create it even if a presenter has the same name
       --video <ref>     Also assign it to this video; repeatable
+
+  organization create --name <name> [options]
+                        Create an organization (ID and slug are assigned)
+      --x, --website, --linkedin, --instagram, --tiktok
+                        Its links (see links below)
+      --logo <url>      Logo URL
+      --contact <name>  Contact person, shown on its page
+      --description <text>
+                        Description (the Markdown body)
+      --slug, --inactive, --allow-duplicate, --video
+                        As for presenter create
 
   links <presenter|organization> <ref> [options]
                         Show an entry's links, or change them: a link option replaces the
@@ -80,6 +91,10 @@ const { values: args, positionals } = parseArgs({
     image: { type: "string" },
     email: { type: "string" },
     bio: { type: "string" },
+    // organization create
+    logo: { type: "string" },
+    contact: { type: "string" },
+    description: { type: "string" },
     slug: { type: "string" },
     inactive: { type: "boolean", default: false },
     "allow-duplicate": { type: "boolean", default: false },
@@ -135,6 +150,23 @@ function presenterCreate(cms: Cms) {
   });
   for (const v of args.video) cms.link(v, "presenters", p.id);
   console.log(`Presenter ${p.id}: ${p.presenterName} → /presenter/${p.slug}`);
+  save(cms);
+}
+
+function organizationCreate(cms: Cms) {
+  if (!args.name) fail("organization create needs --name");
+  const o = cms.createOrganization({
+    name: args.name,
+    links: linkArgs(),
+    logoImage: args.logo,
+    contactPerson: args.contact,
+    description: args.description,
+    slug: args.slug,
+    active: !args.inactive,
+    allowDuplicate: args["allow-duplicate"],
+  });
+  for (const v of args.video) cms.link(v, "organizations", o.id);
+  console.log(`Organization ${o.id}: ${o.orgTitle} → /organization/${o.slug}`);
   save(cms);
 }
 
@@ -217,6 +249,9 @@ function main() {
     case "presenter":
       if (sub !== "create") fail(`unknown presenter command "${sub ?? ""}"; try presenter create`);
       return presenterCreate(cms);
+    case "organization":
+      if (sub !== "create") fail(`unknown organization command "${sub ?? ""}"; try organization create`);
+      return organizationCreate(cms);
     case "links":
       return links(cms);
     case "assign":
