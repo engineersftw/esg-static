@@ -10,7 +10,8 @@
     "check_query": "node check_query.js",
     "deploy": "wrangler pages deploy ./dist --project-name esg-static",
     "deploy:production": "wrangler pages deploy ./dist --project-name esg-static --branch production",
-    "typecheck": "astro check"
+    "typecheck": "astro check",
+    "test": "vitest run"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.3",
@@ -25,6 +26,7 @@
     "@astrojs/check": "^0.9.10",
     "@types/papaparse": "^5.3.15",
     "typescript": "~6.0.3",
+    "vitest": "^5.0.3",
     "wrangler": "^4.148.0"
   }
 }

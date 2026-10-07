@@ -8,6 +8,7 @@ import Footer from '../../../components/Footer.astro';
 import Pagination from '../../../components/Pagination.astro';
 import EntityImage from '../../../components/EntityImage.astro';
 import ProfileLinks from '../../../components/ProfileLinks.astro';
+import LinkedText from '../../../components/LinkedText.astro';
 import FormattedDate from '../../../components/FormattedDate.astro';
 import { getActiveOrganizations, listed } from '../../../helpers/collections';
 
@@ -112,6 +113,7 @@ const { page, organization } = Astro.props;
       }
       .orgDescr {
         white-space: pre-line;
+        overflow-wrap: anywhere;
       }
       @media (max-width: 720px) {
         h1 {
@@ -156,7 +158,7 @@ const { page, organization } = Astro.props;
             )
           }
           <ProfileLinks links={organization.data.links} />
-          <p class="orgDescr">{organization.body}</p>
+          <p class="orgDescr"><LinkedText text={organization.body} /></p>
         </div>
 
         <h2>Videos ({page.total})</h2>

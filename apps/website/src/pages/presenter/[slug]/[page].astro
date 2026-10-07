@@ -8,6 +8,7 @@ import Footer from '../../../components/Footer.astro';
 import Pagination from '../../../components/Pagination.astro';
 import EntityImage from '../../../components/EntityImage.astro';
 import ProfileLinks from '../../../components/ProfileLinks.astro';
+import LinkedText from '../../../components/LinkedText.astro';
 import FormattedDate from '../../../components/FormattedDate.astro';
 import { getActivePresenters, listed } from '../../../helpers/collections';
 
@@ -109,6 +110,7 @@ const { page, presenter } = Astro.props;
       }
       .presenterDescr {
         white-space: pre-line;
+        overflow-wrap: anywhere;
       }
       @media (max-width: 720px) {
         ul {
@@ -150,7 +152,7 @@ const { page, presenter } = Astro.props;
             )
           }
           <ProfileLinks links={presenter.data.links} />
-          <p class="presenterDescr">{presenter.body}</p>
+          <p class="presenterDescr"><LinkedText text={presenter.body} /></p>
         </div>
 
         <h2>Videos ({page.total})</h2>
