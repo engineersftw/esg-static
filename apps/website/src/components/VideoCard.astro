@@ -2,11 +2,14 @@
 import type { CollectionEntry } from 'astro:content';
 import FormattedDate from './FormattedDate.astro';
 import { getVideoByline } from '../helpers/collections';
+import { CARD_SIZES, FEATURED_SIZES, thumbnailSource } from '../helpers/thumbnails';
 
 // One video in a list: a 16:9 thumbnail, the title, and the date with the presenters' and
 // organizations' names. Put it in `<ul class="video-grid">`. The styles are global (global.css),
 // because the search page builds the same card in the browser. `featured` shows it full width with
-// a larger title, as the first video of a list is.
+// a larger title, as the first video of a list is. YouTube thumbnails come in two sizes, so sharp
+// screens get the large one (helpers/thumbnails.ts), and the script below falls back to the stored
+// one when a video has no large thumbnail.
 interface Props {
   video: CollectionEntry<'video'>;
   featured?: boolean;
@@ -15,12 +18,12 @@ interface Props {
 }
 
 const { video, featured = false, without } = Astro.props;
-const { thumbnailDefault, thumbnailMedium, thumbnailHigh } = video.data;
-// The high-quality thumbnail has black bars above and below, which the 16:9 crop removes, and it
-// has more pixels than the medium one, which a full-width card needs.
-const thumbnail = featured
-  ? (thumbnailHigh ?? thumbnailMedium ?? thumbnailDefault)
-  : (thumbnailMedium ?? thumbnailHigh ?? thumbnailDefault);
+// The stored high-quality thumbnail has black bars above and below, which the 16:9 crop removes.
+const thumbnail = thumbnailSource({
+  high: video.data.thumbnailHigh,
+  medium: video.data.thumbnailMedium,
+  default: video.data.thumbnailDefault,
+});
 const byline = await getVideoByline(video, without);
 ---
 
@@ -30,10 +33,13 @@ const byline = await getVideoByline(video, without);
       thumbnail ? (
         <img
           class="video-card-image"
-          src={thumbnail}
+          src={thumbnail.src}
+          srcset={thumbnail.srcset}
+          sizes={thumbnail.srcset ? (featured ? FEATURED_SIZES : CARD_SIZES) : undefined}
+          data-fallback={thumbnail.src}
           alt=""
-          width={featured ? 480 : 320}
-          height={featured ? 270 : 180}
+          width={480}
+          height={270}
           loading={featured ? 'eager' : 'lazy'}
         />
       ) : (
@@ -46,3 +52,9 @@ const byline = await getVideoByline(video, without);
     </p>
   </a>
 </li>
+
+<script>
+  import { watchThumbnails } from '../helpers/thumbnailFallback';
+
+  watchThumbnails();
+</script>

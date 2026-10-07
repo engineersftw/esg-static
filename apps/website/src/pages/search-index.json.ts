@@ -18,7 +18,8 @@ export async function GET() {
     slug: video.data.slug,
     title: video.data.videoTitle.trim(),
     date: video.data.publishedAt,
-    thumbnail: video.data.thumbnailMedium ?? video.data.thumbnailDefault,
+    // The stored high-quality thumbnail: the card crops it to 16:9 (see helpers/thumbnails.ts).
+    thumbnail: video.data.thumbnailHigh ?? video.data.thumbnailMedium ?? video.data.thumbnailDefault,
     presenters: resolve(video.data.presenters, presenters),
     organizations: resolve(video.data.organizations, organizations),
     playlists: resolve(video.data.playlists, playlists),
