@@ -45,7 +45,7 @@ node dist/export.js --from-json ../../output/backup -o ../../output/content   # 
 
 `-f markdown` writes Astro content collections instead of table dumps: `video/<id>.md`, `organization/<id>.md`, `presenter/<id>.md` and `playlist/<id>.md`. It reads `episodes`, `organizations`, `presenters`, `playlists`, `playlist_categories`, `playlist_items`, `sub_playlists`, `video_organizations` and `video_presenters` (in the first `--schema`) in the same snapshot transaction. `--from-json <dir>` reads those tables from an earlier `-f json` export and needs no database.
 
-Frontmatter types are in `@esg/db-types/content`. Relations are ID lists (`organizations`/`presenters`/`playlists` on a video; `videos`, newest first, on an organization or presenter; `videos` in playlist order and `subPlaylists` on a playlist) for Astro's `reference()`, and each description becomes the Markdown body. Presenter emails are written as `null` unless you pass `--include-emails`. Existing files in the output directory are overwritten but never deleted.
+Frontmatter types are in `@esg/db-types/content`. Relations are ID lists (`organizations`/`presenters`/`playlists` on a video; `videos`, newest first, on an organization or presenter; `videos` in playlist order and `subPlaylists` on a playlist) for Astro's `reference()`, and each description becomes the Markdown body. The old `presenters.website` column also held LinkedIn profiles, so a LinkedIn URL there is written to the presenter's `linkedin` field instead, and `website` is kept for personal sites. Presenter emails are written as `null` unless you pass `--include-emails`. Existing files in the output directory are overwritten but never deleted.
 
 ## Output
 
