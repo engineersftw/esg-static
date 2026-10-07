@@ -9,6 +9,8 @@
 import {
   addVideo,
   append,
+  normalizeProfileLink,
+  PROFILE_LINK_TYPES,
   profileLinks,
   reconcileLinks,
   serializeEntry,
@@ -20,7 +22,7 @@ import {
   type HasVideos,
   type VideoLinkField,
 } from "@esg/content";
-import type { Collection, Organization, Playlist, Presenter, ProfileLinkType, Video } from "@esg/db-types/content";
+import type { Collection, Organization, Playlist, Presenter, ProfileLink, ProfileLinkType, Video } from "@esg/db-types/content";
 
 export interface ContentEntries {
   video: Entry<Video>[];
@@ -59,6 +61,14 @@ export interface NewPresenter {
   active?: boolean;
   /** Create it even if a presenter with the same name exists. */
   allowDuplicate?: boolean;
+}
+
+/** Changes to a presenter's or organization's links. */
+export interface LinkEdits {
+  /** A handle or URL per type: replaces that type's link where it is, or adds one at the end. */
+  set?: Partial<Record<ProfileLinkType, string | null>>;
+  /** Types whose links are removed. */
+  remove?: ProfileLinkType[];
 }
 
 export class CmsError extends Error {}
@@ -179,6 +189,32 @@ export class Cms {
     };
     presenters.set(id, { data, body: toBody(input.bio ?? null) });
     return data;
+  }
+
+  /**
+   * Change a presenter's or organization's links and return them. Every value is checked before
+   * anything changes, so an invalid one leaves the links as they were.
+   */
+  editLinks(collection: "presenter" | "organization", ref: string, edits: LinkEdits): ProfileLink[] {
+    const entry = this.find(collection, ref) as Presenter | Organization;
+    const remove = new Set(edits.remove ?? []);
+    const set: ProfileLink[] = [];
+    for (const type of PROFILE_LINK_TYPES) {
+      const value = blank(edits.set?.[type]);
+      if (!value) continue;
+      if (remove.has(type)) throw new CmsError(`the ${type} link can't be both set and removed`);
+      const url = normalizeProfileLink(type, value);
+      if (!url) throw new CmsError(`"${value}" is not a valid ${type} link`);
+      set.push({ type, url });
+    }
+
+    let links = entry.links.filter((l) => !remove.has(l.type));
+    for (const link of set) {
+      const i = links.findIndex((l) => l.type === link.type);
+      links = i < 0 ? [...links, link] : [...links.slice(0, i), link, ...links.slice(i + 1).filter((l) => l.type !== link.type)];
+    }
+    entry.links = links;
+    return links;
   }
 
   /** Link a video and an entry of `field`'s collection on both sides. Returns false if already linked. */

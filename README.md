@@ -9,7 +9,7 @@ This repo holds the new site and the tools that moved the old site's data into i
 | `@esg/static-website` | [`apps/website`](apps/website) | The Astro site, built from Markdown content files |
 | `@esg/pg-export` | [`packages/pg-export`](packages/pg-export) | Dumps a Postgres database to JSON, CSV or NDJSON, or writes the Engineers.SG data as the site's Markdown content |
 | `@esg/yt-export` | [`packages/yt-export`](packages/yt-export) | Pulls videos and playlists from the YouTube Data API and syncs them into the site's content |
-| `@esg/cms` | [`packages/cms`](packages/cms) | Command-line editor for the content: create presenters, link videos to presenters, organizations and playlists |
+| `@esg/cms` | [`packages/cms`](packages/cms) | Command-line editor for the content: create presenters, edit presenter and organization links, link videos to presenters, organizations and playlists |
 | `@esg/content` | [`packages/content`](packages/content) | Shared code for reading, writing, slugging and linking the content files |
 | `@esg/db-types` | [`packages/db-types`](packages/db-types) | Shared TypeScript types: the old database's rows, and the frontmatter of the content files |
 
@@ -104,13 +104,15 @@ pnpm cms find presenter yeo                  # look up entries: find <video|pres
 pnpm cms presenter create --name "Jane Doe" --x @jane --linkedin https://linkedin.com/in/jane --instagram jane.doe --video 4517 --dry-run
 pnpm cms assign --video 4517 --presenter jane-doe --organization 111 --playlist pyconsg-2019
 pnpm cms unassign --video 4517 --playlist 1
+pnpm cms links presenter jane-doe            # show a presenter's or organization's links
+pnpm cms links organization 42 --instagram @golangsg --remove x --dry-run
 pnpm cms check [--fix]                       # find (and complete) links stored on one side only
 pnpm cms --help                              # all options
 ```
 
 A `<ref>` can be an entry ID, a slug, a site URL or path (`/video/<slug>`), and for videos a YouTube video ID or URL, for playlists a YouTube playlist ID. An ambiguous or unknown ref fails the whole command before anything is written. `--dry-run` shows what would change, and `--content <dir>` points it at another content directory (default `apps/website/content`).
 
-Presenters and organizations have a `links` list of `{ "type", "url" }` entries, shown in that order with an icon each. The types are `x`, `website`, `linkedin`, `instagram` and `tiktok`, and `presenter create` has a flag for each (`--x` or `--twitter`, `--website`, `--linkedin`, `--instagram`, `--tiktok`) that takes a handle or URL.
+Presenters and organizations have a `links` list of `{ "type", "url" }` entries, shown in that order with an icon each. The types are `x`, `website`, `linkedin`, `instagram` and `tiktok`, and `presenter create` and `links` have a flag for each (`--x` or `--twitter`, `--website`, `--linkedin`, `--instagram`, `--tiktok`) that takes a handle or URL. `links` replaces a type's link where it is or adds it at the end, and `--remove <type>` deletes one.
 
 ## packages/content
 

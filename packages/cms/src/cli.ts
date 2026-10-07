@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
- * Command line editor for the Astro content collections (apps/website/content): create presenters and
- * link videos to presenters, organizations and playlists, writing both sides of each link.
+ * Command line editor for the Astro content collections (apps/website/content): create presenters, edit
+ * presenters' and organizations' links, and link videos to presenters, organizations and playlists,
+ * writing both sides of each link.
  */
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { readEntries, VIDEO_LINKS, writeEntryFiles, type VideoLinkField } from "@esg/content";
-import { Collection } from "@esg/db-types/content";
+import { PROFILE_LINK_TYPES, readEntries, VIDEO_LINKS, writeEntryFiles, type VideoLinkField } from "@esg/content";
+import { Collection, type Organization, type Presenter, type ProfileLinkType } from "@esg/db-types/content";
 import { Cms, CmsError, titleOf, type Change } from "./cms.js";
 
 const HELP = `
@@ -17,11 +18,8 @@ Commands:
   presenter create --name <name> [options]
                         Create a presenter (ID and slug are assigned)
       --byline <text>   Job title or affiliation
-      --x <h>           X handle (with or without @) or profile URL; --twitter also works
-      --website <url>   A personal site
-      --linkedin <url>  LinkedIn profile URL
-      --instagram <h>   Instagram handle or profile URL
-      --tiktok <h>      TikTok handle or profile URL
+      --x, --website, --linkedin, --instagram, --tiktok
+                        Its links (see links below)
       --image <url>     Photo URL
       --email <email>   Not shown on the site
       --bio <text>      Biography (the Markdown body)
@@ -29,6 +27,16 @@ Commands:
       --inactive        Create it hidden from the site
       --allow-duplicate Create it even if a presenter has the same name
       --video <ref>     Also assign it to this video; repeatable
+
+  links <presenter|organization> <ref> [options]
+                        Show an entry's links, or change them: a link option replaces the
+                        link of its type where it is, or adds it at the end
+      --x <h>           X handle (with or without @) or profile URL; --twitter also works
+      --website <url>   A personal or group site
+      --linkedin <url>  LinkedIn profile URL
+      --instagram <h>   Instagram handle or profile URL
+      --tiktok <h>      TikTok handle or profile URL
+      --remove <type>   Remove the link of this type (${PROFILE_LINK_TYPES.join(", ")}); repeatable
 
   assign --video <ref> [--presenter <ref>] [--organization <ref>] [--playlist <ref>]
                         Link each video to each presenter, organization and playlist;
@@ -67,6 +75,8 @@ const { values: args, positionals } = parseArgs({
     linkedin: { type: "string" },
     instagram: { type: "string" },
     tiktok: { type: "string" },
+    // links
+    remove: { type: "string", multiple: true, default: [] },
     image: { type: "string" },
     email: { type: "string" },
     bio: { type: "string" },
@@ -115,13 +125,7 @@ function presenterCreate(cms: Cms) {
   const p = cms.createPresenter({
     name: args.name,
     byline: args.byline,
-    links: {
-      x: args.x ?? args.twitter,
-      website: args.website,
-      linkedin: args.linkedin,
-      instagram: args.instagram,
-      tiktok: args.tiktok,
-    },
+    links: linkArgs(),
     imageUrl: args.image,
     email: args.email,
     bio: args.bio,
@@ -132,6 +136,28 @@ function presenterCreate(cms: Cms) {
   for (const v of args.video) cms.link(v, "presenters", p.id);
   console.log(`Presenter ${p.id}: ${p.presenterName} → /presenter/${p.slug}`);
   save(cms);
+}
+
+/** The link options given, by type. */
+function linkArgs(): Partial<Record<ProfileLinkType, string>> {
+  return { x: args.x ?? args.twitter, website: args.website, linkedin: args.linkedin, instagram: args.instagram, tiktok: args.tiktok };
+}
+
+function links(cms: Cms) {
+  const [collection, ref] = positionals.slice(1);
+  if (collection !== "presenter" && collection !== "organization") fail("links needs a collection: presenter or organization");
+  if (!ref) fail(`links needs a ${collection} ID, slug or URL`);
+  for (const type of args.remove) {
+    if (!PROFILE_LINK_TYPES.includes(type as ProfileLinkType)) fail(`unknown link type "${type}"; use ${PROFILE_LINK_TYPES.join(", ")}`);
+  }
+  const edits = { set: linkArgs(), remove: args.remove as ProfileLinkType[] };
+  const entry = cms.find(collection, ref) as Presenter | Organization;
+  const editing = args.remove.length > 0 || Object.values(edits.set).some((v) => v?.trim());
+  const shown = editing ? cms.editLinks(collection, ref, edits) : entry.links;
+  console.log(`${collection} ${entry.id}: ${titleOf(entry)}`);
+  for (const l of shown) console.log(`  ${l.type.padEnd(9)} ${l.url}`);
+  if (!shown.length) console.log("  (no links)");
+  if (editing) save(cms);
 }
 
 const LINK_OPTIONS: [VideoLinkField, string[]][] = [
@@ -191,6 +217,8 @@ function main() {
     case "presenter":
       if (sub !== "create") fail(`unknown presenter command "${sub ?? ""}"; try presenter create`);
       return presenterCreate(cms);
+    case "links":
+      return links(cms);
     case "assign":
       return assign(cms, false);
     case "unassign":
