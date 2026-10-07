@@ -1,0 +1,61 @@
+---
+import LinkIcon from './LinkIcon.astro';
+import { twitterLink, websiteLink } from '../helpers/url_helpers';
+
+// A presenter's or organization's links, each with its icon. Values that
+// aren't usable links are skipped, and nothing renders when none are left.
+interface Props {
+  twitter?: string | null;
+  website?: string | null;
+  linkedin?: string | null;
+}
+
+const { twitter, website, linkedin } = Astro.props;
+
+const links = [
+  { kind: 'x', name: 'X', link: twitterLink(twitter) },
+  { kind: 'website', name: 'Website', link: websiteLink(website) },
+  { kind: 'linkedin', name: 'LinkedIn', link: websiteLink(linkedin) },
+] as const;
+const shown = links.filter((l) => l.link);
+---
+
+{
+  shown.length > 0 && (
+    <p class="links">
+      {shown.map(({ kind, name, link }) => (
+        <a href={link!.href} rel="noopener" title={name}>
+          <LinkIcon kind={kind} />
+          <span class="sr-only">{name}: </span>
+          {link!.label}
+        </a>
+      ))}
+    </p>
+  )
+}
+
+<style>
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em 1.5em;
+  }
+  .links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    overflow-wrap: anywhere;
+  }
+  .links :global(svg) {
+    flex: none;
+  }
+  @media (max-width: 720px) {
+    .links {
+      flex-direction: column;
+      gap: 0.25em;
+    }
+    .links a {
+      line-height: 1.5;
+    }
+  }
+</style>
