@@ -6,7 +6,7 @@ There is no database or server. Every page is built ahead of time from Markdown 
 
 ## Getting started
 
-You need Node 22.12 or newer (the repo's `.nvmrc` pins 22.23.3) and pnpm 10. This app is one package of a pnpm workspace, so install from the **repository root**:
+You need Node 24 (the repo's `.nvmrc` pins 24.21.0) and pnpm 10. This app is one package of a pnpm workspace, so install from the **repository root**:
 
 ```bash
 nvm use            # picks up .nvmrc
@@ -43,7 +43,7 @@ Both are read at **build time**, from `.env` locally or `.env.production` for pr
 
 ## Deploying
 
-The Cloudflare Pages project builds from GitHub. Its build settings must use **`apps/website` as the root directory**, with `dist` as the output directory. Cloudflare only looks for `functions/` in the root directory, so with the repo root there, the site deploys but the legacy-URL redirects don't. Set `HOSTNAME` and `PUBLIC_GTM_ID` as environment variables in the project settings, because they are read at build time.
+The Cloudflare Pages project builds from GitHub. Its build settings must use **`apps/website` as the root directory**, with `dist` as the output directory. The build picks its Node version from `apps/website/.nvmrc`, a copy of the repo's `.nvmrc`; update both together. Cloudflare only looks for `functions/` in the root directory, so with the repo root there, the site deploys but the legacy-URL redirects don't. Set `HOSTNAME` and `PUBLIC_GTM_ID` as environment variables in the project settings, because they are read at build time.
 
 To deploy by hand instead, `pnpm run deploy` (preview) and `pnpm deploy:production` upload whatever is in `dist/`, so build with the production settings first:
 

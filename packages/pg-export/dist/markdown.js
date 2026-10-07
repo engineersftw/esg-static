@@ -61,6 +61,7 @@ export function toBody(text) {
     return (text ?? "").replace(/\r\n?/g, "\n").trim();
 }
 const blankToNull = (s) => (s?.trim() ? s.trim() : null);
+const isLinkedIn = (url) => /^(https?:\/\/)?([a-z]{2,3}\.)?linkedin\.com\//i.test(url);
 const file = (collection, id, data, body) => {
     const text = toBody(body);
     return { path: `${collection}/${id}.md`, content: frontmatter(data) + (text ? `\n${text}\n` : "") };
@@ -130,21 +131,28 @@ export function toMarkdownFiles(src, opts) {
             logoImage: blankToNull(o.image),
             contactPerson: blankToNull(o.contact_person),
             slug: orgSlugs[i],
+            // `active` is nullable in the database and defaults to true.
+            active: o.active !== false,
             videos: byNewest(videosByOrg.get(o.id) ?? []),
         };
         files.push(file(Collection.Organization, data.id, data, o.description));
     });
     const presenterSlugs = uniqueSlugs(presenters.map((p) => ({ text: p.name, fallback: `presenter-${p.id}` })));
     presenters.forEach((p, i) => {
+        // The old site kept LinkedIn profiles in the website column; the content has a field for them.
+        const site = blankToNull(p.website);
+        const linkedin = site && isLinkedIn(site) ? site : null;
         const data = {
             id: String(p.id),
             presenterName: p.name,
             presenterByline: blankToNull(p.byline),
             twitter: blankToNull(p.twitter),
             email: opts.includeEmails ? blankToNull(p.email) : null,
-            website: blankToNull(p.website),
+            website: linkedin ? null : site,
+            linkedin,
             imageUrl: blankToNull(p.avatar_url),
             slug: presenterSlugs[i],
+            active: p.active !== false,
             videos: byNewest(videosByPresenter.get(p.id) ?? []),
         };
         files.push(file(Collection.Presenter, data.id, data, p.biography));
@@ -161,6 +169,7 @@ export function toMarkdownFiles(src, opts) {
             hashtag: blankToNull(p.hashtag),
             category: p.playlist_category_id == null ? null : (categoryTitle.get(p.playlist_category_id) ?? null),
             slug: playlistSlugs[i],
+            active: p.active !== false,
             videos: videosByPlaylist.get(p.id) ?? [],
             subPlaylists: subPlaylists.get(p.id) ?? [],
         };
