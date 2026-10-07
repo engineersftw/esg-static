@@ -1,6 +1,7 @@
 import { defineCollection, reference } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { PROFILE_LINK_TYPES } from './consts';
 
 // Markdown written by pg-export (`-f markdown`), one <id>.md per entry; frontmatter types are in
 // @esg/db-types/content. The glob loader would otherwise use the frontmatter `slug` as the entry
@@ -31,13 +32,20 @@ const video = defineCollection({
   }),
 });
 
+// A presenter's or organization's links, in display order (ProfileLink in @esg/db-types/content).
+const links = z.array(
+  z.object({
+    type: z.enum(PROFILE_LINK_TYPES),
+    url: z.url({ protocol: /^https?$/ }),
+  }),
+);
+
 const organization = defineCollection({
   loader: fromContent('organization'),
   schema: z.object({
     id: z.string(),
     orgTitle: z.string(),
-    website: z.string().nullable(),
-    twitter: z.string().nullable(),
+    links,
     logoImage: z.string().nullable(),
     contactPerson: z.string().nullable(),
     slug: z.string(),
@@ -52,10 +60,8 @@ const presenter = defineCollection({
     id: z.string(),
     presenterName: z.string(),
     presenterByline: z.string().nullable(),
-    twitter: z.string().nullable(),
+    links,
     email: z.string().nullable(),
-    website: z.string().nullable(),
-    linkedin: z.string().nullable(),
     imageUrl: z.string().nullable(),
     slug: z.string(),
     active: z.boolean(),

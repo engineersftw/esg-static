@@ -9,6 +9,7 @@
 import {
   addVideo,
   append,
+  profileLinks,
   reconcileLinks,
   serializeEntry,
   slugAllocator,
@@ -19,7 +20,7 @@ import {
   type HasVideos,
   type VideoLinkField,
 } from "@esg/content";
-import type { Collection, Organization, Playlist, Presenter, Video } from "@esg/db-types/content";
+import type { Collection, Organization, Playlist, Presenter, ProfileLinkType, Video } from "@esg/db-types/content";
 
 export interface ContentEntries {
   video: Entry<Video>[];
@@ -48,10 +49,9 @@ export interface Change {
 export interface NewPresenter {
   name: string;
   byline?: string | null;
-  twitter?: string | null;
+  /** A handle or URL per link type (a website is a personal site); written in `PROFILE_LINK_TYPES` order. */
+  links?: Partial<Record<ProfileLinkType, string | null>>;
   email?: string | null;
-  website?: string | null;
-  linkedin?: string | null;
   imageUrl?: string | null;
   /** The biography, the Markdown body. */
   bio?: string | null;
@@ -158,15 +158,20 @@ export class Cms {
       slug = slugAllocator(slugs)(name, `presenter-${id}`);
     }
 
+    let links;
+    try {
+      links = profileLinks(input.links ?? {});
+    } catch (e) {
+      throw new CmsError((e as Error).message);
+    }
+
     // Field order as pg-export writes it.
     const data: Presenter = {
       id,
       presenterName: name,
       presenterByline: blank(input.byline),
-      twitter: blank(input.twitter)?.replace(/^@/, "") ?? null,
+      links,
       email: blank(input.email),
-      website: blank(input.website),
-      linkedin: blank(input.linkedin),
       imageUrl: blank(input.imageUrl),
       slug,
       active: input.active ?? true,

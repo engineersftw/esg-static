@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Episode, Organization, Playlist, Presenter } from "@esg/db-types";
-import { frontmatter, slugify, toBody, toIsoTimestamp, toMarkdownFiles, uniqueSlugs, type MarkdownSource } from "./markdown.js";
+import { frontmatter, oldProfileLinks, slugify, toBody, toIsoTimestamp, toMarkdownFiles, uniqueSlugs, type MarkdownSource } from "./markdown.js";
 
 const stamp = "2016-01-01 10:14:35.104398";
 
@@ -197,17 +197,34 @@ describe("toMarkdownFiles", () => {
   it("turns blank strings into null and keeps an existing organization slug", () => {
     const out = files(source({ organizations: [org(10, { slug: "org-ten", description: "We meet monthly.", image: " " })] }));
     expect(out.get("organization/10.md")).toEqual({
-      data: { id: "10", orgTitle: "Org 10", website: null, twitter: null, logoImage: null, contactPerson: null, slug: "org-ten", active: true, videos: ["3", "1"] },
+      data: { id: "10", orgTitle: "Org 10", links: [], logoImage: null, contactPerson: null, slug: "org-ten", active: true, videos: ["3", "1"] },
       body: "We meet monthly.",
     });
   });
 
-  it("moves a presenter's LinkedIn profile from website to linkedin", () => {
+  it("writes the twitter and website columns as links, with LinkedIn profiles as linkedin links", () => {
     const out = files(
-      source({ presenters: [presenter(20, { website: "https://sg.linkedin.com/in/someone" }), presenter(21, { website: "https://example.com" })] }),
+      source({
+        presenters: [
+          presenter(20, { twitter: "@someone", website: "https://sg.linkedin.com/in/someone" }),
+          presenter(21, { twitter: "https://twitter.com/other", website: "example.com" }),
+        ],
+      }),
     );
-    expect(out.get("presenter/20.md")!.data).toMatchObject({ website: null, linkedin: "https://sg.linkedin.com/in/someone" });
-    expect(out.get("presenter/21.md")!.data).toMatchObject({ website: "https://example.com", linkedin: null });
+    expect(out.get("presenter/20.md")!.data.links).toEqual([
+      { type: "x", url: "https://x.com/someone" },
+      { type: "linkedin", url: "https://sg.linkedin.com/in/someone" },
+    ]);
+    expect(out.get("presenter/21.md")!.data.links).toEqual([
+      { type: "x", url: "https://x.com/other" },
+      { type: "website", url: "https://example.com" },
+    ]);
+  });
+
+  it("fixes the old data's website typos and drops values that aren't links", () => {
+    expect(oldProfileLinks(null, "http://http://blog.example.sg")).toEqual([{ type: "website", url: "http://blog.example.sg" }]);
+    expect(oldProfileLinks(null, "http//redmart.com")).toEqual([{ type: "website", url: "http://redmart.com" }]);
+    expect(oldProfileLinks("not a handle", "Research Assistant at NTU")).toEqual([]);
   });
 
   it("leaves presenter emails out unless asked", () => {

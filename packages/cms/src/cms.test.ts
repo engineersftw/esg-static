@@ -29,10 +29,8 @@ function presenter(id: string, name: string, over: Partial<Presenter> = {}): Ent
     id,
     presenterName: name,
     presenterByline: null,
-    twitter: null,
+    links: [],
     email: null,
-    website: null,
-    linkedin: null,
     imageUrl: null,
     slug: name.toLowerCase().replace(/ /g, "-"),
     active: true,
@@ -45,8 +43,7 @@ function organization(id: string, over: Partial<Organization> = {}): Entry<Organ
   return entry(`organization/${id}.md`, {
     id,
     orgTitle: `Org ${id}`,
-    website: null,
-    twitter: null,
+    links: [],
     logoImage: null,
     contactPerson: null,
     slug: `org-${id}`,
@@ -122,7 +119,12 @@ describe("find", () => {
 describe("createPresenter", () => {
   it("takes the next ID, makes a unique slug and writes the fields in pg-export order", () => {
     const cms = new Cms(content({ presenter: [presenter("7", "Jane Doe"), presenter("12", "Someone", { slug: "john-tan" })] }));
-    const p = cms.createPresenter({ name: "  John Tan ", twitter: "@jtan", byline: " ", bio: "Builds things.\r\nSometimes." });
+    const p = cms.createPresenter({
+      name: "  John Tan ",
+      links: { tiktok: "@jtan.dev", website: "jtan.dev", x: "@jtan" },
+      byline: " ",
+      bio: "Builds things.\r\nSometimes.",
+    });
 
     expect(p.id).toBe("13");
     expect(cms.changes()).toEqual([
@@ -134,10 +136,8 @@ describe("createPresenter", () => {
 id: "13"
 presenterName: "John Tan"
 presenterByline: null
-twitter: "jtan"
+links: [{"type":"x","url":"https://x.com/jtan"},{"type":"website","url":"https://jtan.dev"},{"type":"tiktok","url":"https://www.tiktok.com/@jtan.dev"}]
 email: null
-website: null
-linkedin: null
 imageUrl: null
 slug: "john-tan-2"
 active: true
@@ -158,6 +158,7 @@ Sometimes.
     expect(() => cms.createPresenter({ name: "X", slug: "Bad Slug" })).toThrow(/lowercase/);
     expect(() => cms.createPresenter({ name: "X", slug: "ann-lee" })).toThrow(/already used/);
     expect(() => cms.createPresenter({ name: " " })).toThrow(/needs a name/);
+    expect(() => cms.createPresenter({ name: "X", links: { linkedin: "https://example.com" } })).toThrow(CmsError);
   });
 
   it("can be linked to a video straight away", () => {

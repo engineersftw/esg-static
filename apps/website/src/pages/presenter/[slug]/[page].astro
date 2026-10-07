@@ -149,11 +149,7 @@ const { page, presenter } = Astro.props;
               <h4>{presenter.data.presenterByline}</h4>
             )
           }
-          <ProfileLinks
-            twitter={presenter.data.twitter}
-            website={presenter.data.website}
-            linkedin={presenter.data.linkedin}
-          />
+          <ProfileLinks links={presenter.data.links} />
           <p class="presenterDescr">{presenter.body}</p>
         </div>
 

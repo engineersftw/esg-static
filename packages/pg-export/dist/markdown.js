@@ -61,7 +61,39 @@ export function toBody(text) {
     return (text ?? "").replace(/\r\n?/g, "\n").trim();
 }
 const blankToNull = (s) => (s?.trim() ? s.trim() : null);
-const isLinkedIn = (url) => /^(https?:\/\/)?([a-z]{2,3}\.)?linkedin\.com\//i.test(url);
+/**
+ * The content's `links` from the old `twitter` and `website` columns, as full URLs (the same rules as
+ * normalizeProfileLink in @esg/content, which this build-step package can't import). The old site kept
+ * LinkedIn profiles in the website column, so those become `linkedin` links. A handle that isn't one,
+ * or a website that isn't a URL, is dropped.
+ */
+export function oldProfileLinks(twitter, website) {
+    const links = [];
+    const handle = blankToNull(twitter)
+        ?.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, "")
+        .replace(/^@/, "")
+        .replace(/[/?#].*$/, "");
+    if (handle && /^[A-Za-z0-9_]{1,15}$/.test(handle))
+        links.push({ type: "x", url: `https://x.com/${handle}` });
+    let site = blankToNull(website)
+        ?.replace(/^(https?:\/\/)+(https?:\/\/)/i, "$2")
+        .replace(/^(https?)\/\//i, "$1://");
+    if (site && !/\s/.test(site)) {
+        if (!/^https?:\/\//i.test(site))
+            site = `https://${site}`;
+        try {
+            const host = new URL(site).hostname.toLowerCase();
+            if (host.includes(".")) {
+                const linkedin = host === "linkedin.com" || host.endsWith(".linkedin.com");
+                links.push({ type: linkedin ? "linkedin" : "website", url: site });
+            }
+        }
+        catch {
+            // Not a URL: dropped.
+        }
+    }
+    return links;
+}
 const file = (collection, id, data, body) => {
     const text = toBody(body);
     return { path: `${collection}/${id}.md`, content: frontmatter(data) + (text ? `\n${text}\n` : "") };
@@ -126,8 +158,7 @@ export function toMarkdownFiles(src, opts) {
         const data = {
             id: String(o.id),
             orgTitle: o.title,
-            website: blankToNull(o.website),
-            twitter: blankToNull(o.twitter),
+            links: oldProfileLinks(o.twitter, o.website),
             logoImage: blankToNull(o.image),
             contactPerson: blankToNull(o.contact_person),
             slug: orgSlugs[i],
@@ -139,17 +170,12 @@ export function toMarkdownFiles(src, opts) {
     });
     const presenterSlugs = uniqueSlugs(presenters.map((p) => ({ text: p.name, fallback: `presenter-${p.id}` })));
     presenters.forEach((p, i) => {
-        // The old site kept LinkedIn profiles in the website column; the content has a field for them.
-        const site = blankToNull(p.website);
-        const linkedin = site && isLinkedIn(site) ? site : null;
         const data = {
             id: String(p.id),
             presenterName: p.name,
             presenterByline: blankToNull(p.byline),
-            twitter: blankToNull(p.twitter),
+            links: oldProfileLinks(p.twitter, p.website),
             email: opts.includeEmails ? blankToNull(p.email) : null,
-            website: linkedin ? null : site,
-            linkedin,
             imageUrl: blankToNull(p.avatar_url),
             slug: presenterSlugs[i],
             active: p.active !== false,
