@@ -122,6 +122,10 @@ import Footer from '../components/Footer.astro';
 
 <script>
   import type { SearchResponse, SearchResult } from '../helpers/search';
+  import { CARD_SIZES, thumbnailSource } from '../helpers/thumbnails';
+  import { watchThumbnails } from '../helpers/thumbnailFallback';
+
+  watchThumbnails();
 
   const form = document.querySelector<HTMLFormElement>('#search-form')!;
   const input = document.querySelector<HTMLInputElement>('#search-input')!;
@@ -146,13 +150,20 @@ import Footer from '../components/Footer.astro';
     const a = document.createElement('a');
     a.href = `/video/${result.slug}`;
     let image: HTMLElement;
-    if (result.thumbnail) {
+    const thumbnail = result.thumbnail ? thumbnailSource({ high: result.thumbnail, medium: null, default: null }) : null;
+    if (thumbnail) {
       const img = document.createElement('img');
-      img.width = 320;
-      img.height = 180;
+      img.width = 480;
+      img.height = 270;
       img.loading = 'lazy';
       img.alt = '';
-      img.src = result.thumbnail;
+      img.src = thumbnail.src;
+      if (thumbnail.srcset) {
+        // Not every YouTube video has the large thumbnail: watchThumbnails falls back to `data-fallback`.
+        img.srcset = thumbnail.srcset;
+        img.sizes = CARD_SIZES;
+        img.dataset.fallback = thumbnail.src;
+      }
       image = img;
     } else {
       image = document.createElement('div');

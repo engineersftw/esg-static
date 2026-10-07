@@ -193,6 +193,8 @@ Photos we host ourselves are in `public/images/presenters/<id>.jpg` (400×400), 
 
 Every list of videos (the home page, `/videos`, and the organization, presenter and playlist pages) and the search results show the same card: a 16:9 thumbnail, the title, and the date with the presenters' and organizations' names. `VideoCard.astro` renders it inside `<ul class="video-grid">`. The first video of a list is `featured`: full width with a larger title. An organization or presenter page leaves its own name out of the byline (`without`). The styles are global in `src/styles/global.css`, because `search.astro` builds the same card in the browser; if you change the card, change both.
 
+Thumbnails are the stored 480 px YouTube image, cropped to 16:9. For YouTube videos the card also offers the 1280 px `maxresdefault`, so phones and other high-density screens (and the full-width featured card) get a sharp image, and normal screens keep the small download. About 6% of videos have no large thumbnail; `src/helpers/thumbnailFallback.ts` notices (YouTube sends a small 4:3 stand-in picture) and shows the stored one instead.
+
 ### Links in descriptions
 
 Descriptions are plain text with their line breaks kept. `LinkedText.astro` shows the URLs in them (`http(s)://…` and `www.…`) as links that open in a new tab. Punctuation after a URL, as in "(see http://a.sg/x).", stays out of the link. A bare domain such as `tiny.tt/asm` isn't linked. Video, organization, presenter and playlist descriptions all use it.
