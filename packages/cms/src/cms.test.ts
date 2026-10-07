@@ -116,6 +116,60 @@ describe("find", () => {
   });
 });
 
+describe("createOrganization", () => {
+  it("takes the next ID, makes a unique slug and writes the fields in pg-export order", () => {
+    const cms = new Cms(content({ organization: [organization("5"), organization("9", { slug: "tech-circle" })] }));
+    const o = cms.createOrganization({
+      name: " Tech Circle ",
+      links: { website: "techcircle.sg", x: "@techcircle" },
+      contactPerson: " Jane Doe ",
+      logoImage: " ",
+      description: "Monthly roundtables.\r\nFor leaders.",
+    });
+
+    expect(o.id).toBe("10");
+    expect(cms.changes()).toEqual([
+      {
+        kind: "create",
+        path: "organization/10.md",
+        title: "Tech Circle",
+        content: `---
+id: "10"
+orgTitle: "Tech Circle"
+links: [{"type":"x","url":"https://x.com/techcircle"},{"type":"website","url":"https://techcircle.sg"}]
+logoImage: null
+contactPerson: "Jane Doe"
+slug: "tech-circle-2"
+active: true
+videos: []
+---
+
+Monthly roundtables.
+For leaders.
+`,
+      },
+    ]);
+  });
+
+  it("refuses a taken name or slug, a bad link and a blank name", () => {
+    const cms = new Cms(content());
+    expect(() => cms.createOrganization({ name: "org 5" })).toThrow(/already called/);
+    expect(cms.createOrganization({ name: "Org 5", allowDuplicate: true }).slug).toBe("org-5-2");
+    expect(() => cms.createOrganization({ name: "New", slug: "org-5" })).toThrow(/already used by another organization/);
+    expect(() => cms.createOrganization({ name: "New", links: { x: "not a handle" } })).toThrow(CmsError);
+    expect(() => cms.createOrganization({ name: " " })).toThrow(/an organization needs a name/);
+  });
+
+  it("can be linked to videos on both sides straight away", () => {
+    const cms = new Cms(content());
+    const o = cms.createOrganization({ name: "New Group" });
+    cms.link("1", "organizations", o.id);
+    cms.link("3", "organizations", "new-group");
+    expect(o.videos).toEqual(["3", "1"]);
+    expect(cms.changes().map((c) => c.path)).toEqual(["video/1.md", "video/3.md", "organization/6.md"]);
+  });
+});
+
 describe("editLinks", () => {
   const withLinks = () =>
     new Cms(

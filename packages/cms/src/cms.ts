@@ -63,6 +63,20 @@ export interface NewPresenter {
   allowDuplicate?: boolean;
 }
 
+export interface NewOrganization {
+  name: string;
+  /** A handle or URL per link type (a website is the group's site); written in `PROFILE_LINK_TYPES` order. */
+  links?: Partial<Record<ProfileLinkType, string | null>>;
+  logoImage?: string | null;
+  contactPerson?: string | null;
+  /** The description, the Markdown body. */
+  description?: string | null;
+  slug?: string | null;
+  active?: boolean;
+  /** Create it even if an organization with the same name exists. */
+  allowDuplicate?: boolean;
+}
+
 /** Changes to a presenter's or organization's links. */
 export interface LinkEdits {
   /** A handle or URL per type: replaces that type's link where it is, or adds one at the end. */
@@ -148,33 +162,42 @@ export class Cms {
       });
   }
 
-  createPresenter(input: NewPresenter): Presenter {
+  /**
+   * What a new presenter or organization needs before its fields are written: its name, the next free
+   * ID, a unique slug (or the one asked for) and its links. Throws if anything is missing or taken.
+   */
+  private prepareNew(
+    collection: "presenter" | "organization",
+    input: { name: string; slug?: string | null; links?: Partial<Record<ProfileLinkType, string | null>>; allowDuplicate?: boolean },
+  ) {
     const name = blank(input.name);
-    if (!name) throw new CmsError("a presenter needs a name");
-    const presenters = this.items.presenter;
-    const twin = [...presenters.values()].find((i) => sameName((i.data as Presenter).presenterName, name));
+    if (!name) throw new CmsError(`${collection === "presenter" ? "a presenter" : "an organization"} needs a name`);
+    const items = this.items[collection];
+    const twin = [...items.values()].find((i) => sameName(titleOf(i.data), name));
     if (twin && !input.allowDuplicate) {
-      throw new CmsError(`presenter ${twin.data.id} (${twin.data.slug}) is already called "${name}"; pass --allow-duplicate to create another`);
+      throw new CmsError(`${collection} ${twin.data.id} (${twin.data.slug}) is already called "${name}"; pass --allow-duplicate to create another`);
     }
 
-    const id = String([...presenters.keys()].reduce((m, k) => Math.max(m, Number(k) || 0), 0) + 1);
-    const slugs = [...presenters.values()].map((i) => i.data.slug);
+    const id = String([...items.keys()].reduce((m, k) => Math.max(m, Number(k) || 0), 0) + 1);
+    const slugs = [...items.values()].map((i) => i.data.slug);
     let slug: string;
     if (input.slug) {
       slug = input.slug.trim();
       if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) throw new CmsError(`slug "${slug}" must be lowercase letters, digits and single dashes`);
-      if (slugs.includes(slug)) throw new CmsError(`slug "${slug}" is already used by another presenter`);
+      if (slugs.includes(slug)) throw new CmsError(`slug "${slug}" is already used by another ${collection}`);
     } else {
-      slug = slugAllocator(slugs)(name, `presenter-${id}`);
+      slug = slugAllocator(slugs)(name, `${collection}-${id}`);
     }
 
-    let links;
     try {
-      links = profileLinks(input.links ?? {});
+      return { name, id, slug, links: profileLinks(input.links ?? {}) };
     } catch (e) {
       throw new CmsError((e as Error).message);
     }
+  }
 
+  createPresenter(input: NewPresenter): Presenter {
+    const { name, id, slug, links } = this.prepareNew("presenter", input);
     // Field order as pg-export writes it.
     const data: Presenter = {
       id,
@@ -187,7 +210,24 @@ export class Cms {
       active: input.active ?? true,
       videos: [],
     };
-    presenters.set(id, { data, body: toBody(input.bio ?? null) });
+    this.items.presenter.set(id, { data, body: toBody(input.bio ?? null) });
+    return data;
+  }
+
+  createOrganization(input: NewOrganization): Organization {
+    const { name, id, slug, links } = this.prepareNew("organization", input);
+    // Field order as pg-export writes it.
+    const data: Organization = {
+      id,
+      orgTitle: name,
+      links,
+      logoImage: blank(input.logoImage),
+      contactPerson: blank(input.contactPerson),
+      slug,
+      active: input.active ?? true,
+      videos: [],
+    };
+    this.items.organization.set(id, { data, body: toBody(input.description ?? null) });
     return data;
   }
 
