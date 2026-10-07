@@ -7,6 +7,7 @@ import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import Pagination from '../../../components/Pagination.astro';
 import EntityImage from '../../../components/EntityImage.astro';
+import ProfileLinks from '../../../components/ProfileLinks.astro';
 import FormattedDate from '../../../components/FormattedDate.astro';
 import { getActiveOrganizations, listed } from '../../../helpers/collections';
 
@@ -105,6 +106,10 @@ const { page, organization } = Astro.props;
       ul a:hover img {
         box-shadow: var(--box-shadow);
       }
+      .contact {
+        margin-bottom: 0.5em;
+        color: rgb(var(--gray));
+      }
       .orgDescr {
         white-space: pre-line;
       }
@@ -145,6 +150,15 @@ const { page, organization } = Astro.props;
             <h1>{organization.data.orgTitle}</h1>
             <hr />
           </div>
+          {
+            organization.data.contactPerson && (
+              <p class="contact">Contact: {organization.data.contactPerson}</p>
+            )
+          }
+          <ProfileLinks
+            twitter={organization.data.twitter}
+            website={organization.data.website}
+          />
           <p class="orgDescr">{organization.body}</p>
         </div>
 

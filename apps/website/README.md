@@ -172,9 +172,9 @@ Organization logos and presenter photos always go through `EntityImage`. It show
 
 Photos we host ourselves are in `public/images/presenters/<id>.jpg` (400×400), and the presenter's `imageUrl` is `/images/presenters/<id>.jpg`.
 
-### Presenter links
+### Presenter and organization links
 
-The presenter page shows the `twitter` handle (as an x.com link), `website` and `linkedin` under the byline. `twitterLink()` and `websiteLink()` in `url_helpers.ts` tolerate the old data's `@handle`s, full twitter.com URLs and scheme-less sites, and skip values that aren't links. `website` is for a personal site only, and LinkedIn profiles go in `linkedin`.
+`ProfileLinks.astro` shows a `twitter` handle (as an x.com link), `website` and `linkedin`, each with its icon (the X and LinkedIn logos, a globe for websites), stacked on mobile. The presenter page shows all three under the byline. The organization page shows `twitter` and `website`, after "Contact: …" when the organization has a `contactPerson`. `twitterLink()` and `websiteLink()` in `url_helpers.ts` tolerate the old data's `@handle`s, full twitter.com URLs and scheme-less sites, and skip values that aren't links. `website` is for a personal site only, and LinkedIn profiles go in `linkedin`.
 
 ### Header
 
