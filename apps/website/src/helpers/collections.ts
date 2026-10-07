@@ -23,6 +23,9 @@ export const getActiveOrganizations = () => getCollection('organization', (organ
 /** Every active presenter. Use this, not `getCollection('presenter')`. */
 export const getActivePresenters = () => getCollection('presenter', (presenter) => presenter.data.active);
 
+/** Every active playlist. Use this, not `getCollection('playlist')`. */
+export const getActivePlaylists = () => getCollection('playlist', (playlist) => playlist.data.active);
+
 /** Drop inactive organizations from resolved references, keeping their order. */
 export const listedOrganizations = (organizations: CollectionEntry<'organization'>[]) =>
   organizations.filter((organization) => organization.data.active);

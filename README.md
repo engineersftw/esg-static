@@ -51,7 +51,7 @@ To run a script in one package from the root, use `pnpm --filter <name> <script>
 
 ## apps/website
 
-The public site: about 7k static pages covering videos, conferences, playlists, organizations and presenters, with a hamburger menu on mobile. Every page has its own title, description and preview image for sharing, and organizations or presenters with no image (or a broken image URL) get a placeholder. A small Cloudflare Pages Function (`apps/website/functions/`) redirects the old site's URLs.
+The public site: about 7k static pages covering videos, conferences, playlists, organizations and presenters, with a hamburger menu on mobile. Every page has its own title, description and preview image for sharing, and organizations or presenters with no image (or a broken image URL) get a placeholder. Two small Cloudflare Pages Functions (`apps/website/functions/`) redirect the old site's URLs and power the video search at `/search`.
 
 ```bash
 cd apps/website

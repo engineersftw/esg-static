@@ -75,6 +75,7 @@ apps/website/
     styles/global.css
   functions/
     _middleware.ts      Cloudflare Pages Function that redirects old Rails URLs
+    api/search.ts       Cloudflare Pages Function for video search (GET /api/search?q=…)
   astro.config.mjs      Site URL, integrations and the /episodes redirect
 ```
 
@@ -136,9 +137,20 @@ Paginated pages use the shared `Pagination` component, which always shows 7 page
 | `/organization/[slug]`, `/organization/[slug]/[page]` | One organization and its videos |
 | `/presenters`, `/presenters/list/[page]` | Presenters, A–Z, 48 per page (3 columns, 2 on mobile) |
 | `/presenter/[slug]`, `/presenter/[slug]/[page]` | One presenter and their videos |
+| `/search` | Video search: a static page that calls `/api/search` as you type (see "Video search") |
 | `/feed` | RSS feed of the 50 newest videos (`public/_headers` sets its content type) |
 | `/about` | About page |
 | `404` | Served by Cloudflare for any missing path |
+
+### Video search
+
+The search icon in the header leads to `/search`, which searches every active video's title, presenters, organizations, playlists and description.
+
+- **How it works:** the page is static. Its script calls the Pages Function `functions/api/search.ts` (`/api/search?q=<words>&page=<n>`) once the visitor pauses typing, and shows 20 results at a time with a "More results" button. The query stays in the address (`/search?q=kubernetes`), so searches can be shared.
+- **The index:** `src/pages/search-index.json.ts` builds `dist/search-index.json`, which wrangler bundles into the function, so **build before deploying**. Nothing else needs updating when content changes.
+- **Matching:** every word must appear somewhere, ignoring case and accents ("kube" finds "Kubernetes"). Title matches rank first, then presenter and organization names, then playlists, then descriptions. The logic is in `src/helpers/search.ts`, with tests in `search.test.ts`.
+- **Limits:** each search request counts against the Workers quota (100,000 a day on the free plan), which is why the page waits for a pause in typing. The Functions bundle is about 1 MB gzipped, against the free plan's 3 MB limit.
+- **Testing:** `pnpm preview` doesn't run Functions, so search shows "Search isn't available right now" there. Use `pnpm exec wrangler pages dev ./dist`.
 
 ### Old Rails URLs
 

@@ -1,0 +1,239 @@
+---
+// Video keyword search. The page is static; its script calls the Pages Function at /api/search
+// (functions/api/search.ts) as the visitor types, and keeps the query in the address (?q=) so a
+// search can be shared or reloaded. `pnpm preview` doesn't run Functions, so test it with
+// `wrangler pages dev ./dist`.
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead
+      title="Search videos"
+      description="Search the talks recorded by Engineers.SG by title, speaker, group, conference or description."
+    />
+    <style is:global>
+      .search-page main {
+        width: 960px;
+      }
+      .search-page form {
+        display: flex;
+        gap: 0.5em;
+        margin-bottom: 1em;
+      }
+      .search-page input[type='search'] {
+        flex: 1;
+        min-width: 0;
+        padding: 0.6em 0.8em;
+        font: inherit;
+        border: 1px solid rgb(var(--gray-light));
+        border-radius: 8px;
+        background: white;
+      }
+      .search-page input[type='search']:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      .search-page form button,
+      .search-page .more {
+        padding: 0.6em 1.4em;
+        font: inherit;
+        font-weight: 700;
+        color: white;
+        background: var(--accent);
+        border: 0;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .search-page form button:hover,
+      .search-page .more:hover {
+        background: var(--accent-dark);
+      }
+      .search-page .status {
+        min-height: 1.7em;
+        color: rgb(var(--gray));
+      }
+      .search-page .results {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        list-style-type: none;
+        margin: 1em 0 0;
+        padding: 0;
+      }
+      .search-page .results li {
+        width: calc(50% - 1rem);
+      }
+      .search-page .results a {
+        display: block;
+        text-decoration: none;
+      }
+      .search-page .results img {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        margin-bottom: 0.5rem;
+        border-radius: 12px;
+        background: rgb(var(--gray-light));
+      }
+      .search-page .results .title {
+        margin: 0;
+        color: rgb(var(--black));
+        line-height: 1.2;
+      }
+      .search-page .results .meta {
+        margin: 0.25em 0 0;
+        color: rgb(var(--gray));
+        font-size: 0.9em;
+      }
+      .search-page .results a:hover .title {
+        color: rgb(var(--accent));
+      }
+      .search-page .results a:hover img {
+        box-shadow: var(--box-shadow);
+      }
+      .search-page .more {
+        display: block;
+        margin: 2em auto 1em;
+      }
+      @media (max-width: 720px) {
+        .search-page .results {
+          gap: 1.5em;
+        }
+        .search-page .results li {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body class="search-page">
+    <Header />
+    <main>
+      <h1>Search videos</h1>
+      <form id="search-form" action="/search" method="get" role="search">
+        <label for="search-input" class="sr-only">Search videos</label>
+        <input
+          id="search-input"
+          type="search"
+          name="q"
+          placeholder="Titles, speakers, groups, descriptions…"
+          autocomplete="off"
+          maxlength="100"
+          autofocus
+        />
+        <button type="submit">Search</button>
+      </form>
+      <p id="search-status" class="status" aria-live="polite"></p>
+      <noscript><p>Search needs JavaScript. You can still <a href="/videos">browse every video</a>.</p></noscript>
+      <ul id="search-results" class="results"></ul>
+      <button id="search-more" class="more" type="button" hidden>More results</button>
+    </main>
+    <Footer />
+  </body>
+</html>
+
+<script>
+  import type { SearchResponse, SearchResult } from '../helpers/search';
+
+  const form = document.querySelector<HTMLFormElement>('#search-form')!;
+  const input = document.querySelector<HTMLInputElement>('#search-input')!;
+  const status = document.querySelector<HTMLParagraphElement>('#search-status')!;
+  const list = document.querySelector<HTMLUListElement>('#search-results')!;
+  const more = document.querySelector<HTMLButtonElement>('#search-more')!;
+
+  const MIN_LENGTH = 2;
+  const DEBOUNCE_MS = 300;
+  let latest = 0; // Only the newest request's response is shown.
+  let shown = { query: '', page: 0, total: 0 };
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-us', { year: 'numeric', month: 'short', day: 'numeric' });
+
+  // Built with DOM APIs and textContent, so titles and names are never parsed as HTML.
+  function item(result: SearchResult): HTMLLIElement {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = `/video/${result.slug}`;
+    const img = document.createElement('img');
+    img.width = 320;
+    img.height = 180;
+    img.loading = 'lazy';
+    img.alt = '';
+    if (result.thumbnail) img.src = result.thumbnail;
+    const title = document.createElement('h4');
+    title.className = 'title';
+    title.textContent = result.title;
+    const meta = document.createElement('p');
+    meta.className = 'meta';
+    meta.textContent = [formatDate(result.date), [...result.presenters, ...result.organizations].join(', ')]
+      .filter(Boolean)
+      .join(' · ');
+    a.append(img, title, meta);
+    li.append(a);
+    return li;
+  }
+
+  function setAddress(query: string) {
+    const url = new URL(location.href);
+    if (query) url.searchParams.set('q', query);
+    else url.searchParams.delete('q');
+    history.replaceState(null, '', url);
+  }
+
+  async function search(query: string, page = 1) {
+    const request = ++latest;
+    if (page === 1) setAddress(query);
+    if (query.length < MIN_LENGTH) {
+      list.replaceChildren();
+      more.hidden = true;
+      shown = { query: '', page: 0, total: 0 };
+      status.textContent = query ? `Type at least ${MIN_LENGTH} characters.` : '';
+      return;
+    }
+
+    if (page === 1) status.textContent = 'Searching…';
+    else more.textContent = 'Loading…';
+    try {
+      const response = await fetch(`/api/search?${new URLSearchParams({ q: query, page: String(page) })}`);
+      if (!response.ok || !response.headers.get('content-type')?.includes('json')) throw new Error(`HTTP ${response.status}`);
+      const data: SearchResponse = await response.json();
+      if (request !== latest) return;
+
+      if (page === 1) list.replaceChildren();
+      list.append(...data.results.map(item));
+      shown = { query, page: data.page, total: data.total };
+      const count = `${data.total.toLocaleString('en')} ${data.total === 1 ? 'video matches' : 'videos match'}`;
+      status.textContent = data.total ? `${count} “${data.query}”.` : `No videos match “${data.query}”.`;
+      more.hidden = list.children.length >= data.total;
+    } catch {
+      if (request !== latest) return;
+      status.textContent = "Search isn't available right now. Please try again later.";
+      more.hidden = true;
+    } finally {
+      more.textContent = 'More results';
+    }
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => search(input.value.trim()), DEBOUNCE_MS);
+  });
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    clearTimeout(timer);
+    search(input.value.trim());
+  });
+  more.addEventListener('click', () => search(shown.query, shown.page + 1));
+
+  const initial = new URLSearchParams(location.search).get('q')?.trim() ?? '';
+  if (initial) {
+    input.value = initial;
+    search(initial);
+  }
+</script>
