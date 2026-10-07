@@ -7,6 +7,7 @@ import Header from "../../../components/Header.astro";
 import Footer from "../../../components/Footer.astro";
 import Pagination from "../../../components/Pagination.astro";
 import EntityImage from "../../../components/EntityImage.astro";
+import NameFilter from "../../../components/NameFilter.astro";
 
 export const getStaticPaths = (async ({ paginate }) => {
   const presenters = (await getActivePresenters()).sort((a, b) =>
@@ -94,6 +95,8 @@ const { page } = Astro.props;
     <Header />
     <main>
       <h1>Presenters</h1>
+      <NameFilter kind="presenter" label="presenters" source="/presenters.json" />
+      <div data-name-filter-page>
       <section>
         <ul>
           {
@@ -118,6 +121,17 @@ const { page } = Astro.props;
         </ul>
       </section>
       <Pagination page={page} />
+      </div>
+      <ul data-name-filter-results hidden></ul>
+      <template data-name-filter-item>
+        <li>
+          <a>
+            <img class="orgImage" alt="" loading="lazy" />
+            <h4 class="title"></h4>
+          </a>
+          <p data-byline></p>
+        </li>
+      </template>
     </main>
     <Footer />
   </body>

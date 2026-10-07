@@ -136,6 +136,10 @@ hr {
 	}
 }
 
+/* Keep the hidden attribute working on elements whose styles set a display, such as a flex list. */
+[hidden] {
+	display: none !important;
+}
 .sr-only {
 	border: 0;
 	padding: 0;
