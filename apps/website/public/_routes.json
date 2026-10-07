@@ -16,6 +16,8 @@
     "/search",
     "/search/",
     "/search-index.json",
+    "/presenters.json",
+    "/organizations.json",
     "/sitemap-*",
     "/favicon.svg",
     "/videos",

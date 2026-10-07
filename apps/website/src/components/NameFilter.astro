@@ -1,0 +1,143 @@
+---
+// A filter box for the presenter and organization lists, which searches every name, not just the
+// page shown. On the first keystroke it loads every name from `source` (a static JSON file, so
+// there are no Function requests), then shows the matches in place of the paginated list.
+//
+// The page provides the pieces, so that the matches look exactly like its own list:
+//   [data-name-filter-page]       the list and pagination, hidden while filtering
+//   [data-name-filter-results]    an empty <ul hidden> for the matches
+//   template[data-name-filter-item]  one <li> with an <a>, an <img>, an <h4> and, for presenters,
+//                                    a <p data-byline>
+interface Props {
+  kind: 'presenter' | 'organization';
+  /** Plural, for the placeholder and status text: "presenters". */
+  label: string;
+  source: string;
+}
+
+const { kind, label, source } = Astro.props;
+---
+
+<div class="name-filter" data-name-filter data-kind={kind} data-label={label} data-source={source}>
+  <label for="name-filter-input" class="sr-only">Filter {label} by name</label>
+  <input id="name-filter-input" type="search" placeholder={`Filter ${label} by name…`} autocomplete="off" maxlength="100" />
+  <p class="name-filter-status" aria-live="polite"></p>
+</div>
+
+<style>
+  .name-filter {
+    margin-bottom: 1.5em;
+  }
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.6em 0.8em;
+    font: inherit;
+    border: 1px solid rgb(var(--gray-light));
+    border-radius: 8px;
+    background: white;
+  }
+  input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .name-filter-status {
+    min-height: 1.7em;
+    margin: 0.5em 0 0;
+    color: rgb(var(--gray));
+  }
+  .name-filter-status:empty {
+    min-height: 0;
+  }
+</style>
+
+<script>
+  import { filterByName, type NameEntry } from '../helpers/nameFilter';
+
+  const MAX_SHOWN = 96;
+  const DEBOUNCE_MS = 150;
+
+  const root = document.querySelector<HTMLElement>('[data-name-filter]');
+  const input = root?.querySelector<HTMLInputElement>('input');
+  const status = root?.querySelector<HTMLElement>('.name-filter-status');
+  const page = document.querySelector<HTMLElement>('[data-name-filter-page]');
+  const results = document.querySelector<HTMLUListElement>('[data-name-filter-results]');
+  const template = document.querySelector<HTMLTemplateElement>('template[data-name-filter-item]');
+
+  if (root && input && status && page && results && template) {
+    const { kind, label, source } = root.dataset as { kind: string; label: string; source: string };
+    const placeholder = `/placeholder-${kind}.svg`;
+    let entries: Promise<NameEntry[]> | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let latest = 0;
+
+    const load = () =>
+      (entries ??= fetch(source).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      }));
+
+    // Cloned from the page's template and filled with textContent, so names are never parsed as HTML.
+    const item = (entry: NameEntry) => {
+      const li = (template.content.firstElementChild as HTMLLIElement).cloneNode(true) as HTMLLIElement;
+      li.querySelector('a')!.href = `/${kind}/${entry.slug}`;
+      const img = li.querySelector('img')!;
+      img.addEventListener('error', () => (img.src = placeholder), { once: true });
+      img.src = entry.image || placeholder;
+      li.querySelector('h4')!.textContent = entry.name;
+      const byline = li.querySelector<HTMLElement>('[data-byline]');
+      if (byline) {
+        if (entry.byline) byline.textContent = entry.byline;
+        else byline.remove();
+      }
+      return li;
+    };
+
+    const setAddress = (query: string) => {
+      const url = new URL(location.href);
+      if (query) url.searchParams.set('q', query);
+      else url.searchParams.delete('q');
+      history.replaceState(null, '', url);
+    };
+
+    const show = async (query: string) => {
+      const request = ++latest;
+      setAddress(query);
+      if (!query) {
+        results.hidden = true;
+        results.replaceChildren();
+        page.hidden = false;
+        status.textContent = '';
+        return;
+      }
+      try {
+        const matches = filterByName(await load(), query);
+        if (request !== latest) return;
+        results.replaceChildren(...matches.slice(0, MAX_SHOWN).map(item));
+        results.hidden = false;
+        page.hidden = true;
+        const count = `${matches.length.toLocaleString('en')} ${matches.length === 1 ? label.replace(/s$/, '') + ' matches' : label + ' match'}`;
+        status.textContent = !matches.length
+          ? `No ${label} match “${query}”.`
+          : matches.length > MAX_SHOWN
+            ? `${count} “${query}”. Showing the first ${MAX_SHOWN}; keep typing to narrow it down.`
+            : `${count} “${query}”.`;
+      } catch {
+        if (request !== latest) return;
+        entries = undefined;
+        status.textContent = `The ${label} couldn't be loaded. Please try again later.`;
+      }
+    };
+
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => show(input.value.trim()), DEBOUNCE_MS);
+    });
+
+    const initial = new URLSearchParams(location.search).get('q')?.trim();
+    if (initial) {
+      input.value = initial;
+      show(initial);
+    }
+  }
+</script>
