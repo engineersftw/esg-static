@@ -76,6 +76,13 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
         white-space: pre-line;
       }
 
+      @media (max-width: 720px) {
+        .title h1 {
+          font-size: 1.953em;
+          line-height: 1.15;
+        }
+      }
+
       h5 a {
         display: flex;
         align-items: center;

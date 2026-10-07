@@ -7,6 +7,7 @@ import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
 import Pagination from '../../../components/Pagination.astro';
 import EntityImage from '../../../components/EntityImage.astro';
+import LinkIcon from '../../../components/LinkIcon.astro';
 import FormattedDate from '../../../components/FormattedDate.astro';
 import { getActivePresenters, listed } from '../../../helpers/collections';
 import { twitterLink, websiteLink } from '../../../helpers/url_helpers';
@@ -28,9 +29,9 @@ type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 
 const { page, presenter } = Astro.props;
 const links = [
-  { kind: 'X', link: twitterLink(presenter.data.twitter) },
-  { kind: 'Website', link: websiteLink(presenter.data.website) },
-  { kind: 'LinkedIn', link: websiteLink(presenter.data.linkedin) },
+  { kind: 'x', name: 'X', link: twitterLink(presenter.data.twitter) },
+  { kind: 'website', name: 'Website', link: websiteLink(presenter.data.website) },
+  { kind: 'linkedin', name: 'LinkedIn', link: websiteLink(presenter.data.linkedin) },
 ].filter((l) => l.link);
 ---
 
@@ -118,12 +119,25 @@ const links = [
         gap: 0.5em 1.5em;
       }
       .links a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4em;
         overflow-wrap: anywhere;
+      }
+      .links svg {
+        flex: none;
       }
       .presenterDescr {
         white-space: pre-line;
       }
       @media (max-width: 720px) {
+        .links {
+          flex-direction: column;
+          gap: 0.25em;
+        }
+        .links a {
+          line-height: 1.5;
+        }
         ul {
           gap: 0.5em;
         }
@@ -165,10 +179,12 @@ const links = [
           {
             links.length > 0 && (
               <p class="links">
-                {links.map(({ kind, link }) => (
-                  <span>
-                    {kind}: <a href={link!.href} rel="noopener">{link!.label}</a>
-                  </span>
+                {links.map(({ kind, name, link }) => (
+                  <a href={link!.href} rel="noopener" title={name}>
+                    <LinkIcon kind={kind as 'x' | 'website' | 'linkedin'} />
+                    <span class="sr-only">{name}: </span>
+                    {link!.label}
+                  </a>
                 ))}
               </p>
             )
