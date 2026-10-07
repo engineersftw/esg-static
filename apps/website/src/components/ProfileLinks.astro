@@ -16,7 +16,7 @@ const { links } = Astro.props;
   links.length > 0 && (
     <p class="links">
       {links.map(({ type, url }) => (
-        <a href={url} rel="noopener" title={PROFILE_LINK_NAMES[type]}>
+        <a href={url} target="_blank" rel="noopener noreferrer" title={PROFILE_LINK_NAMES[type]}>
           <LinkIcon kind={type} />
           <span class="sr-only">{PROFILE_LINK_NAMES[type]}: </span>
           {profileLinkLabel(type, url)}
