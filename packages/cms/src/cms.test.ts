@@ -116,6 +116,54 @@ describe("find", () => {
   });
 });
 
+describe("editLinks", () => {
+  const withLinks = () =>
+    new Cms(
+      content({
+        presenter: [
+          presenter("7", "Jane Doe", {
+            links: [
+              { type: "x", url: "https://x.com/jane" },
+              { type: "website", url: "https://jane.dev" },
+            ],
+          }),
+        ],
+        organization: [organization("3")],
+      }),
+    );
+
+  it("replaces a type's link where it is and adds new types at the end", () => {
+    const cms = withLinks();
+    const links = cms.editLinks("presenter", "jane-doe", { set: { instagram: "@jane.d", x: "https://twitter.com/janedoe" } });
+    expect(links).toEqual([
+      { type: "x", url: "https://x.com/janedoe" },
+      { type: "website", url: "https://jane.dev" },
+      { type: "instagram", url: "https://www.instagram.com/jane.d/" },
+    ]);
+    expect(cms.changes().map((c) => c.path)).toEqual(["presenter/7.md"]);
+  });
+
+  it("removes links by type", () => {
+    const cms = withLinks();
+    expect(cms.editLinks("presenter", "7", { remove: ["x"], set: { tiktok: "jane" } })).toEqual([
+      { type: "website", url: "https://jane.dev" },
+      { type: "tiktok", url: "https://www.tiktok.com/@jane" },
+    ]);
+  });
+
+  it("works for organizations", () => {
+    const cms = withLinks();
+    expect(cms.editLinks("organization", "3", { set: { website: "example.org" } })).toEqual([{ type: "website", url: "https://example.org" }]);
+  });
+
+  it("changes nothing when a value is invalid or a type is both set and removed", () => {
+    const cms = withLinks();
+    expect(() => cms.editLinks("presenter", "7", { set: { website: "jane.org", linkedin: "https://example.com" } })).toThrow(CmsError);
+    expect(() => cms.editLinks("presenter", "7", { set: { x: "jane" }, remove: ["x"] })).toThrow(/both set and removed/);
+    expect(cms.changes()).toEqual([]);
+  });
+});
+
 describe("createPresenter", () => {
   it("takes the next ID, makes a unique slug and writes the fields in pg-export order", () => {
     const cms = new Cms(content({ presenter: [presenter("7", "Jane Doe"), presenter("12", "Someone", { slug: "john-tan" })] }));
