@@ -70,7 +70,7 @@ apps/website/
       collections.ts    Queries every page uses (active filtering, sorting)
       url_helpers.ts    toSlug(), and profileLinkLabel() for presenter and organization links
       linkify.ts        Finds the URLs in a description (with a test next to it)
-    components/         Header, Footer, BaseHead, Pagination, PlaylistPage, EntityImage, GoogleTagManager, ...
+    components/         Header, Footer, BaseHead, Pagination, PlaylistPage, VideoCard, EntityImage, GoogleTagManager, ...
     pages/              One file per route (see "Routes")
     styles/global.css
   functions/
@@ -188,6 +188,10 @@ Every page passes its own `title`, `description` and `image` to `BaseHead`, so a
 Organization logos and presenter photos always go through `EntityImage`. It shows `public/placeholder-organization.svg` or `public/placeholder-presenter.svg` when the URL is null, or when the image fails to load (an inline `onerror` swaps it in; many old Twitter image URLs now 404). Don't use a plain `<img>` for them.
 
 Photos we host ourselves are in `public/images/presenters/<id>.jpg` (400×400), and the presenter's `imageUrl` is `/images/presenters/<id>.jpg`.
+
+### Video cards
+
+Every list of videos (the home page, `/videos`, and the organization, presenter and playlist pages) and the search results show the same card: a 16:9 thumbnail, the title, and the date with the presenters' and organizations' names. `VideoCard.astro` renders it inside `<ul class="video-grid">`. The first video of a list is `featured`: full width with a larger title. An organization or presenter page leaves its own name out of the byline (`without`). The styles are global in `src/styles/global.css`, because `search.astro` builds the same card in the browser; if you change the card, change both.
 
 ### Links in descriptions
 

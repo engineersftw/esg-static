@@ -136,6 +136,75 @@ hr {
 	}
 }
 
+/* Video cards: every list of videos on the site, and the search results, which src/pages/search.astro
+   builds in the browser with the same classes. VideoCard.astro renders one. */
+.video-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2rem;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+.video-card {
+	width: calc(50% - 1rem);
+}
+/* The first video of a list is shown full width, with a larger title. */
+.video-card.featured {
+	width: 100%;
+	margin-bottom: 1rem;
+}
+.video-card a {
+	display: block;
+	text-decoration: none;
+}
+.video-card-image {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+	margin-bottom: 0.5rem;
+	border-radius: 12px;
+	background: rgb(var(--gray-light));
+	transition: box-shadow 0.2s ease;
+}
+.video-card-title {
+	margin: 0;
+	color: rgb(var(--black));
+	line-height: 1.2;
+	transition: color 0.2s ease;
+}
+.video-card.featured .video-card-title {
+	font-size: 2.369rem;
+	line-height: 1.1;
+}
+.video-card-meta {
+	margin: 0.25em 0 0;
+	color: rgb(var(--gray));
+	font-size: 0.9em;
+}
+.video-card a:hover .video-card-title {
+	color: var(--accent);
+}
+.video-card a:hover .video-card-image {
+	box-shadow: var(--box-shadow);
+}
+@media (max-width: 720px) {
+	.video-grid {
+		gap: 1.5em;
+	}
+	.video-card {
+		width: 100%;
+	}
+	.video-card.featured {
+		margin-bottom: 0;
+	}
+	.video-card.featured .video-card-title {
+		font-size: 1.563em;
+	}
+}
+
 /* Keep the hidden attribute working on elements whose styles set a display, such as a flex list. */
 [hidden] {
 	display: none !important;
