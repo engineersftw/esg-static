@@ -1,15 +1,19 @@
 #!/usr/bin/env node
 /**
  * Command line editor for the Astro content collections (apps/website/content): create presenters and
- * organizations, edit their links, and link videos to presenters, organizations and playlists,
- * writing both sides of each link.
+ * organizations, edit their links, link videos to presenters, organizations and playlists (writing
+ * both sides of each link), and add videos submitted through the GitHub issue form.
  */
+import { randomUUID } from "node:crypto";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { PROFILE_LINK_TYPES, readEntries, VIDEO_LINKS, writeEntryFiles, type VideoLinkField } from "@esg/content";
 import { Collection, type Organization, type Presenter, type ProfileLinkType } from "@esg/db-types/content";
+import { YouTubeClient } from "@esg/yt-export/youtube";
 import { Cms, CmsError, titleOf, type Change } from "./cms.js";
+import { addedReport, applySubmission, assertNewVideo, COMMUNITY_PLAYLIST, parseSubmission, rejectedReport, SubmissionError } from "./submission.js";
 
 const HELP = `
 Usage: cms <command> [options]
@@ -53,6 +57,17 @@ Commands:
                         Link each video to each presenter, organization and playlist;
                         every option is repeatable
   unassign …            Same options; removes the links
+
+  submission <issue-body-file>
+                        Add the video a "Submit a video" issue names: fetch it from YouTube
+                        (needs YOUTUBE_API_KEY), link it to its presenters (matched by name,
+                        or created) and to the community playlist, and report what was done
+      --issue <n>       The issue number, for the report ("Closes #n")
+      --report <file>   Write the report (Markdown) here as well as printing it
+      --playlist <ref>  Instead of ${COMMUNITY_PLAYLIST}
+                        A submission that can't be added (bad link, already on the site,
+                        not public) is reported and exits 0 with status "rejected"; in GitHub
+                        Actions, status, title and video are also step outputs
 
   find <video|presenter|organization|playlist> <text>
                         List entries whose ID, slug, title or YouTube ID contains the text
@@ -105,6 +120,9 @@ const { values: args, positionals } = parseArgs({
     playlist: { type: "string", multiple: true, default: [] },
     // check
     fix: { type: "boolean", default: false },
+    // submission
+    issue: { type: "string" },
+    report: { type: "string" },
   },
 });
 
@@ -238,7 +256,46 @@ function check(cms: Cms) {
   else console.log("Run with --fix to complete them.");
 }
 
-function main() {
+/** Set a step output when running in GitHub Actions; a random delimiter keeps any value to one output. */
+function output(name: string, value: string) {
+  const file = process.env.GITHUB_OUTPUT;
+  if (!file) return;
+  const delimiter = `EOF_${randomUUID()}`;
+  appendFileSync(file, `${name}<<${delimiter}\n${value}\n${delimiter}\n`);
+}
+
+async function submission(cms: Cms) {
+  const [, file] = positionals;
+  if (!file) fail("submission needs the file holding the issue body");
+  const issue = args.issue ? Number(args.issue) : undefined;
+  if (issue !== undefined && !Number.isInteger(issue)) fail(`--issue must be a number, not "${args.issue}"`);
+  const playlist = args.playlist.at(-1) ?? COMMUNITY_PLAYLIST;
+  cms.find("playlist", playlist); // fail early on a bad --playlist
+
+  const report = (text: string) => {
+    console.log(text);
+    if (args.report) writeFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), args.report), text);
+  };
+  try {
+    const sub = parseSubmission(readFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), file), "utf8"));
+    assertNewVideo(cms, sub.videoId);
+    const key = process.env.YOUTUBE_API_KEY;
+    if (!key) fail("submission needs YOUTUBE_API_KEY to fetch the video");
+    const [video] = await new YouTubeClient(key).getVideos([sub.videoId]);
+    const result = applySubmission(cms, sub, video, playlist);
+    report(addedReport(result, sub, issue));
+    save(cms);
+    output("status", "added");
+    output("title", result.video.videoTitle.replace(/\s+/g, " "));
+    output("video", result.video.id);
+  } catch (e) {
+    if (!(e instanceof SubmissionError)) throw e;
+    report(rejectedReport(e.message));
+    output("status", "rejected");
+  }
+}
+
+async function main() {
   const [command, sub] = positionals;
   if (args.help || !command) {
     console.log(HELP);
@@ -262,13 +319,15 @@ function main() {
       return find(cms);
     case "check":
       return check(cms);
+    case "submission":
+      return submission(cms);
     default:
       fail(`unknown command "${command}"; see --help`);
   }
 }
 
 try {
-  main();
+  await main();
 } catch (e) {
   if (e instanceof CmsError) fail(e.message);
   throw e;

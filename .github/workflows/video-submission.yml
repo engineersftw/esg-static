@@ -1,0 +1,118 @@
+name: Video submission
+
+# Turns a "Submit a video" issue (.github/ISSUE_TEMPLATE/submit-video.yml) into a pull request that
+# adds the video to the Community Contributed playlist, and reports back on the issue. Editing the
+# issue runs it again, updating the same pull request. See VIDEO_SUBMISSION.md.
+#
+# The issue body is untrusted: it only reaches the shell as a file or an environment variable, never
+# through ${{ }} inside `run:`.
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: video-submission-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  submit:
+    if: github.event.issue.state == 'open' && contains(github.event.issue.labels.*.name, 'video-submission')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Save the issue body
+        env:
+          BODY: ${{ github.event.issue.body }}
+        run: printf '%s' "$BODY" > "$RUNNER_TEMP/issue-body.md"
+
+      - name: Add the video
+        id: submission
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: pnpm cms submission "$RUNNER_TEMP/issue-body.md" --issue "$ISSUE" --report "$RUNNER_TEMP/report.md"
+
+      - name: Create or update the pull request
+        id: pr
+        if: steps.submission.outputs.status == 'added'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: apps/website/content
+          commit-message: |
+            Add community video: ${{ steps.submission.outputs.title }}
+
+            Submitted in #${{ github.event.issue.number }}.
+          title: 'Add community video: ${{ steps.submission.outputs.title }}'
+          body-path: ${{ runner.temp }}/report.md
+          branch: video-submission/issue-${{ github.event.issue.number }}
+          delete-branch: true
+          labels: video-submission
+          committer: 'github-actions[bot] <github-actions[bot]@users.noreply.github.com>'
+          author: 'github-actions[bot] <github-actions[bot]@users.noreply.github.com>'
+
+      - name: Report the pull request on the issue
+        if: steps.pr.outputs.pull-request-operation == 'created' || steps.pr.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          PR_URL: ${{ steps.pr.outputs.pull-request-url }}
+          OPERATION: ${{ steps.pr.outputs.pull-request-operation }}
+        run: |
+          if [ "$OPERATION" = created ]; then
+            MESSAGE="Thanks for the submission! $PR_URL adds the video, and a maintainer will review it."
+          else
+            MESSAGE="$PR_URL has been updated with the edited submission."
+          fi
+          gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body "$MESSAGE"
+
+      - name: Report a rejected submission on the issue
+        if: steps.submission.outputs.status == 'rejected'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/report.md"
+
+      - name: Report a failure on the issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" \
+            --body "Thanks for the submission! Something went wrong while adding it, so a maintainer will take a look ($RUN_URL)."
+
+      - name: Send Telegram notification
+        if: steps.pr.outputs.pull-request-operation == 'created'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PR_URL: ${{ steps.pr.outputs.pull-request-url }}
+          PR_NUMBER: ${{ steps.pr.outputs.pull-request-number }}
+        run: |
+          [ -n "$TELEGRAM_BOT_TOKEN" ] || exit 0
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=🎬 New community video submission: PR #${PR_NUMBER} ${PR_URL}" \
+            -d "disable_web_page_preview=true" > /dev/null

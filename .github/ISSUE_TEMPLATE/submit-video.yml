@@ -1,0 +1,46 @@
+# Community video submissions. .github/workflows/video-submission.yml turns an issue made from this
+# form into a pull request that adds the video (pnpm cms submission). The field labels are what
+# packages/cms/src/submission.ts reads (FORM_FIELDS), so change both together.
+name: Submit a video
+description: Suggest a tech talk on YouTube for the Engineers.SG Community Contributed playlist
+title: "Video submission: "
+labels: ["video-submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a talk! Once you submit this form, a pull request adding the video is created automatically, and a maintainer reviews it. The title, description and thumbnail come from YouTube.
+  - type: input
+    id: url
+    attributes:
+      label: YouTube URL
+      description: The video must be public on YouTube.
+      placeholder: https://www.youtube.com/watch?v=…
+    validations:
+      required: true
+  - type: textarea
+    id: presenters
+    attributes:
+      label: Presenters
+      description: |
+        One presenter per line. After the name you can add their links, each after a `|`: an X handle (`@name`), or a link to X, LinkedIn, Instagram, TikTok or a personal website. Someone who already has a page on Engineers.SG is matched by name.
+      placeholder: |
+        Jane Doe | @janedoe | https://www.linkedin.com/in/janedoe
+        John Tan
+    validations:
+      required: false
+  - type: input
+    id: event
+    attributes:
+      label: Event or group
+      description: The meetup, conference or organization where the talk was given, if any.
+      placeholder: e.g. PyCon SG 2025, Singapore JS meetup
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Anything the reviewers should know.
+    validations:
+      required: false

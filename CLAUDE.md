@@ -16,8 +16,8 @@ ESLint is configured once for the whole repo in the root `eslint.config.js` (fla
 - `output/backup/`: a JSON export of the production database made with that tool on 2026-10-03 (Postgres 17.9).
 - `packages/db-types/` (`@esg/db-types`): row types for every table in `output/backup/schema.json`, in `src/db.ts`, and the frontmatter types of the Astro content collections in `src/content.ts` (`@esg/db-types/content`: `Video`, `Organization`, `Presenter`, `Playlist`). Each row type matches a row in the JSON dump, so timestamps are UTC text, not `Date`. It ships TypeScript source with no build step (`exports` points at the `.ts` files), so consumers must run through tsx/Vitest or type-check with `tsc`.
 - `packages/yt-export/` (`@esg/yt-export`): a CLI that builds `episodes`/`playlists`/`playlist_items` rows (typed by `@esg/db-types`) from the YouTube Data API.
-- `packages/content/` (`@esg/content`): shared code for the content `.md` files: reading and writing them (`files.ts`, byte-identical to pg-export's format), `slugify`/`slugAllocator` (`slug.ts`), the two-sided link helpers (`links.ts`), and `normalizeProfileLink`/`profileLinks` (`profileLinks.ts`), which turn a handle or URL into a stored profile link. TypeScript source with no build step, like `@esg/db-types`.
-- `packages/cms/` (`@esg/cms`): a CLI that edits the content: create presenters and organizations, edit their links, and assign videos to presenters, organizations and playlists.
+- `packages/content/` (`@esg/content`): shared code for the content `.md` files: reading and writing them (`files.ts`, byte-identical to pg-export's format), `slugify`/`slugAllocator` (`slug.ts`), the two-sided link helpers (`links.ts`), and `normalizeProfileLink`/`profileLinks`/`detectProfileLink` (`profileLinks.ts`), which turn a handle or URL into a stored profile link (`detectProfileLink` works out the type from the value alone). TypeScript source with no build step, like `@esg/db-types`.
+- `packages/cms/` (`@esg/cms`): a CLI that edits the content: create presenters and organizations, edit their links, assign videos to presenters, organizations and playlists, and add videos submitted through the GitHub issue form.
 
 From the repo root:
 
@@ -31,7 +31,7 @@ pnpm --filter @esg/yt-export <script>   # run one package's script from the root
 pnpm cms --help    # the content editor (see "cms" below)
 ```
 
-`.github/workflows/ci.yml` runs `pnpm lint`, `pnpm typecheck` and `pnpm test` as three checks (`lint`, `typecheck`, `test`) on every pull request and push to `main`, after a `--frozen-lockfile` install, so a stale `pnpm-lock.yaml` fails too. `.github/workflows/sync-youtube.yml` is the daily yt-export sync (see `SYNC_YOUTUBE.md` next to it).
+`.github/workflows/ci.yml` runs `pnpm lint`, `pnpm typecheck` and `pnpm test` as three checks (`lint`, `typecheck`, `test`) on every pull request and push to `main`, after a `--frozen-lockfile` install, so a stale `pnpm-lock.yaml` fails too. `.github/workflows/sync-youtube.yml` is the daily yt-export sync (see `SYNC_YOUTUBE.md` next to it). `.github/workflows/video-submission.yml` turns a "Submit a video" issue into a pull request with `pnpm cms submission` (see `VIDEO_SUBMISSION.md` and "cms" below).
 
 ## apps/website
 
@@ -132,6 +132,7 @@ pnpm cms organization create --name "Tech Circle" --website techcircle.sg --cont
 pnpm cms links presenter jane-doe                            # show a presenter's or organization's links
 pnpm cms links organization 42 --instagram @golangsg --remove x
 pnpm cms check [--fix]                       # one-sided links in any relation
+YOUTUBE_API_KEY=... pnpm cms submission body.md --issue 12 --report report.md --dry-run
 ```
 
 - `src/cms.ts` is pure (the `Cms` class works on an in-memory copy, and `changes()` returns the files to write), and `src/cms.test.ts` covers it. `src/cli.ts` does the argument parsing and I/O. `--content` defaults to `apps/website/content`; relative paths resolve against where `pnpm` was run (`INIT_CWD`).
@@ -141,6 +142,8 @@ pnpm cms check [--fix]                       # one-sided links in any relation
 - `organization create` works like `presenter create`, with `--logo`, `--contact` (the contact person, shown on its page) and `--description` (the body), and the same link flags, `--slug`, `--inactive`, `--allow-duplicate` and `--video`. Both share `Cms.prepareNew` for the name check, next ID, slug and links.
 - `presenter create` takes one flag per link type: `--x` (or `--twitter`), `--website` (a personal site), `--linkedin`, `--instagram` and `--tiktok`. Each goes through `normalizeProfileLink` in `@esg/content` (a handle with or without `@`, or a profile URL, becomes the stored URL), and a value that isn't a link of its type fails the command. It takes the next free ID and a unique slug from the name (or `--slug`), and refuses a name another presenter already has unless `--allow-duplicate`.
 - Only changed files are written, in the same format as pg-export, so they diff cleanly.
+- `submission <issue-body-file>` adds a community-submitted video. `src/submission.ts` is pure and tested (`submission.test.ts`): `parseSubmission` reads the issue form (GitHub renders each field as `### <label>`; the labels are `FORM_FIELDS` and must match `.github/ISSUE_TEMPLATE/submit-video.yml`), `applySubmission` creates the video with `Cms.createVideo` (the same fields yt-export's sync writes for a new video), links presenters found by `Cms.presentersNamed` (`nameKey`: case, spacing and accents ignored; active first, then most videos, the others listed for the reviewer) and creates the rest with `detectProfileLink` links, and adds it to the `community-contributed` playlist (`playlist/130.md`, no `playlistId`, so the YouTube sync leaves it alone). `addedReport`/`rejectedReport` write the PR description or issue comment, escaping all issue and YouTube text (`escapeMarkdown`). A `SubmissionError` is a rejection the submitter can fix: the CLI reports it and exits 0 with step output `status=rejected`; success sets `status=added`, `title` and `video`. A video already in the content is rejected before calling YouTube. The YouTube client comes from `@esg/yt-export/youtube` (the package's only export).
+- The workflow passes the untrusted issue body to the shell only as a file or env variable, never through `${{ }}` in `run:`; keep it that way. PRs it opens with `GITHUB_TOKEN` don't trigger `ci.yml`.
 
 ## pg-export
 

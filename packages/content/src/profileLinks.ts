@@ -66,6 +66,27 @@ export function normalizeProfileLink(type: ProfileLinkType, value: string | null
   return rule.pattern.test(handle) ? rule.url(handle) : null;
 }
 
+/**
+ * A link of any type, worked out from the value alone: a URL is an X, Instagram, TikTok or LinkedIn
+ * link if it is on that network's host and a website otherwise, and an "@handle" is an X handle.
+ * Null if it is neither.
+ */
+export function detectProfileLink(value: string | null | undefined): ProfileLink | null {
+  const raw = value?.trim();
+  if (!raw) return null;
+  if (raw.startsWith("@")) {
+    const url = normalizeProfileLink("x", raw);
+    return url ? { type: "x", url } : null;
+  }
+  const parsed = parseUrl(raw);
+  if (!parsed) return null;
+  const type: ProfileLinkType =
+    (Object.keys(HANDLES) as (keyof typeof HANDLES)[]).find((t) => hostIs(parsed.url, HANDLES[t].hosts)) ??
+    (hostIs(parsed.url, ["linkedin.com"]) ? "linkedin" : "website");
+  const url = normalizeProfileLink(type, raw);
+  return url ? { type, url } : null;
+}
+
 /** Links of the given types, normalized, in `PROFILE_LINK_TYPES` order; blank values are skipped. */
 export function profileLinks(values: Partial<Record<ProfileLinkType, string | null | undefined>>): ProfileLink[] {
   const links: ProfileLink[] = [];

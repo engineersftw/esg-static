@@ -1,8 +1,8 @@
 /**
- * Editing operations on the Astro content collections, done on an in-memory copy: create presenters,
- * and link videos to presenters, organizations and playlists. Every link is written on both sides
- * (the video's `presenters` / `organizations` / `playlists` and the other entry's `videos`), in the
- * order pg-export uses (see @esg/content's links.ts).
+ * Editing operations on the Astro content collections, done on an in-memory copy: add YouTube videos,
+ * create presenters and organizations, and link videos to presenters, organizations and playlists.
+ * Every link is written on both sides (the video's `presenters` / `organizations` / `playlists` and
+ * the other entry's `videos`), in the order pg-export uses (see @esg/content's links.ts).
  *
  * No I/O here: `changes()` returns the files to write, so it can be unit tested and dry-run.
  */
@@ -85,6 +85,18 @@ export interface LinkEdits {
   remove?: ProfileLinkType[];
 }
 
+/** A YouTube video to add, as the YouTube Data API describes it. */
+export interface NewVideo {
+  videoId: string;
+  title: string;
+  /** ISO 8601 UTC, as YouTube gives it. */
+  publishedAt: string;
+  thumbnails: { default?: string | null; medium?: string | null; high?: string | null };
+  /** The description, the Markdown body. */
+  description?: string | null;
+  active?: boolean;
+}
+
 export class CmsError extends Error {}
 
 /** The display title of an entry of any collection. */
@@ -100,7 +112,11 @@ const blank = (s: string | null | undefined) => {
   return t ? t : null;
 };
 
-const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, " ").toLowerCase() === b.trim().replace(/\s+/g, " ").toLowerCase();
+/** A name as compared: trimmed, single-spaced, lowercase and without accents, so "José  Tan" is "jose tan". */
+export const nameKey = (name: string) =>
+  name.normalize("NFKD").replace(/\p{M}/gu, "").trim().replace(/\s+/g, " ").toLowerCase();
+
+const sameName = (a: string, b: string) => nameKey(a) === nameKey(b);
 
 /** The ID, slug or external ID in an argument that may be a URL: `/video/<slug>`, `…/watch?v=<id>`, `youtu.be/<id>`. */
 export function refKey(ref: string): string {
@@ -162,6 +178,50 @@ export class Cms {
       });
   }
 
+  /** Presenters with this name (see `nameKey`), active ones first, then by most videos. */
+  presentersNamed(name: string): Presenter[] {
+    const key = nameKey(name);
+    return [...this.items.presenter.values()]
+      .map((i) => i.data as Presenter)
+      .filter((p) => nameKey(p.presenterName) === key)
+      .sort((a, b) => Number(b.active) - Number(a.active) || b.videos.length - a.videos.length || Number(a.id) - Number(b.id));
+  }
+
+  /** The next free ID of a collection: one more than the highest. */
+  private nextId(collection: Collection): string {
+    return String([...this.items[collection].keys()].reduce((m, k) => Math.max(m, Number(k) || 0), 0) + 1);
+  }
+
+  /**
+   * Add a YouTube video, with the next free ID and a unique slug from its title, and no links yet.
+   * The fields are the ones yt-export's sync writes for a new video, so the daily sync refreshes it
+   * like any other. Throws if a video with the same YouTube ID exists.
+   */
+  createVideo(input: NewVideo): Video {
+    const existing = [...this.items.video.values()].find((i) => (i.data as Video).videoSite === "youtube" && (i.data as Video).videoId === input.videoId);
+    if (existing) throw new CmsError(`video ${existing.data.id} (${existing.data.slug}) is already YouTube video ${input.videoId}`);
+    const id = this.nextId("video");
+    const slug = slugAllocator([...this.items.video.values()].map((i) => i.data.slug))(input.title, `video-${id}`);
+    // Field order as yt-export's sync writes it.
+    const data: Video = {
+      id,
+      videoId: input.videoId,
+      videoTitle: input.title,
+      publishedAt: input.publishedAt,
+      thumbnailDefault: blank(input.thumbnails.default),
+      thumbnailMedium: blank(input.thumbnails.medium),
+      thumbnailHigh: blank(input.thumbnails.high),
+      slug,
+      organizations: [],
+      presenters: [],
+      playlists: [],
+      active: input.active ?? true,
+      videoSite: "youtube",
+    };
+    this.items.video.set(id, { data, body: toBody(input.description ?? null) });
+    return data;
+  }
+
   /**
    * What a new presenter or organization needs before its fields are written: its name, the next free
    * ID, a unique slug (or the one asked for) and its links. Throws if anything is missing or taken.
@@ -178,7 +238,7 @@ export class Cms {
       throw new CmsError(`${collection} ${twin.data.id} (${twin.data.slug}) is already called "${name}"; pass --allow-duplicate to create another`);
     }
 
-    const id = String([...items.keys()].reduce((m, k) => Math.max(m, Number(k) || 0), 0) + 1);
+    const id = this.nextId(collection);
     const slugs = [...items.values()].map((i) => i.data.slug);
     let slug: string;
     if (input.slug) {

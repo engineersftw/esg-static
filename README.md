@@ -9,7 +9,7 @@ This repo holds the new site and the tools that moved the old site's data into i
 | `@esg/static-website` | [`apps/website`](apps/website) | The Astro site, built from Markdown content files |
 | `@esg/pg-export` | [`packages/pg-export`](packages/pg-export) | Dumps a Postgres database to JSON, CSV or NDJSON, or writes the Engineers.SG data as the site's Markdown content |
 | `@esg/yt-export` | [`packages/yt-export`](packages/yt-export) | Pulls videos and playlists from the YouTube Data API and syncs them into the site's content |
-| `@esg/cms` | [`packages/cms`](packages/cms) | Command-line editor for the content: create presenters and organizations, edit their links, link videos to presenters, organizations and playlists |
+| `@esg/cms` | [`packages/cms`](packages/cms) | Command-line editor for the content: create presenters and organizations, edit their links, link videos to presenters, organizations and playlists, add community-submitted videos |
 | `@esg/content` | [`packages/content`](packages/content) | Shared code for reading, writing, slugging and linking the content files |
 | `@esg/db-types` | [`packages/db-types`](packages/db-types) | Shared TypeScript types: the old database's rows, and the frontmatter of the content files |
 
@@ -28,7 +28,7 @@ output/backup/*.json  ── pg-export -f markdown ─┐ │ yt-export --conten
                                     apps/website/dist/  ──  wrangler  ──▶  Cloudflare Pages
 ```
 
-The old database was exported once to `output/backup/`. `pg-export` turned that into the site's Markdown content, which is committed in `apps/website/content/`. From here on, `yt-export` keeps the content up to date with the YouTube channel (daily, through a GitHub Action), `cms` is used to curate it (presenters, organizations, playlists), and the site is built from the content alone. Nothing talks to a database at build or run time.
+The old database was exported once to `output/backup/`. `pg-export` turned that into the site's Markdown content, which is committed in `apps/website/content/`. From here on, `yt-export` keeps the content up to date with the YouTube channel (daily, through a GitHub Action), `cms` is used to curate it (presenters, organizations, playlists) and adds the videos people submit through a GitHub issue form, and the site is built from the content alone. Nothing talks to a database at build or run time.
 
 ## Getting started
 
@@ -108,12 +108,15 @@ pnpm cms organization create --name "Tech Circle" --website techcircle.sg --cont
 pnpm cms links presenter jane-doe            # show a presenter's or organization's links
 pnpm cms links organization 42 --instagram @golangsg --remove x --dry-run
 pnpm cms check [--fix]                       # find (and complete) links stored on one side only
+YOUTUBE_API_KEY=... pnpm cms submission issue-body.md --dry-run   # add a "Submit a video" issue's video
 pnpm cms --help                              # all options
 ```
 
 A `<ref>` can be an entry ID, a slug, a site URL or path (`/video/<slug>`), and for videos a YouTube video ID or URL, for playlists a YouTube playlist ID. An ambiguous or unknown ref fails the whole command before anything is written. `--dry-run` shows what would change, and `--content <dir>` points it at another content directory (default `apps/website/content`).
 
 Presenters and organizations have a `links` list of `{ "type", "url" }` entries, shown in that order with an icon each. The types are `x`, `website`, `linkedin`, `instagram` and `tiktok`, and `presenter create` and `links` have a flag for each (`--x` or `--twitter`, `--website`, `--linkedin`, `--instagram`, `--tiktok`) that takes a handle or URL. `links` replaces a type's link where it is or adds it at the end, and `--remove <type>` deletes one.
+
+`submission` is what the video submission workflow runs (see [Automation](#automation)). It reads the body of an issue made from the **Submit a video** form, fetches the video from YouTube, creates its entry (with the fields the YouTube sync writes, so the sync keeps it up to date), links each listed presenter to an existing presenter with the same name (ignoring case, spacing and accents) or creates one with the links given, adds the video to the `community-contributed` playlist, and prints a Markdown report for the pull request. A submission it can't add (not a YouTube link, already on the site, not public) gets a report saying why instead.
 
 ## packages/content
 
@@ -161,6 +164,7 @@ GitHub Actions in `.github/workflows/`:
 
 - **CI** (`ci.yml`): runs `pnpm lint`, `pnpm typecheck` and `pnpm test` as three separate checks on every pull request and push to `main`, after a `pnpm install --frozen-lockfile`. Commit `pnpm-lock.yaml` with any dependency change, or the install fails.
 - **Sync YouTube** (`sync-youtube.yml`): runs yt-export against the channel daily at 02:00 UTC (10:00 Singapore time), or on demand from the Actions tab. If the content changed, it opens or updates a pull request from the `youtube-sync` branch, and can post a Telegram notification. It needs the `YOUTUBE_API_KEY` secret (and optionally `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`). Setup is in [SYNC_YOUTUBE.md](.github/workflows/SYNC_YOUTUBE.md).
+- **Video submission** (`video-submission.yml`): runs when someone opens or edits an issue made from the **Submit a video** form (`.github/ISSUE_TEMPLATE/submit-video.yml`, labelled `video-submission`). It runs `pnpm cms submission` on the issue, opens or updates a pull request from `video-submission/issue-<n>` that adds the video to the Community Contributed playlist and closes the issue, and comments on the issue with the result. It uses the same secrets as the sync. Setup and caveats are in [VIDEO_SUBMISSION.md](.github/workflows/VIDEO_SUBMISSION.md).
 
 ## Repo layout
 
@@ -172,7 +176,7 @@ packages/db-types/     shared types
 packages/pg-export/    Postgres export / Markdown generator
 packages/yt-export/    YouTube sync
 output/                generated data, git-ignored (backup/, yt-export runs, scratch exports)
-.github/workflows/     CI and the daily YouTube sync
+.github/workflows/     CI, the daily YouTube sync and video submissions
 eslint.config.js       ESLint config for the whole repo
 tsconfig.base.json     compiler options every package extends
 CLAUDE.md              detailed notes for AI coding agents (also handy for humans)

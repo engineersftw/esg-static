@@ -47,6 +47,7 @@ export interface YtVideo {
     description: string;
     publishedAt: string;
     channelId: string;
+    channelTitle?: string;
     thumbnails: YtThumbnails;
   };
   /** Absent fields are hidden by the owner (e.g. viewCount is always present, likeCount may not be). */
