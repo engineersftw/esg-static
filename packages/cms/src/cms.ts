@@ -150,6 +150,32 @@ export function refKey(ref: string): string {
   return parts.length > 1 ? parts[1] : (parts[0] ?? s);
 }
 
+/** Most videos one range like "4600-4700" may name. */
+const MAX_RANGE = 1000;
+
+/**
+ * Video refs from command-line values: each value may list refs separated by commas, and an
+ * "a-b" pair of entry IDs is every ID from a to b. Other refs (slugs, YouTube IDs, URLs) are kept as
+ * written, and repeats are dropped.
+ */
+export function expandVideoRefs(values: string[]): string[] {
+  const refs: string[] = [];
+  for (const part of values.flatMap((v) => v.split(","))) {
+    const ref = part.trim();
+    if (!ref) continue;
+    const range = /^(\d{1,7})-(\d{1,7})$/.exec(ref);
+    if (!range) {
+      refs.push(ref);
+      continue;
+    }
+    const [from, to] = [Number(range[1]), Number(range[2])];
+    if (from > to) throw new CmsError(`range "${ref}" runs backwards`);
+    if (to - from >= MAX_RANGE) throw new CmsError(`range "${ref}" names more than ${MAX_RANGE} videos`);
+    for (let id = from; id <= to; id++) refs.push(String(id));
+  }
+  return [...new Set(refs)];
+}
+
 export class Cms {
   private readonly items: Record<Collection, Map<string, Item>>;
   /** Notes for the user, e.g. linking to an entry the site doesn't show. */
@@ -198,6 +224,11 @@ export class Cms {
         const fields = [d.id, d.slug, titleOf(d), "videoId" in d ? d.videoId : null, "playlistId" in d ? d.playlistId : null];
         return fields.some((f) => f?.toLowerCase().includes(q));
       });
+  }
+
+  /** The IDs of the videos a playlist lists, in its order. */
+  playlistVideos(ref: string): string[] {
+    return [...(this.find("playlist", ref) as Playlist).videos];
   }
 
   /** Presenters with this name (see `nameKey`), active ones first, then by most videos. */

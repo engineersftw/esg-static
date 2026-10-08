@@ -129,6 +129,7 @@ pnpm cms find presenter yeo                  # look up IDs: find <video|presente
 pnpm cms presenter create --name "Jane Doe" --x @jane --instagram jane.doe --video 4517 --dry-run
 pnpm cms assign --video 4517 --presenter jane-doe --organization 111 --playlist pyconsg-2019
 pnpm cms unassign --video 4517 --playlist 1
+pnpm cms assign --video 4609-4618 --from-playlist pyconsg-2019 --organization 42   # ranges, lists, a whole playlist
 pnpm cms organization create --name "Tech Circle" --website techcircle.sg --contact "Jane Doe" --video 4588 --dry-run
 pnpm cms playlist create --title "PyCon SG 2026" --category Conference --date 2026-06-01 --video 4588 --dry-run
 pnpm cms links presenter jane-doe                            # show a presenter's or organization's links
@@ -139,6 +140,7 @@ YOUTUBE_API_KEY=... pnpm cms submission body.md --issue 12 --report report.md --
 
 - `src/cms.ts` is pure (the `Cms` class works on an in-memory copy, and `changes()` returns the files to write), and `src/cms.test.ts` covers it. `src/cli.ts` does the argument parsing and I/O. `--content` defaults to `apps/website/content`; relative paths resolve against where `pnpm` was run (`INIT_CWD`).
 - A `<ref>` is an entry ID, slug, site URL or path, a YouTube video ID or URL (videos) or a YouTube playlist ID (playlists). An ambiguous or unknown ref fails the whole command before anything is written.
+- `assign` and `unassign` take many videos: `--video` may be repeated, comma-separated, or an ID range (`--video 4609-4618,4620`), and `--from-playlist <ref>` (repeatable) adds every video of a playlist. The `create` commands' `--video` accepts the same forms (`expandVideoRefs`). A bad ref fails the whole command before anything is written.
 - Every link is written on both sides: the video's `presenters`/`organizations`/`playlists` get the ID appended, a playlist's `videos` gets the video appended, and an organization's or presenter's `videos` gets it inserted newest first by `publishedAt`. Linking to an inactive entry warns, since the site won't show it.
 - `links <presenter|organization> <ref>` shows the entry's links, or edits them with the same link flags plus `--remove <type>` (repeatable): a flag replaces the link of its type in place (dropping any other link of that type) or appends one, so the curated order survives. `Cms.editLinks` checks every value before changing anything.
 - `organization create` works like `presenter create`, with `--logo`, `--contact` (the contact person, shown on its page) and `--description` (the body), and the same link flags, `--slug`, `--inactive`, `--allow-duplicate` and `--video`. Both share `Cms.prepareNew` for the name check, next ID, slug and links.

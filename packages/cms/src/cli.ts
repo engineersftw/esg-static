@@ -12,7 +12,7 @@ import { parseArgs } from "node:util";
 import { PROFILE_LINK_TYPES, readEntries, VIDEO_LINKS, writeEntryFiles, type VideoLinkField } from "@esg/content";
 import { Collection, type Organization, type Presenter, type ProfileLinkType } from "@esg/db-types/content";
 import { YouTubeClient } from "@esg/yt-export/youtube";
-import { Cms, CmsError, PLAYLIST_CATEGORIES, titleOf, type Change } from "./cms.js";
+import { Cms, CmsError, expandVideoRefs, PLAYLIST_CATEGORIES, titleOf, type Change } from "./cms.js";
 import { addedReport, applySubmission, assertNewVideo, COMMUNITY_PLAYLIST, parseSubmission, rejectedReport, SubmissionError } from "./submission.js";
 
 const HELP = `
@@ -30,7 +30,8 @@ Commands:
       --slug <slug>     Instead of one made from the name
       --inactive        Create it hidden from the site
       --allow-duplicate Create it even if a presenter has the same name
-      --video <ref>     Also assign it to this video; repeatable
+      --video <refs>    Also assign it to these videos (repeated, comma-separated or
+                        an ID range, as for assign)
 
   organization create --name <name> [options]
                         Create an organization (ID and slug are assigned)
@@ -68,9 +69,14 @@ Commands:
       --tiktok <h>      TikTok handle or profile URL
       --remove <type>   Remove the link of this type (${PROFILE_LINK_TYPES.join(", ")}); repeatable
 
-  assign --video <ref> [--presenter <ref>] [--organization <ref>] [--playlist <ref>]
+  assign --video <refs> [--presenter <ref>] [--organization <ref>] [--playlist <ref>]
                         Link each video to each presenter, organization and playlist;
                         every option is repeatable
+      --video <refs>    Video refs, repeated or comma-separated; an ID range like
+                        4609-4618 means every ID in it
+      --from-playlist <ref>
+                        Every video of this playlist; repeatable, and can be combined
+                        with --video
   unassign …            Same options; removes the links
 
   submission <issue-body-file>
@@ -133,6 +139,7 @@ const { values: args, positionals } = parseArgs({
     presenter: { type: "string", multiple: true, default: [] },
     organization: { type: "string", multiple: true, default: [] },
     playlist: { type: "string", multiple: true, default: [] },
+    "from-playlist": { type: "string", multiple: true, default: [] },
     // playlist create
     title: { type: "string" },
     category: { type: "string" },
@@ -187,7 +194,7 @@ function presenterCreate(cms: Cms) {
     active: !args.inactive,
     allowDuplicate: args["allow-duplicate"],
   });
-  for (const v of args.video) cms.link(v, "presenters", p.id);
+  for (const v of expandVideoRefs(args.video)) cms.link(v, "presenters", p.id);
   console.log(`Presenter ${p.id}: ${p.presenterName} → /presenter/${p.slug}`);
   save(cms);
 }
@@ -204,7 +211,7 @@ function organizationCreate(cms: Cms) {
     active: !args.inactive,
     allowDuplicate: args["allow-duplicate"],
   });
-  for (const v of args.video) cms.link(v, "organizations", o.id);
+  for (const v of expandVideoRefs(args.video)) cms.link(v, "organizations", o.id);
   console.log(`Organization ${o.id}: ${o.orgTitle} → /organization/${o.slug}`);
   save(cms);
 }
@@ -224,7 +231,7 @@ function playlistCreate(cms: Cms) {
     active: !args.inactive,
     allowDuplicate: args["allow-duplicate"],
   });
-  for (const v of args.video) cms.link(v, "playlists", p.id);
+  for (const v of expandVideoRefs(args.video)) cms.link(v, "playlists", p.id);
   console.log(`Playlist ${p.id}: ${p.playlistTitle} → /${p.category?.startsWith("Conference") ? "conference" : "playlist"}/${p.slug}`);
   save(cms);
 }
@@ -259,9 +266,10 @@ const LINK_OPTIONS: [VideoLinkField, string[]][] = [
 
 function assign(cms: Cms, remove: boolean) {
   const verb = remove ? "unassign" : "assign";
-  if (!args.video.length) fail(`${verb} needs at least one --video`);
+  const videos = [...new Set([...expandVideoRefs(args.video), ...args["from-playlist"].flatMap((p) => cms.playlistVideos(p))])];
+  if (!videos.length) fail(`${verb} needs at least one --video or --from-playlist`);
   if (!LINK_OPTIONS.some(([, refs]) => refs.length)) fail(`${verb} needs a --presenter, --organization or --playlist`);
-  for (const videoRef of args.video) {
+  for (const videoRef of videos) {
     for (const [field, refs] of LINK_OPTIONS) {
       for (const ref of refs) {
         const changed = remove ? cms.unlink(videoRef, field, ref) : cms.link(videoRef, field, ref);

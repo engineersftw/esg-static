@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Cms, CmsError, refKey } from "./cms.js";
+import { Cms, CmsError, expandVideoRefs, refKey } from "./cms.js";
 import { content, data, organization, presenter, video } from "./testContent.js";
 
 describe("refKey", () => {
@@ -11,6 +11,29 @@ describe("refKey", () => {
     expect(refKey("https://www.youtube.com/watch?v=JUqZxUlixSw&t=10")).toBe("JUqZxUlixSw");
     expect(refKey("https://youtu.be/JUqZxUlixSw")).toBe("JUqZxUlixSw");
     expect(refKey("https://www.youtube.com/playlist?list=PLMrPH")).toBe("PLMrPH");
+  });
+});
+
+describe("expandVideoRefs", () => {
+  it("splits commas, expands ID ranges, keeps other refs and drops repeats", () => {
+    expect(expandVideoRefs(["1,2", " 3 "])).toEqual(["1", "2", "3"]);
+    expect(expandVideoRefs(["4609-4612", "4610", "video-3", "/video/some-talk", "dQw4w9WgXcQ"])).toEqual([
+      "4609", "4610", "4611", "4612", "video-3", "/video/some-talk", "dQw4w9WgXcQ",
+    ]);
+    expect(expandVideoRefs(["", ","])).toEqual([]);
+  });
+
+  it("rejects a backwards or huge range", () => {
+    expect(() => expandVideoRefs(["10-5"])).toThrow(/backwards/);
+    expect(() => expandVideoRefs(["1-5000"])).toThrow(/more than 1000/);
+  });
+});
+
+describe("playlistVideos", () => {
+  it("lists a playlist's videos in order", () => {
+    const cms = new Cms(content());
+    expect(cms.playlistVideos("PL4")).toEqual(["1", "3"]);
+    expect(() => cms.playlistVideos("nope")).toThrow(CmsError);
   });
 });
 
