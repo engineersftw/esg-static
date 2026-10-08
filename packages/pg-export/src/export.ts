@@ -16,11 +16,16 @@ import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from "node:
 import { once } from "node:events";
 import { dirname, join, resolve } from "node:path";
 import { pipeline } from "node:stream/promises";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { config as loadEnv } from "dotenv";
 import pg from "pg";
 import Cursor from "pg-cursor";
 import { to as copyTo } from "pg-copy-streams";
 import { MARKDOWN_TABLES, toMarkdownFiles, type MarkdownSource } from "./markdown.js";
+
+// The repo's .env (DATABASE_URL, ...), from src/ or dist/ alike; variables already set win.
+loadEnv({ path: fileURLToPath(new URL("../../../.env", import.meta.url)), quiet: true });
 
 type Format = "csv" | "json" | "ndjson" | "markdown";
 
