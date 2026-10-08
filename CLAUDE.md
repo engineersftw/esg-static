@@ -101,6 +101,7 @@ YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/webs
 pnpm export --from-raw out/raw.json --content ../../apps/website/content   # no API calls
 ```
 
+- The CLI loads the repo's root `.env` with dotenv (`YOUTUBE_API_KEY`), whichever directory it runs from; a variable already set in the shell wins. `.env` is git-ignored.
 - `src/youtube.ts` is a thin `fetch` client that authenticates with an API key, so it only sees public and unlisted content. Each list call costs 1 quota unit.
 - `src/export.ts` runs the fetch: channel → its playlists plus any `--playlist` extras → each playlist's items → the uploads playlist (to catch videos that are in no playlist) → `videos.list` in batches of 50. It saves everything to `raw.json`.
 - `src/transform.ts` is pure and holds every mapping rule; the unit tests cover it. It produces a standalone export, not a merge with `output/backup/`:
@@ -160,6 +161,8 @@ pnpm export --from-json ../../output/backup -o ../../output/content   # Markdown
 pnpm test                         # vitest run (markdown.ts only)
 pnpm typecheck                    # includes the tests (tsconfig.test.json); the build excludes them
 ```
+
+`export.ts` loads the repo's root `.env` with dotenv (`DATABASE_URL`), from `src/` or `dist/` alike; a variable already set in the shell wins.
 
 The CLI and the table export live in `src/export.ts`, which is ESM with NodeNext resolution. `dist/` is committed, so run `pnpm build` after changing `src/`. Design points to keep:
 - Everything (introspection and the data reads) runs in **one** `REPEATABLE READ READ ONLY` transaction on a single connection, so queries run one after another and all see the same snapshot. Keep new queries inside that transaction.

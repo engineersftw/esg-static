@@ -14,11 +14,16 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { config as loadEnv } from "dotenv";
 import { readEntries, writeEntryFiles } from "@esg/content";
 import { planSync, type CollectionSummary, type ExistingContent } from "./sync.js";
 import { transform, type RawExport } from "./transform.js";
 import { YouTubeClient, type YtPlaylistItem } from "./youtube.js";
+
+// The repo's .env (YOUTUBE_API_KEY, ...), wherever the command runs; variables already set win.
+loadEnv({ path: fileURLToPath(new URL("../../../.env", import.meta.url)), quiet: true });
 
 const HELP = `
 Usage: yt-export --channel <handle|id> [options]
