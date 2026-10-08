@@ -4,6 +4,9 @@
   "private": true,
   "description": "Export a YouTube channel's playlists and videos as episodes/playlists/playlist_items rows matching types/db.ts",
   "type": "module",
+  "exports": {
+    "./youtube": "./src/youtube.ts"
+  },
   "scripts": {
     "export": "tsx src/export.ts",
     "test": "vitest run",

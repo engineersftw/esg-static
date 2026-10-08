@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeProfileLink, profileLinks } from "./profileLinks.js";
+import { detectProfileLink, normalizeProfileLink, profileLinks } from "./profileLinks.js";
 
 describe("normalizeProfileLink", () => {
   it("turns an X handle or profile URL into an x.com URL", () => {
@@ -42,6 +42,27 @@ describe("normalizeProfileLink", () => {
   it("returns null for blanks", () => {
     expect(normalizeProfileLink("website", null)).toBeNull();
     expect(normalizeProfileLink("x", "  ")).toBeNull();
+  });
+});
+
+describe("detectProfileLink", () => {
+  it("works out the type from the URL's host", () => {
+    expect(detectProfileLink("https://twitter.com/jtan")).toEqual({ type: "x", url: "https://x.com/jtan" });
+    expect(detectProfileLink("instagram.com/jane.doe")).toEqual({ type: "instagram", url: "https://www.instagram.com/jane.doe/" });
+    expect(detectProfileLink("https://www.tiktok.com/@jane.doe")).toEqual({ type: "tiktok", url: "https://www.tiktok.com/@jane.doe" });
+    expect(detectProfileLink("https://sg.linkedin.com/in/someone")).toEqual({ type: "linkedin", url: "https://sg.linkedin.com/in/someone" });
+    expect(detectProfileLink("jtan.dev")).toEqual({ type: "website", url: "https://jtan.dev" });
+  });
+
+  it("takes an @handle as an X handle", () => {
+    expect(detectProfileLink(" @jtan ")).toEqual({ type: "x", url: "https://x.com/jtan" });
+  });
+
+  it("returns null for what isn't a link", () => {
+    expect(detectProfileLink("Jane Doe")).toBeNull();
+    expect(detectProfileLink("@not a handle")).toBeNull();
+    expect(detectProfileLink("https://x.com/")).toBeNull();
+    expect(detectProfileLink("")).toBeNull();
   });
 });
 

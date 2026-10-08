@@ -75,6 +75,9 @@ importers:
       '@esg/db-types':
         specifier: workspace:*
         version: link:../db-types
+      '@esg/yt-export':
+        specifier: workspace:*
+        version: link:../yt-export
     devDependencies:
       '@types/node':
         specifier: ^24.19.1

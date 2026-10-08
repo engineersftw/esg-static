@@ -234,7 +234,9 @@ YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/webs
 YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/website/content
 ```
 
-New videos come in with no organizations or presenters. Link them with the `cms` tool (`pnpm cms assign --video <ref> --presenter <ref> --organization <ref>` from the repo root), which writes each link on both sides, instead of editing the frontmatter by hand. See the yt-export section of the repo's `CLAUDE.md` for the matching rules, and for `--deactivate-missing` and `--exclude-video`.
+Videos people submit through the **Submit a video** issue form arrive as pull requests that add them to the Community Contributed playlist (`content/playlist/130.md`, slug `community-contributed`), with their presenters linked or created (see `.github/workflows/VIDEO_SUBMISSION.md`).
+
+New videos from the YouTube sync come in with no organizations or presenters. Link them with the `cms` tool (`pnpm cms assign --video <ref> --presenter <ref> --organization <ref>` from the repo root), which writes each link on both sides, instead of editing the frontmatter by hand. See the yt-export section of the repo's `CLAUDE.md` for the matching rules, and for `--deactivate-missing` and `--exclude-video`.
 
 **From the old database.** `packages/pg-export` regenerates every file from the Rails database's JSON export, which **overwrites** anything edited since. This is only for a fresh start:
 

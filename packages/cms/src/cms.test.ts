@@ -1,91 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseEntry, serializeEntry, type Entry } from "@esg/content";
-import type { Organization, Playlist, Presenter, Video } from "@esg/db-types/content";
-import { Cms, CmsError, refKey, type ContentEntries } from "./cms.js";
-
-const entry = <T extends object>(path: string, data: T, body = "") => parseEntry<T>(path, serializeEntry(data, body));
-
-function video(id: string, publishedAt: string, over: Partial<Video> = {}): Entry<Video> {
-  return entry(`video/${id}.md`, {
-    id,
-    videoId: `yt${id}`,
-    videoTitle: `Video ${id}`,
-    publishedAt,
-    thumbnailDefault: null,
-    thumbnailMedium: null,
-    thumbnailHigh: null,
-    slug: `video-${id}`,
-    organizations: [],
-    presenters: [],
-    playlists: [],
-    active: true,
-    videoSite: "youtube",
-    ...over,
-  } satisfies Video);
-}
-
-function presenter(id: string, name: string, over: Partial<Presenter> = {}): Entry<Presenter> {
-  return entry(`presenter/${id}.md`, {
-    id,
-    presenterName: name,
-    presenterByline: null,
-    links: [],
-    email: null,
-    imageUrl: null,
-    slug: name.toLowerCase().replace(/ /g, "-"),
-    active: true,
-    videos: [],
-    ...over,
-  } satisfies Presenter);
-}
-
-function organization(id: string, over: Partial<Organization> = {}): Entry<Organization> {
-  return entry(`organization/${id}.md`, {
-    id,
-    orgTitle: `Org ${id}`,
-    links: [],
-    logoImage: null,
-    contactPerson: null,
-    slug: `org-${id}`,
-    active: true,
-    videos: [],
-    ...over,
-  } satisfies Organization);
-}
-
-function playlist(id: string, over: Partial<Playlist> = {}): Entry<Playlist> {
-  return entry(`playlist/${id}.md`, {
-    id,
-    playlistId: `PL${id}`,
-    playlistTitle: `Playlist ${id}`,
-    publishDate: null,
-    image: null,
-    website: null,
-    hashtag: null,
-    category: "Meetup",
-    slug: `playlist-${id}`,
-    active: true,
-    videos: [],
-    subPlaylists: [],
-    ...over,
-  } satisfies Playlist);
-}
-
-function content(over: Partial<ContentEntries> = {}): ContentEntries {
-  return {
-    video: [video("1", "2020-01-01T00:00:00Z"), video("2", "2021-01-01T00:00:00Z"), video("3", "2022-01-01T00:00:00Z")],
-    organization: [organization("5", { videos: ["3", "1"] })],
-    presenter: [presenter("7", "Jane Doe"), presenter("9", "Ann Lee", { videos: ["3", "1"] })],
-    playlist: [playlist("4", { videos: ["1", "3"] })],
-    ...over,
-  };
-}
-
-const data = (cms: Cms, path: string) => {
-  const c = cms.changes().find((x) => x.path === path);
-  if (!c) throw new Error(`no change to ${path}`);
-  return parseEntry<Record<string, unknown>>(path, c.content);
-};
+import { Cms, CmsError, refKey } from "./cms.js";
+import { content, data, organization, presenter, video } from "./testContent.js";
 
 describe("refKey", () => {
   it("takes the key out of IDs, paths and URLs", () => {
@@ -323,5 +238,65 @@ describe("reconcile", () => {
     expect(cms.reconcile()).toEqual({ organizations: 2, presenters: 2, playlists: 2 });
     expect(data(cms, "video/1.md").data).toMatchObject({ organizations: ["5"], presenters: ["9"], playlists: ["4"] });
     expect(cms.changes().map((c) => c.path)).toEqual(["video/1.md", "video/3.md"]);
+  });
+});
+
+describe("createVideo", () => {
+  const input = {
+    videoId: "dQw4w9WgXcQ",
+    title: "Video 1",
+    publishedAt: "2024-05-01T10:00:00Z",
+    thumbnails: { default: "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg", medium: null, high: " " },
+    description: "About it\r\n",
+  };
+
+  it("takes the next ID and a unique slug, with the fields the YouTube sync writes", () => {
+    const cms = new Cms(content());
+    const v = cms.createVideo(input);
+    expect(v).toEqual({
+      id: "4",
+      videoId: "dQw4w9WgXcQ",
+      videoTitle: "Video 1",
+      publishedAt: "2024-05-01T10:00:00Z",
+      thumbnailDefault: "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg",
+      thumbnailMedium: null,
+      thumbnailHigh: null,
+      slug: "video-1-2",
+      organizations: [],
+      presenters: [],
+      playlists: [],
+      active: true,
+      videoSite: "youtube",
+    });
+    const change = cms.changes().find((c) => c.path === "video/4.md");
+    expect(change?.kind).toBe("create");
+    expect(change?.content.endsWith("---\n\nAbout it\n")).toBe(true);
+  });
+
+  it("refuses a YouTube video that is already there", () => {
+    const cms = new Cms(content());
+    expect(() => cms.createVideo({ ...input, videoId: "yt2" })).toThrow(/video 2 \(video-2\) is already YouTube video yt2/);
+  });
+});
+
+describe("presentersNamed", () => {
+  it("matches names ignoring case, spacing and accents, active ones and those with more videos first", () => {
+    const cms = new Cms(
+      content({
+        presenter: [
+          presenter("1", "José Tan", { active: false, videos: ["1", "2", "3"] }),
+          presenter("2", "jose  tan"),
+          presenter("3", "Jose Tan ", { videos: ["1"] }),
+          presenter("4", "Josef Tan"),
+        ],
+      }),
+    );
+    expect(cms.presentersNamed(" JOSE TAN").map((p) => p.id)).toEqual(["3", "2", "1"]);
+    expect(cms.presentersNamed("Nobody")).toEqual([]);
+  });
+
+  it("is what createPresenter checks for duplicates", () => {
+    const cms = new Cms(content());
+    expect(() => cms.createPresenter({ name: "Ánn  LEE" })).toThrow(/already called/);
   });
 });
