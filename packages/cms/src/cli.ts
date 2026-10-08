@@ -12,7 +12,7 @@ import { parseArgs } from "node:util";
 import { PROFILE_LINK_TYPES, readEntries, VIDEO_LINKS, writeEntryFiles, type VideoLinkField } from "@esg/content";
 import { Collection, type Organization, type Presenter, type ProfileLinkType } from "@esg/db-types/content";
 import { YouTubeClient } from "@esg/yt-export/youtube";
-import { Cms, CmsError, titleOf, type Change } from "./cms.js";
+import { Cms, CmsError, PLAYLIST_CATEGORIES, titleOf, type Change } from "./cms.js";
 import { addedReport, applySubmission, assertNewVideo, COMMUNITY_PLAYLIST, parseSubmission, rejectedReport, SubmissionError } from "./submission.js";
 
 const HELP = `
@@ -38,6 +38,21 @@ Commands:
                         Its links (see links below)
       --logo <url>      Logo URL
       --contact <name>  Contact person, shown on its page
+      --description <text>
+                        Description (the Markdown body)
+      --slug, --inactive, --allow-duplicate, --video
+                        As for presenter create
+
+  playlist create --title <title> [options]
+                        Create a playlist (ID and slug are assigned); videos are added with
+                        --video or assign. Without --playlist-id the YouTube sync leaves it alone
+      --category <name> ${PLAYLIST_CATEGORIES.join(", ")}
+      --date <YYYY-MM-DD>
+                        Event date; conferences are listed newest first by it
+      --playlist-id <id>
+                        The YouTube playlist ID
+      --image <url>     Cover image URL
+      --website <url>, --hashtag <tag>
       --description <text>
                         Description (the Markdown body)
       --slug, --inactive, --allow-duplicate, --video
@@ -118,6 +133,12 @@ const { values: args, positionals } = parseArgs({
     presenter: { type: "string", multiple: true, default: [] },
     organization: { type: "string", multiple: true, default: [] },
     playlist: { type: "string", multiple: true, default: [] },
+    // playlist create
+    title: { type: "string" },
+    category: { type: "string" },
+    date: { type: "string" },
+    "playlist-id": { type: "string" },
+    hashtag: { type: "string" },
     // check
     fix: { type: "boolean", default: false },
     // submission
@@ -185,6 +206,26 @@ function organizationCreate(cms: Cms) {
   });
   for (const v of args.video) cms.link(v, "organizations", o.id);
   console.log(`Organization ${o.id}: ${o.orgTitle} → /organization/${o.slug}`);
+  save(cms);
+}
+
+function playlistCreate(cms: Cms) {
+  if (!args.title) fail("playlist create needs --title");
+  const p = cms.createPlaylist({
+    title: args.title,
+    category: args.category,
+    playlistId: args["playlist-id"],
+    publishDate: args.date,
+    image: args.image,
+    website: args.website,
+    hashtag: args.hashtag,
+    description: args.description,
+    slug: args.slug,
+    active: !args.inactive,
+    allowDuplicate: args["allow-duplicate"],
+  });
+  for (const v of args.video) cms.link(v, "playlists", p.id);
+  console.log(`Playlist ${p.id}: ${p.playlistTitle} → /${p.category?.startsWith("Conference") ? "conference" : "playlist"}/${p.slug}`);
   save(cms);
 }
 
@@ -309,6 +350,9 @@ async function main() {
     case "organization":
       if (sub !== "create") fail(`unknown organization command "${sub ?? ""}"; try organization create`);
       return organizationCreate(cms);
+    case "playlist":
+      if (sub !== "create") fail(`unknown playlist command "${sub ?? ""}"; try playlist create`);
+      return playlistCreate(cms);
     case "links":
       return links(cms);
     case "assign":

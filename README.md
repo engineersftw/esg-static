@@ -105,6 +105,7 @@ pnpm cms presenter create --name "Jane Doe" --x @jane --linkedin https://linkedi
 pnpm cms assign --video 4517 --presenter jane-doe --organization 111 --playlist pyconsg-2019
 pnpm cms unassign --video 4517 --playlist 1
 pnpm cms organization create --name "Tech Circle" --website techcircle.sg --contact "Jane Doe" --video 4588 --dry-run
+pnpm cms playlist create --title "PyCon SG 2026" --category Conference --date 2026-06-01 --video 4588 --dry-run
 pnpm cms links presenter jane-doe            # show a presenter's or organization's links
 pnpm cms links organization 42 --instagram @golangsg --remove x --dry-run
 pnpm cms check [--fix]                       # find (and complete) links stored on one side only
