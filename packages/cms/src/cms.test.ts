@@ -85,6 +85,66 @@ For leaders.
   });
 });
 
+describe("createPlaylist", () => {
+  it("takes the next ID, makes a unique slug and writes the fields in sync order", () => {
+    const cms = new Cms(content());
+    const p = cms.createPlaylist({
+      title: " PyCon SG 2026 ",
+      category: "conference",
+      publishDate: "2026-06-01",
+      playlistId: " PLabc ",
+      hashtag: "#pyconsg",
+      image: " ",
+      description: "Two days of Python.",
+    });
+
+    expect(p.id).toBe("5");
+    expect(cms.changes()).toEqual([
+      {
+        kind: "create",
+        path: "playlist/5.md",
+        title: "PyCon SG 2026",
+        content: `---
+id: "5"
+playlistId: "PLabc"
+playlistTitle: "PyCon SG 2026"
+publishDate: "2026-06-01"
+image: null
+website: null
+hashtag: "#pyconsg"
+category: "Conference"
+slug: "pycon-sg-2026"
+active: true
+videos: []
+subPlaylists: []
+---
+
+Two days of Python.
+`,
+      },
+    ]);
+  });
+
+  it("refuses a taken title, slug or YouTube ID, and a bad category, date or blank title", () => {
+    const cms = new Cms(content());
+    expect(() => cms.createPlaylist({ title: "playlist 4" })).toThrow(/already called/);
+    expect(() => cms.createPlaylist({ title: "New", slug: "playlist-4" })).toThrow(/already used by another playlist/);
+    expect(() => cms.createPlaylist({ title: "New", playlistId: "PL4" })).toThrow(/already YouTube playlist PL4/);
+    expect(() => cms.createPlaylist({ title: "New", category: "Party" })).toThrow(/unknown category/);
+    expect(() => cms.createPlaylist({ title: "New", publishDate: "June 2026" })).toThrow(/YYYY-MM-DD/);
+    expect(() => cms.createPlaylist({ title: " " })).toThrow(/a playlist needs a title/);
+  });
+
+  it("can be linked to videos on both sides straight away", () => {
+    const cms = new Cms(content());
+    const p = cms.createPlaylist({ title: "Brand New" });
+    cms.link("1", "playlists", p.id);
+    cms.link("3", "playlists", "brand-new");
+    expect(p.videos).toEqual(["1", "3"]);
+    expect(cms.changes().map((c) => c.path)).toEqual(["video/1.md", "video/3.md", "playlist/5.md"]);
+  });
+});
+
 describe("editLinks", () => {
   const withLinks = () =>
     new Cms(

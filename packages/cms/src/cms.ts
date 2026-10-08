@@ -1,6 +1,6 @@
 /**
  * Editing operations on the Astro content collections, done on an in-memory copy: add YouTube videos,
- * create presenters and organizations, and link videos to presenters, organizations and playlists.
+ * create presenters, organizations and playlists, and link videos to presenters, organizations and playlists.
  * Every link is written on both sides (the video's `presenters` / `organizations` / `playlists` and
  * the other entry's `videos`), in the order pg-export uses (see @esg/content's links.ts).
  *
@@ -74,6 +74,28 @@ export interface NewOrganization {
   slug?: string | null;
   active?: boolean;
   /** Create it even if an organization with the same name exists. */
+  allowDuplicate?: boolean;
+}
+
+/** The categories a playlist can have, as the site's pages and pg-export know them. */
+export const PLAYLIST_CATEGORIES = ["Conference", "Conference Track", "Meetup", "Tutorial", "Training", "Shows"] as const;
+
+export interface NewPlaylist {
+  title: string;
+  /** Matched case-insensitively against `PLAYLIST_CATEGORIES`. */
+  category?: string | null;
+  /** The YouTube playlist ID, if there is one; the daily sync then refreshes the playlist. */
+  playlistId?: string | null;
+  /** YYYY-MM-DD: the event date, which sorts conferences. */
+  publishDate?: string | null;
+  image?: string | null;
+  website?: string | null;
+  hashtag?: string | null;
+  /** The description, the Markdown body. */
+  description?: string | null;
+  slug?: string | null;
+  active?: boolean;
+  /** Create it even if a playlist with the same title exists. */
   allowDuplicate?: boolean;
 }
 
@@ -227,11 +249,11 @@ export class Cms {
    * ID, a unique slug (or the one asked for) and its links. Throws if anything is missing or taken.
    */
   private prepareNew(
-    collection: "presenter" | "organization",
+    collection: "presenter" | "organization" | "playlist",
     input: { name: string; slug?: string | null; links?: Partial<Record<ProfileLinkType, string | null>>; allowDuplicate?: boolean },
   ) {
     const name = blank(input.name);
-    if (!name) throw new CmsError(`${collection === "presenter" ? "a presenter" : "an organization"} needs a name`);
+    if (!name) throw new CmsError(`${{ presenter: "a presenter", organization: "an organization", playlist: "a playlist" }[collection]} needs a ${collection === "playlist" ? "title" : "name"}`);
     const items = this.items[collection];
     const twin = [...items.values()].find((i) => sameName(titleOf(i.data), name));
     if (twin && !input.allowDuplicate) {
@@ -288,6 +310,50 @@ export class Cms {
       videos: [],
     };
     this.items.organization.set(id, { data, body: toBody(input.description ?? null) });
+    return data;
+  }
+
+  /**
+   * Add a playlist with no videos yet (link them with `link`). Like the community playlist, one with
+   * no `playlistId` is left alone by the YouTube sync.
+   */
+  createPlaylist(input: NewPlaylist): Playlist {
+    const { name, id, slug } = this.prepareNew("playlist", { name: input.title, slug: input.slug, allowDuplicate: input.allowDuplicate });
+
+    const category = blank(input.category);
+    let canonical: string | null = null;
+    if (category) {
+      canonical = PLAYLIST_CATEGORIES.find((c) => c.toLowerCase() === category.toLowerCase()) ?? null;
+      if (!canonical) throw new CmsError(`unknown category "${category}"; use ${PLAYLIST_CATEGORIES.join(", ")}`);
+    }
+
+    const publishDate = blank(input.publishDate);
+    if (publishDate && (!/^\d{4}-\d{2}-\d{2}$/.test(publishDate) || Number.isNaN(Date.parse(publishDate)))) {
+      throw new CmsError(`publish date "${publishDate}" must be a date as YYYY-MM-DD`);
+    }
+
+    const playlistId = blank(input.playlistId);
+    if (playlistId) {
+      const twin = [...this.items.playlist.values()].find((i) => (i.data as Playlist).playlistId === playlistId);
+      if (twin) throw new CmsError(`playlist ${twin.data.id} (${twin.data.slug}) is already YouTube playlist ${playlistId}`);
+    }
+
+    // Field order as yt-export's sync writes it.
+    const data: Playlist = {
+      id,
+      playlistId,
+      playlistTitle: name,
+      publishDate,
+      image: blank(input.image),
+      website: blank(input.website),
+      hashtag: blank(input.hashtag),
+      category: canonical,
+      slug,
+      active: input.active ?? true,
+      videos: [],
+      subPlaylists: [],
+    };
+    this.items.playlist.set(id, { data, body: toBody(input.description ?? null) });
     return data;
   }
 
