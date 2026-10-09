@@ -2,16 +2,16 @@
 
 The rebuild of [Engineers.SG](https://engineers.sg), the archive of Singapore tech meetup and conference talks. The old site was a Rails app on Heroku Postgres. The new one is a static Astro site on Cloudflare Pages.
 
-This repo holds the new site and the tools that moved the old site's data into it:
+This repo holds the new site and the tools that moved the old site's data into it and keep it up to date. Each one has its own README, linked below:
 
 | Package | Path | What it does |
 |---|---|---|
-| `@esg/static-website` | [`apps/website`](apps/website) | The Astro site, built from Markdown content files |
-| `@esg/pg-export` | [`packages/pg-export`](packages/pg-export) | Dumps a Postgres database to JSON, CSV or NDJSON, or writes the Engineers.SG data as the site's Markdown content |
-| `@esg/yt-export` | [`packages/yt-export`](packages/yt-export) | Pulls videos and playlists from the YouTube Data API and syncs them into the site's content |
-| `@esg/cms` | [`packages/cms`](packages/cms) | Command-line editor for the content: create presenters and organizations, edit their links, link videos to presenters, organizations and playlists, add community-submitted videos |
-| `@esg/content` | [`packages/content`](packages/content) | Shared code for reading, writing, slugging and linking the content files |
-| `@esg/db-types` | [`packages/db-types`](packages/db-types) | Shared TypeScript types: the old database's rows, and the frontmatter of the content files |
+| `@esg/static-website` | [`apps/website`](apps/website/README.md) | The Astro site, built from Markdown content files |
+| `@esg/pg-export` | [`packages/pg-export`](packages/pg-export/README.md) | Dumps a Postgres database to JSON, CSV or NDJSON, or writes the Engineers.SG data as the site's Markdown content |
+| `@esg/yt-export` | [`packages/yt-export`](packages/yt-export/README.md) | Pulls videos and playlists from the YouTube Data API and syncs them into the site's content |
+| `@esg/cms` | [`packages/cms`](packages/cms/README.md) | Command-line editor for the content: create presenters and organizations, edit their links, link videos to presenters, organizations and playlists, add community-submitted videos |
+| `@esg/content` | [`packages/content`](packages/content/README.md) | Shared code for the content files: reading and writing them, entry IDs, slugs, links and profile links |
+| `@esg/db-types` | [`packages/db-types`](packages/db-types/README.md) | Shared TypeScript types: the old database's rows, and the frontmatter of the content files |
 
 ## How the pieces fit
 
@@ -66,99 +66,46 @@ See **[apps/website/README.md](apps/website/README.md)** for the content format,
 
 ## packages/yt-export
 
-Fetches a YouTube channel's playlists and videos with an API key, so it only sees public and unlisted content. It works in two modes:
-
-- **Sync into the site's content** (the usual one): it updates the title, description and thumbnails of existing entries, and adds new videos and playlists. Nothing is ever deleted, and curated fields (slugs, organizations, presenters, categories) are kept.
-- **Standalone export:** it writes `episodes.json`, `playlists.json` and `playlist_items.json` rows shaped like the old database (typed by `@esg/db-types`).
+Syncs the YouTube channel into the site's content: it refreshes the title, description and thumbnails of existing videos and playlists, and adds new ones (`video/yt-<YouTube ID>.md`). Nothing is ever deleted, and curated fields are kept. It can also write a standalone JSON export shaped like the old database. The daily GitHub Action runs it (see [Automation](#automation)).
 
 ```bash
 cd packages/yt-export
-
-# Sync into the site; always do a dry run first
-YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/website/content --dry-run
-YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/website/content -o ../../output/yt
-
-# Re-run from the saved API responses, with no API calls
-pnpm export --from-raw ../../output/yt/raw.json --content ../../apps/website/content
-
-# Standalone JSON export
-YOUTUBE_API_KEY=... pnpm export --channel @engineerssg -o ../../output/yt-export
-
-pnpm export --help      # all options
-pnpm test
+pnpm export --channel @engineerssg --content ../../apps/website/content --dry-run   # YOUTUBE_API_KEY from .env
 ```
 
-Useful sync options:
-
-- `--deactivate-missing` sets `active: false` on videos and playlists that YouTube was asked about and didn't return (now private or deleted), so the site stops showing them.
-- `--exclude-video <youtube-id>` leaves a video out of the sync entirely. You can repeat it.
-- `--playlist <id>` also fetches a playlist owned by another channel. You can repeat it.
-
-New videos arrive with no organizations or presenters; link them with [`cms`](#packagescms). Every list call costs 1 unit of YouTube API quota. Get an API key from the Google Cloud console (YouTube Data API v3).
+New videos arrive with no organizations or presenters; link them with [`cms`](#packagescms). Options, matching rules and API quota: **[packages/yt-export/README.md](packages/yt-export/README.md)**.
 
 ## packages/cms
 
-A command-line editor for the content, run from the repo root with `pnpm cms`. Each link is stored on one side only (a video's `presenters`/`organizations`, a playlist's `videos`), new entries get IDs that can't clash with another contributor's (`yt-<YouTube ID>` for videos, a random ID for presenters and organizations), and only changed files are rewritten, in the same format as pg-export, so they diff cleanly.
+The command-line editor for the content, run from the repo root: create presenters, organizations and playlists, edit their links, link videos to them, check the content, and add the videos people submit through the issue form.
 
 ```bash
-pnpm cms find presenter yeo                  # look up entries: find <video|presenter|organization|playlist> <text>
-pnpm cms presenter create --name "Jane Doe" --x @jane --linkedin https://linkedin.com/in/jane --instagram jane.doe --video 4517 --dry-run
-pnpm cms assign --video 4517 --presenter jane-doe --organization 111 --playlist pyconsg-2019
-pnpm cms unassign --video 4517 --playlist 1
-pnpm cms organization create --name "Tech Circle" --website techcircle.sg --contact "Jane Doe" --video 4588 --dry-run
-pnpm cms playlist create --title "PyCon SG 2026" --category Conference --date 2026-06-01 --video 4588 --dry-run
-pnpm cms links presenter jane-doe            # show a presenter's or organization's links
-pnpm cms links organization 42 --instagram @golangsg --remove x --dry-run
-pnpm cms check                               # links to missing entries, case clashes, leftover reverse lists
-YOUTUBE_API_KEY=... pnpm cms submission issue-body.md --dry-run   # add a "Submit a video" issue's video
-pnpm cms --help                              # all options
+pnpm cms find presenter yeo
+pnpm cms assign --video 4609-4618 --presenter jane-doe --organization 42 --dry-run
+pnpm cms check          # same as pnpm content
+pnpm cms --help
 ```
 
-A `<ref>` can be an entry ID, a slug, a site URL or path (`/video/<slug>`), and for videos a YouTube video ID or URL, for playlists a YouTube playlist ID. An ambiguous or unknown ref fails the whole command before anything is written. `--dry-run` shows what would change, and `--content <dir>` points it at another content directory (default `apps/website/content`).
-
-Presenters and organizations have a `links` list of `{ "type", "url" }` entries, shown in that order with an icon each. The types are `x`, `website`, `linkedin`, `instagram` and `tiktok`, and `presenter create` and `links` have a flag for each (`--x` or `--twitter`, `--website`, `--linkedin`, `--instagram`, `--tiktok`) that takes a handle or URL. `links` replaces a type's link where it is or adds it at the end, and `--remove <type>` deletes one.
-
-`submission` is what the video submission workflow runs (see [Automation](#automation)). It reads the body of an issue made from the **Submit a video** form, fetches the video from YouTube, creates its entry (with the fields the YouTube sync writes, so the sync keeps it up to date), links each listed presenter to an existing presenter with the same name (ignoring case, spacing and accents) or creates one with the links given, adds the video to the `community-contributed` playlist, and prints a Markdown report for the pull request. A submission it can't add (not a YouTube link, already on the site, not public) gets a report saying why instead.
+Every command, refs, IDs and the submission flow: **[packages/cms/README.md](packages/cms/README.md)**.
 
 ## packages/content
 
-The shared code behind yt-export and cms: reading and writing the content `.md` files (byte-identical to pg-export's output, so unchanged files are never rewritten), `slugify` and unique slug allocation, and the helpers that keep two-sided links in sync. Like db-types, it ships TypeScript source with no build step.
+Shared code behind yt-export and cms: reading and writing the content files (byte-identical to pg-export's output, so unchanged files are never rewritten), entry IDs (numeric for the old site's entries, `yt-<YouTube ID>` or random for new ones), one-sided links, slugs and profile links. See **[packages/content/README.md](packages/content/README.md)**.
 
 ## packages/pg-export
 
-A general-purpose Postgres export CLI, made to export Heroku Postgres. It reads everything in one read-only, consistent snapshot transaction and streams large tables. It also has an Engineers.SG-specific Markdown mode that produces the site's content.
+A general-purpose Postgres export CLI (one file per table plus `schema.json`, in one consistent snapshot), with an Engineers.SG-specific Markdown mode that produced the site's content from the old database. It was used once to make `output/backup/` and the first `apps/website/content/`.
 
 ```bash
 cd packages/pg-export
-
-# Table dumps: one file per table plus schema.json (this is how output/backup/ was made)
 node dist/export.js --app <heroku-app> -f json -o ../../output/backup
-DATABASE_URL=postgres://... pnpm export --no-ssl -f csv -o ../../output/local
-
-# Markdown content for the site, from the JSON dump (no database needed) or a live database
-pnpm export --from-json ../../output/backup -o ../../apps/website/content
-pnpm export -f markdown --app <heroku-app> -o ../../apps/website/content
-
-pnpm export --help      # all options
-pnpm build              # tsc → dist/ (committed)
-pnpm test
 ```
 
-The Markdown mode **overwrites** files in the output directory. Running it into `apps/website/content` replaces any edits made since, including the yt-export syncs, so point it somewhere else unless you mean to start over. More detail is in [packages/pg-export/README.md](packages/pg-export/README.md).
+The Markdown mode **overwrites** files in its output directory, so never point it at `apps/website/content` unless you mean to start over. Options and output format: **[packages/pg-export/README.md](packages/pg-export/README.md)**.
 
 ## packages/db-types
 
-Types only, with no build step: its `exports` point at the `.ts` source, which tsx, Vitest and `tsc` read directly.
-
-- `@esg/db-types`: one interface per table in the old database (`Episode`, `Organization`, `Presenter`, `Playlist`, …), matching the rows in `output/backup/*.json`. Timestamps are UTC text, not `Date`.
-- `@esg/db-types/content`: the frontmatter of the site's content files (`Video`, `Organization`, `Presenter`, `Playlist`).
-
-```ts
-import type { Episode } from "@esg/db-types";
-import type { Video } from "@esg/db-types/content";
-```
-
-If you change a content field, update `content.ts`, the zod schema in `apps/website/src/content.config.ts`, and the tool that writes the field.
+Shared TypeScript types, with no build step: `@esg/db-types` for the old database's rows and `@esg/db-types/content` for the content files' frontmatter. If you change a content field, update `content.ts`, the zod schema in `apps/website/src/content.config.ts`, and the tools that write it. See **[packages/db-types/README.md](packages/db-types/README.md)**.
 
 ## Automation
 
@@ -177,6 +124,7 @@ packages/content/      shared content file read/write, slugs and links
 packages/db-types/     shared types
 packages/pg-export/    Postgres export / Markdown generator
 packages/yt-export/    YouTube sync
+docs/                  design notes, e.g. content-id-migration.md (why IDs and links work as they do)
 output/                generated data, git-ignored (backup/, yt-export runs, scratch exports)
 .github/workflows/     CI, the daily YouTube sync and video submissions
 eslint.config.js       ESLint config for the whole repo

@@ -1,12 +1,16 @@
-# heroku-pg-export
+# @esg/pg-export
 
-Exports a Heroku Postgres database to **one file per table** (CSV, JSON, or NDJSON) plus a `schema.json` describing the schema.
+Exports a Heroku Postgres database to **one file per table** (CSV, JSON, or NDJSON) plus a `schema.json` describing the schema. It also has an Engineers.SG-specific Markdown mode that wrote the site's content from the old database.
+
+The CLI loads the repo's root `.env` (`DATABASE_URL=...`) from `src/` or the committed `dist/` build alike. A variable already set in the shell wins.
 
 ## Setup
 
 ```bash
 pnpm install         # from the repo root (pnpm workspace)
-pnpm build           # or skip and use `pnpm export ...` (runs via tsx)
+pnpm build           # tsc → dist/ (committed, so run it after changing src/); or use `pnpm export ...` (runs via tsx)
+pnpm test            # Vitest (markdown.ts)
+pnpm typecheck
 ```
 
 ## Usage
@@ -45,7 +49,9 @@ node dist/export.js --from-json ../../output/backup -o ../../output/content   # 
 
 `-f markdown` writes Astro content collections instead of table dumps: `video/<id>.md`, `organization/<id>.md`, `presenter/<id>.md` and `playlist/<id>.md`. It reads `episodes`, `organizations`, `presenters`, `playlists`, `playlist_categories`, `playlist_items`, `sub_playlists`, `video_organizations` and `video_presenters` (in the first `--schema`) in the same snapshot transaction. `--from-json <dir>` reads those tables from an earlier `-f json` export and needs no database.
 
-Frontmatter types are in `@esg/db-types/content`. Relations are ID lists for Astro's `reference()`, each stored on one side only: `organizations`/`presenters` on a video, and `videos` in playlist order and `subPlaylists` on a playlist, and each description becomes the Markdown body. The old `twitter` and `website` columns become a presenter's or organization's `links` list, as full URLs: an X handle becomes `https://x.com/<handle>`, a LinkedIn URL in `website` becomes a `linkedin` link, and values that aren't links are dropped. Presenter emails are written as `null` unless you pass `--include-emails`. Existing files in the output directory are overwritten but never deleted.
+Frontmatter types are in `@esg/db-types/content`. Relations are ID lists for Astro's `reference()`, each stored on one side only: `organizations`/`presenters` on a video, and `videos` in playlist order and `subPlaylists` on a playlist, and each description becomes the Markdown body. The old `twitter` and `website` columns become a presenter's or organization's `links` list, as full URLs: an X handle becomes `https://x.com/<handle>`, a LinkedIn URL in `website` becomes a `linkedin` link, and values that aren't links are dropped. Entry IDs are the database IDs (entries added to the site since then have `yt-…` or random IDs; see `@esg/content`). Presenter emails are written as `null` unless you pass `--include-emails`. Existing files in the output directory are overwritten but never deleted.
+
+**Don't run it into `apps/website/content`** unless you mean to start over: it replaces every edit made since the export, including the YouTube syncs and everything curated with `cms`.
 
 ## Output
 

@@ -10,6 +10,7 @@ It is a pnpm workspace (`pnpm-workspace.yaml` → `apps/*` and `packages/*`, pnp
 
 ESLint is configured once for the whole repo in the root `eslint.config.js` (flat config: `@eslint/js` and typescript-eslint recommended, plus eslint-plugin-astro for the site; Cloudflare `functions/` get Workers globals instead of Node's). The packages compile with TypeScript 7, which has no JavaScript API, so typescript-eslint uses the TypeScript 6.0 installed at the root; that is why the root `typescript` is pinned to `~6.0` while each package depends on `typescript@^7`. Keep it that way until typescript-eslint supports TypeScript 7. The website likewise depends on `typescript@~6.0`, because `astro check` (`@astrojs/check`) supports TypeScript 5 and 6 only. Rules are syntax-only, not type-aware, so they don't depend on the TypeScript version matching.
 
+- Every app and package has a README for people (the root `README.md` links them); `docs/content-id-migration.md` is the plan behind the current entry IDs and one-sided links. Keep the READMEs in step when behaviour changes.
 - `output/` (git-ignored): generated data. `output/backup/` is below; yt-export runs also land here (e.g. `-o ../../output/yt-export-<timestamp>`).
 - `apps/website/` (`esg-website`): the Astro site, described under "apps/website" below.
 - `packages/pg-export/` (`@esg/pg-export`): a TypeScript CLI that dumps a Postgres database to one file per table plus a `schema.json`, or writes the Engineers.SG content as Markdown for Astro content collections.
@@ -84,7 +85,7 @@ The only tests are Vitest ones for pure helpers, such as `src/helpers/linkify.te
 
 Known problems as of this scan:
 - `check_query.js` is a leftover scratch script (`pnpm check_query`) that queries Supabase, but `@supabase/supabase-js` is not a dependency and it needs `SUPABASE_URL`/`SUPABASE_KEY`. It does show the old table relationships (`episodes` ← `video_organizations`/`video_presenters`).
-- `project.json` is a leftover Nx config, and the README is the unchanged Astro blog template text. Neither is used.
+- `project.json` is a leftover Nx config. It isn't used.
 - Template leftovers are still in use: `about.astro` uses the `BlogPost.astro` layout, and `public/blog-placeholder-*.jpg` are unused.
 
 ## yt-export
