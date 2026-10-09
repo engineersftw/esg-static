@@ -1,6 +1,5 @@
 ---
 import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
-import { getEntries } from 'astro:content';
 
 import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
@@ -10,13 +9,13 @@ import EntityImage from '../../../components/EntityImage.astro';
 import ProfileLinks from '../../../components/ProfileLinks.astro';
 import LinkedText from '../../../components/LinkedText.astro';
 import VideoCard from '../../../components/VideoCard.astro';
-import { getActiveOrganizations, listed } from '../../../helpers/collections';
+import { getActiveOrganizations, getOrganizationVideos } from '../../../helpers/collections';
 
 export const getStaticPaths = (async ({ paginate }) => {
   const organizations = await getActiveOrganizations();
 
   return Promise.all(organizations.map(async (organization) => {
-    const videos = listed(await getEntries(organization.data.videos));
+    const videos = await getOrganizationVideos(organization.id);
     return paginate(videos, {
       params: { slug: organization.data.slug },
       pageSize: 25,

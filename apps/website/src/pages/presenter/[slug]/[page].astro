@@ -1,6 +1,5 @@
 ---
 import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
-import { getEntries } from 'astro:content';
 
 import BaseHead from '../../../components/BaseHead.astro';
 import Header from '../../../components/Header.astro';
@@ -10,13 +9,13 @@ import EntityImage from '../../../components/EntityImage.astro';
 import ProfileLinks from '../../../components/ProfileLinks.astro';
 import LinkedText from '../../../components/LinkedText.astro';
 import VideoCard from '../../../components/VideoCard.astro';
-import { getActivePresenters, listed } from '../../../helpers/collections';
+import { getActivePresenters, getPresenterVideos } from '../../../helpers/collections';
 
 export const getStaticPaths = (async ({ paginate }) => {
   const presenters = await getActivePresenters();
 
   return Promise.all(presenters.map(async (presenter) => {
-    const videos = listed(await getEntries(presenter.data.videos));
+    const videos = await getPresenterVideos(presenter.id);
     return paginate(videos, {
       params: { slug: presenter.data.slug },
       pageSize: 25,

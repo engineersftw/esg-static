@@ -1,7 +1,15 @@
 import { type CollectionEntry, getCollection, getEntries } from 'astro:content';
 
+/** Entry IDs in order: legacy numeric IDs by number, then the others (`yt-…`, random) as text. */
+export function compareIds(a: string, b: string) {
+  const [legacyA, legacyB] = [/^\d+$/.test(a), /^\d+$/.test(b)];
+  if (legacyA && legacyB) return Number(a) - Number(b);
+  if (legacyA !== legacyB) return legacyA ? -1 : 1;
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 const newestFirst = (a: CollectionEntry<'video'>, b: CollectionEntry<'video'>) =>
-  b.data.publishedAt.localeCompare(a.data.publishedAt) || Number(b.id) - Number(a.id);
+  b.data.publishedAt.localeCompare(a.data.publishedAt) || compareIds(b.id, a.id);
 
 /**
  * Every active video. Use this, not `getCollection('video')`, for anything that lists or builds a
@@ -48,6 +56,46 @@ export async function getVideoByline(video: CollectionEntry<'video'>, without?: 
   return names.filter((name) => name !== without?.trim()).join(', ');
 }
 
+type ReverseLinks = {
+  videosByPresenter: Map<string, CollectionEntry<'video'>[]>;
+  videosByOrganization: Map<string, CollectionEntry<'video'>[]>;
+  playlistsByVideo: Map<string, CollectionEntry<'playlist'>[]>;
+};
+let reverseLinks: Promise<ReverseLinks> | undefined;
+
+const push = <T extends { id: string }>(map: Map<string, T[]>, key: string, entry: T) => {
+  const list = map.get(key);
+  if (!list) map.set(key, [entry]);
+  else if (!list.some((e) => e.id === entry.id)) list.push(entry);
+};
+
+// Each link is stored on one side only: a video names its presenters and organizations, and a
+// playlist lists its videos. The other direction is worked out here, once per build.
+const getReverseLinks = () =>
+  (reverseLinks ??= Promise.all([getListedVideos(), getActivePlaylists()]).then(([videos, playlists]) => {
+    const links: ReverseLinks = { videosByPresenter: new Map(), videosByOrganization: new Map(), playlistsByVideo: new Map() };
+    for (const video of videos) {
+      for (const { id } of video.data.presenters) push(links.videosByPresenter, id, video);
+      for (const { id } of video.data.organizations) push(links.videosByOrganization, id, video);
+    }
+    for (const playlist of [...playlists].sort((a, b) => compareIds(a.id, b.id))) {
+      for (const { id } of playlist.data.videos) push(links.playlistsByVideo, id, playlist);
+    }
+    return links;
+  }));
+
+/** A presenter's active videos, newest first. */
+export const getPresenterVideos = async (presenterId: string) =>
+  (await getReverseLinks()).videosByPresenter.get(presenterId) ?? [];
+
+/** An organization's active videos, newest first. */
+export const getOrganizationVideos = async (organizationId: string) =>
+  (await getReverseLinks()).videosByOrganization.get(organizationId) ?? [];
+
+/** The active playlists that list a video. */
+export const getVideoPlaylists = async (videoId: string) =>
+  (await getReverseLinks()).playlistsByVideo.get(videoId) ?? [];
+
 /** Drop inactive organizations from resolved references, keeping their order. */
 export const listedOrganizations = (organizations: CollectionEntry<'organization'>[]) =>
   organizations.filter((organization) => organization.data.active);
@@ -61,7 +109,7 @@ export const listedPlaylists = (playlists: CollectionEntry<'playlist'>[]) =>
   playlists.filter((playlist) => playlist.data.active);
 
 const newestPlaylistFirst = (a: CollectionEntry<'playlist'>, b: CollectionEntry<'playlist'>) =>
-  (b.data.publishDate ?? '').localeCompare(a.data.publishDate ?? '') || Number(b.id) - Number(a.id);
+  (b.data.publishDate ?? '').localeCompare(a.data.publishDate ?? '') || compareIds(b.id, a.id);
 
 /** Active playlists in the "Conference" category, newest first. */
 export async function getConferences() {
