@@ -92,7 +92,6 @@ publishedAt: "2023-11-03T06:41:58Z"
 slug: "making-a-hdmi-isa-graphics-card-by-improving-the-graphics-gremlin-hackware-v7-9"
 organizations: ["111"]
 presenters: ["68"]
-playlists: ["1"]
 active: true
 videoSite: "youtube"
 ...
@@ -121,6 +120,9 @@ Don't call `getCollection()` directly in a page. The helpers apply the `active` 
 | `getConferencePages()` | Conferences plus their sub-playlists (tracks), each with its parent |
 | `getPlaylistPages()` | Every other active playlist, each with its parent |
 | `listed()`, `listedOrganizations()`, `listedPresenters()`, `listedPlaylists()` | Drop inactive entries from resolved references |
+| `getPresenterVideos(id)` / `getOrganizationVideos(id)` | A presenter's or organization's active videos, newest first (worked out from the videos, once per build) |
+| `getVideoPlaylists(id)` | The active playlists that list a video |
+| `compareIds(a, b)` | Entry ID order for tie-breaks: numeric IDs by number, then the rest as text |
 
 ### Routes
 
@@ -225,7 +227,7 @@ To add a link type: add it to `ProfileLinkType` in `@esg/db-types/content`, `PRO
 
 ## Updating the content
 
-Don't edit hundreds of files by hand: two tools in this repo regenerate `content/`.
+Don't edit hundreds of files by hand: use the tools in this repo, which write `content/` in the right format.
 
 **From YouTube** (the usual way to add new videos and playlists). `packages/yt-export` syncs the channel into `content/`. It updates titles, descriptions and thumbnails of existing entries, adds new ones, and never deletes anything:
 
@@ -237,7 +239,7 @@ YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/webs
 
 Videos people submit through the **Submit a video** issue form arrive as pull requests that add them to the Community Contributed playlist (`content/playlist/130.md`, slug `community-contributed`), with their presenters linked or created (see `.github/workflows/VIDEO_SUBMISSION.md`).
 
-New videos from the YouTube sync come in with no organizations or presenters. Link them with the `cms` tool (`pnpm cms assign --video <ref> --presenter <ref> --organization <ref>` from the repo root), which writes each link where it belongs, instead of editing the frontmatter by hand. See the yt-export section of the repo's `CLAUDE.md` for the matching rules, and for `--deactivate-missing` and `--exclude-video`.
+New videos from the YouTube sync come in with no organizations or presenters. Link them with the `cms` tool (`pnpm cms assign --video <ref> --presenter <ref> --organization <ref>` from the repo root), which writes each link where it belongs, instead of editing the frontmatter by hand. See [`packages/cms/README.md`](../../packages/cms/README.md), and [`packages/yt-export/README.md`](../../packages/yt-export/README.md) for the sync's matching rules, `--deactivate-missing` and `--exclude-video`.
 
 **From the old database.** `packages/pg-export` regenerates every file from the Rails database's JSON export, which **overwrites** anything edited since. This is only for a fresh start:
 
@@ -247,10 +249,10 @@ pnpm --filter @esg/pg-export export --from-json ../../output/backup -o ../../app
 
 Presenter emails are written as `null` unless you pass `--include-emails`. Keep it that way: `content/` is committed and published.
 
-After either one, run `pnpm build`. Broken references (an ID pointing at a missing file) fail the build, which is a good check.
+After any change, run `pnpm content` from the repo root (`pnpm cms check`, which CI also runs): it reports links to missing entries, IDs that differ only in case, and leftover reverse lists. Then `pnpm build`.
 
 ## Known leftovers
 
 - **Template remnants:** `about.astro` still uses the template's `BlogPost.astro` layout, and `public/blog-placeholder-*.jpg` are unused.
 - **Unused files:** `check_query.js` is an old Supabase scratch script whose dependency isn't installed, and `project.json` is an unused Nx config.
-- **Not ported from the old site yet:** the static pages (`/events`, `/cal`, `/bookings`, `/live`, `/fb_live`, `/support_us`, `/screenshots`, `/terms`), search (`/episodes/search`, `/presenters/search`), newsletter signup, `/videos/:tag` and the `/api/*` JSON endpoints.
+- **Not ported from the old site yet:** the static pages (`/events`, `/cal`, `/bookings`, `/live`, `/fb_live`, `/support_us`, `/screenshots`, `/terms`), the old search URLs (`/episodes/search`, `/presenters/search`; search is now `/search` and the list pages' name filters), newsletter signup, `/videos/:tag` and the `/api/*` JSON endpoints.
