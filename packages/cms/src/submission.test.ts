@@ -13,7 +13,7 @@ import {
   youtubeVideoId,
   type Submission,
 } from "./submission.js";
-import { content, data, playlist, presenter, video } from "./testContent.js";
+import { content, counterIds, data, playlist, presenter, video } from "./testContent.js";
 
 /** An issue body as GitHub renders the submit-video form. */
 const issueBody = (fields: { url?: string; presenters?: string; event?: string; notes?: string }) =>
@@ -126,7 +126,7 @@ describe("parseSubmission", () => {
 
 describe("applySubmission", () => {
   it("adds the video, links existing presenters, creates new ones and adds it to the community playlist", () => {
-    const cms = new Cms(community());
+    const cms = new Cms(community(), { randomId: counterIds() });
     const result = applySubmission(
       cms,
       submission({
@@ -138,7 +138,7 @@ describe("applySubmission", () => {
       yt(),
     );
 
-    expect(result.video).toMatchObject({ id: "4", videoId: "dQw4w9WgXcQ", slug: "rust-in-production", presenters: ["7", "10"], playlists: ["8"] });
+    expect(result.video).toMatchObject({ id: "yt-dQw4w9WgXcQ", videoId: "dQw4w9WgXcQ", slug: "rust-in-production", presenters: ["7", "new1"] });
     expect(result.video.thumbnailHigh).toBe("https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
     expect(result.presenters.map(({ name, created, unused, links }) => ({ name, created, unused, links }))).toEqual([
       { name: "jane DOE", created: false, unused: ["@ignored"], links: [] },
@@ -154,20 +154,22 @@ describe("applySubmission", () => {
     ]);
 
     expect(cms.changes().map((c) => `${c.kind} ${c.path}`)).toEqual([
-      "create video/4.md",
-      "update presenter/7.md",
-      "create presenter/10.md",
+      "create video/yt-dQw4w9WgXcQ.md",
+      "create presenter/new1.md",
       "update playlist/8.md",
     ]);
-    expect(data(cms, "presenter/7.md").data.videos).toEqual(["4"]);
-    expect(data(cms, "presenter/10.md").data).toMatchObject({ presenterName: "Bob Lee", slug: "bob-lee", videos: ["4"] });
-    expect(data(cms, "playlist/8.md").data.videos).toEqual(["4"]);
-    expect(data(cms, "video/4.md").body).toBe("Slides: https://example.com/slides");
+    expect(data(cms, "presenter/new1.md").data).toMatchObject({ presenterName: "Bob Lee", slug: "bob-lee" });
+    expect(data(cms, "playlist/8.md").data.videos).toEqual(["yt-dQw4w9WgXcQ"]);
+    expect(data(cms, "video/yt-dQw4w9WgXcQ.md").body).toBe("Slides: https://example.com/slides");
   });
 
   it("links the best of several presenters with the name and reports the others", () => {
     const c = community();
-    const twins = new Cms({ ...c, presenter: [presenter("7", "Jane Doe"), presenter("8", "Jane Doe", { videos: ["1"] })] });
+    const twins = new Cms({
+      ...c,
+      presenter: [presenter("7", "Jane Doe"), presenter("8", "Jane Doe")],
+      video: [video("1", "2020-01-01T00:00:00Z", { presenters: ["8"] })],
+    });
     const result = applySubmission(twins, submission({ presenters: [{ name: "Jane Doe", links: [] }] }), yt());
     expect(result.presenters[0].presenter.id).toBe("8");
     expect(result.presenters[0].otherMatches.map((p) => p.id)).toEqual(["7"]);
@@ -198,7 +200,7 @@ describe("escapeMarkdown", () => {
 
 describe("reports", () => {
   it("describes what was added, for the pull request", () => {
-    const cms = new Cms(community());
+    const cms = new Cms(community(), { randomId: counterIds() });
     const sub = submission({
       presenters: [
         { name: "Jane Doe", links: [] },
@@ -211,10 +213,10 @@ describe("reports", () => {
     expect(report).toContain("Adds the video submitted in #42.");
     expect(report).toContain("**[Rust \\*in\\* production](https://www.youtube.com/watch?v=dQw4w9WgXcQ)**");
     expect(report).toContain("Published 2024-05-01 by the YouTube channel Some Channel.");
-    expect(report).toContain("- Video 4: `/video/rust-in-production`");
+    expect(report).toContain("- Video yt-dQw4w9WgXcQ: `/video/rust-in-production`");
     expect(report).toContain("- Added to the playlist Community Contributed (`/playlist/community-contributed`)");
     expect(report).toContain("- **Jane Doe**: existing presenter 7, `/presenter/jane-doe`");
-    expect(report).toContain("- **Bob Lee**: new presenter 10, `/presenter/bob-lee`, with links: x `https://x.com/boblee`");
+    expect(report).toContain("- **Bob Lee**: new presenter new1, `/presenter/bob-lee`, with links: x `https://x.com/boblee`");
     expect(report).toContain("Event or group: PyCon SG 2024.");
     expect(report).toContain("> Great talk by &#64;someone\n> &lt;b&gt;really&lt;/b&gt;");
     expect(report.trimEnd().endsWith("Closes #42")).toBe(true);

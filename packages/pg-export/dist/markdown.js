@@ -123,16 +123,9 @@ export function toMarkdownFiles(src, opts) {
     const orgsByEpisode = relate(src.video_organizations, (r) => r.episode_id, (r) => r.organization_id, new Set(organizations.map((o) => o.id)));
     const presentersByEpisode = relate(src.video_presenters, (r) => r.episode_id, (r) => r.presenter_id, new Set(presenters.map((p) => p.id)));
     const playlistIds = new Set(playlists.map((p) => p.id));
-    const playlistsByEpisode = relate(src.playlist_items, (r) => r.episode_id, (r) => r.playlist_id, playlistIds);
     const videosByPlaylist = relate(src.playlist_items, (r) => r.playlist_id, (r) => r.episode_id, episodeIds, (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id);
     const subPlaylists = relate(src.sub_playlists, (r) => r.playlist_id, (r) => r.sub_playlist_id, playlistIds, (a, b) => a.sequence - b.sequence || a.id - b.id);
     const categoryTitle = new Map(src.playlist_categories.map((c) => [c.id, blankToNull(c.title)]));
-    // Reverse relations list videos newest first, as the site shows them.
-    const newestFirst = [...episodes].sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? "") || b.id - a.id);
-    const rank = new Map(newestFirst.map((e, i) => [String(e.id), i]));
-    const byNewest = (ids) => ids.sort((a, b) => rank.get(a) - rank.get(b));
-    const videosByOrg = relate(src.video_organizations, (r) => r.organization_id, (r) => r.episode_id, episodeIds);
-    const videosByPresenter = relate(src.video_presenters, (r) => r.presenter_id, (r) => r.episode_id, episodeIds);
     const files = [];
     const episodeSlugs = uniqueSlugs(episodes.map((e) => ({ text: e.title ?? "", fallback: `video-${e.id}` })));
     episodes.forEach((e, i) => {
@@ -147,7 +140,6 @@ export function toMarkdownFiles(src, opts) {
             slug: episodeSlugs[i],
             organizations: orgsByEpisode.get(e.id) ?? [],
             presenters: presentersByEpisode.get(e.id) ?? [],
-            playlists: playlistsByEpisode.get(e.id) ?? [],
             active: e.active,
             videoSite: e.video_site === VideoSite.Vimeo ? "vimeo" : "youtube",
         };
@@ -164,7 +156,6 @@ export function toMarkdownFiles(src, opts) {
             slug: orgSlugs[i],
             // `active` is nullable in the database and defaults to true.
             active: o.active !== false,
-            videos: byNewest(videosByOrg.get(o.id) ?? []),
         };
         files.push(file(Collection.Organization, data.id, data, o.description));
     });
@@ -179,7 +170,6 @@ export function toMarkdownFiles(src, opts) {
             imageUrl: blankToNull(p.avatar_url),
             slug: presenterSlugs[i],
             active: p.active !== false,
-            videos: byNewest(videosByPresenter.get(p.id) ?? []),
         };
         files.push(file(Collection.Presenter, data.id, data, p.biography));
     });

@@ -103,7 +103,8 @@ Speaker: Yeo Kheng Meng
 
 Things to know:
 
-- **IDs are the file names.** They are the old database IDs, and they are also the entry IDs in Astro. Relations such as `organizations`, `presenters`, `videos` and `subPlaylists` are lists of those IDs, declared with `reference()` in `src/content.config.ts`. Use `getEntries()` to turn them into entries.
+- **IDs are the file names.** Entries from the old site keep their database IDs (`video/601.md`); newer ones are `yt-<YouTube ID>` (videos, and playlists from YouTube) or a random ID (`presenter/k3v9qz2m7d.md`). They are also the entry IDs in Astro. Relations (`organizations` and `presenters` on a video, `videos` and `subPlaylists` on a playlist) are lists of those IDs, declared with `reference()` in `src/content.config.ts`. Use `getEntries()` to turn them into entries.
+- **Each link is stored on one side.** A presenter's or organization's videos and a video's playlists aren't in the files: `src/helpers/collections.ts` works them out once per build (`getPresenterVideos`, `getOrganizationVideos`, `getVideoPlaylists`).
 - **`generateId` is required.** The glob loaders use the file name as the entry ID. Without that, Astro uses the frontmatter `slug` as the ID and every reference breaks.
 - **The schemas mirror shared types.** The frontmatter types live in `@esg/db-types/content` (`packages/db-types/src/content.ts`). If you add a field, change both.
 - **Inactive entries stay in the files** with `active: false`, but the site leaves them out entirely: they get no page, no list entry and no link. See the next section.
@@ -236,7 +237,7 @@ YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/webs
 
 Videos people submit through the **Submit a video** issue form arrive as pull requests that add them to the Community Contributed playlist (`content/playlist/130.md`, slug `community-contributed`), with their presenters linked or created (see `.github/workflows/VIDEO_SUBMISSION.md`).
 
-New videos from the YouTube sync come in with no organizations or presenters. Link them with the `cms` tool (`pnpm cms assign --video <ref> --presenter <ref> --organization <ref>` from the repo root), which writes each link on both sides, instead of editing the frontmatter by hand. See the yt-export section of the repo's `CLAUDE.md` for the matching rules, and for `--deactivate-missing` and `--exclude-video`.
+New videos from the YouTube sync come in with no organizations or presenters. Link them with the `cms` tool (`pnpm cms assign --video <ref> --presenter <ref> --organization <ref>` from the repo root), which writes each link where it belongs, instead of editing the frontmatter by hand. See the yt-export section of the repo's `CLAUDE.md` for the matching rules, and for `--deactivate-missing` and `--exclude-video`.
 
 **From the old database.** `packages/pg-export` regenerates every file from the Rails database's JSON export, which **overwrites** anything edited since. This is only for a fresh start:
 

@@ -1,25 +1,29 @@
 /**
  * Editing operations on the Astro content collections, done on an in-memory copy: add YouTube videos,
  * create presenters, organizations and playlists, and link videos to presenters, organizations and playlists.
- * Every link is written on both sides (the video's `presenters` / `organizations` / `playlists` and
- * the other entry's `videos`), in the order pg-export uses (see @esg/content's links.ts).
+ * Each link is stored on one side only (see @esg/content's links.ts): a video's `presenters` and
+ * `organizations`, a playlist's `videos`. New entries get IDs that can't clash with another
+ * contributor's (see @esg/content's ids.ts).
  *
  * No I/O here: `changes()` returns the files to write, so it can be unit tested and dry-run.
  */
 import {
-  addVideo,
   append,
+  caseClashes,
+  compareIds,
   normalizeProfileLink,
+  playlistEntryId,
   PROFILE_LINK_TYPES,
   profileLinks,
-  reconcileLinks,
+  randomEntryId,
   serializeEntry,
   slugAllocator,
   toBody,
+  unusedId,
   VIDEO_LINKS,
+  videoEntryId,
   without,
   type Entry,
-  type HasVideos,
   type VideoLinkField,
 } from "@esg/content";
 import type { Collection, Organization, Playlist, Presenter, ProfileLink, ProfileLinkType, Video } from "@esg/db-types/content";
@@ -180,8 +184,11 @@ export class Cms {
   private readonly items: Record<Collection, Map<string, Item>>;
   /** Notes for the user, e.g. linking to an entry the site doesn't show. */
   readonly warnings = new Set<string>();
+  private readonly randomId: () => string;
 
-  constructor(entries: ContentEntries) {
+  /** `randomId` makes the random IDs of new presenters, organizations and hand-made playlists. */
+  constructor(entries: ContentEntries, { randomId = randomEntryId }: { randomId?: () => string } = {}) {
+    this.randomId = randomId;
     const load = <T extends AnyData>(list: Entry<T>[]) =>
       new Map<string, Item>(list.map((e) => [e.id, { before: e, data: { ...e.data }, body: e.body } as Item]));
     this.items = {
@@ -237,23 +244,34 @@ export class Cms {
     return [...this.items.presenter.values()]
       .map((i) => i.data as Presenter)
       .filter((p) => nameKey(p.presenterName) === key)
-      .sort((a, b) => Number(b.active) - Number(a.active) || b.videos.length - a.videos.length || Number(a.id) - Number(b.id));
+      .sort((a, b) => Number(b.active) - Number(a.active) || this.videoCount("presenters", b.id) - this.videoCount("presenters", a.id) || compareIds(a.id, b.id));
   }
 
-  /** The next free ID of a collection: one more than the highest. */
-  private nextId(collection: Collection): string {
-    return String([...this.items[collection].keys()].reduce((m, k) => Math.max(m, Number(k) || 0), 0) + 1);
+  /** How many videos list this presenter or organization. */
+  videoCount(field: "presenters" | "organizations", id: string): number {
+    let n = 0;
+    for (const { data } of this.items.video.values()) if ((data as Video)[field].includes(id)) n++;
+    return n;
+  }
+
+  /** A new ID for `collection` from `make`, unless an entry already has it (ignoring case). */
+  private newId(collection: Collection, make: () => string, what: string): string {
+    try {
+      return unusedId(make, this.items[collection].keys(), what);
+    } catch (e) {
+      throw new CmsError((e as Error).message);
+    }
   }
 
   /**
-   * Add a YouTube video, with the next free ID and a unique slug from its title, and no links yet.
+   * Add a YouTube video, with the ID `yt-<YouTube ID>` and a unique slug from its title, and no links yet.
    * The fields are the ones yt-export's sync writes for a new video, so the daily sync refreshes it
    * like any other. Throws if a video with the same YouTube ID exists.
    */
   createVideo(input: NewVideo): Video {
     const existing = [...this.items.video.values()].find((i) => (i.data as Video).videoSite === "youtube" && (i.data as Video).videoId === input.videoId);
     if (existing) throw new CmsError(`video ${existing.data.id} (${existing.data.slug}) is already YouTube video ${input.videoId}`);
-    const id = this.nextId("video");
+    const id = this.newId("video", () => videoEntryId("youtube", input.videoId), `a video whose ID differs from ${videoEntryId("youtube", input.videoId)} only in case`);
     const slug = slugAllocator([...this.items.video.values()].map((i) => i.data.slug))(input.title, `video-${id}`);
     // Field order as yt-export's sync writes it.
     const data: Video = {
@@ -267,7 +285,6 @@ export class Cms {
       slug,
       organizations: [],
       presenters: [],
-      playlists: [],
       active: input.active ?? true,
       videoSite: "youtube",
     };
@@ -276,12 +293,14 @@ export class Cms {
   }
 
   /**
-   * What a new presenter or organization needs before its fields are written: its name, the next free
-   * ID, a unique slug (or the one asked for) and its links. Throws if anything is missing or taken.
+   * What a new presenter, organization or playlist needs before its fields are written: its name, a
+   * new ID (random unless `makeId` says otherwise), a unique slug (or the one asked for) and its
+   * links. Throws if anything is missing or taken.
    */
   private prepareNew(
     collection: "presenter" | "organization" | "playlist",
     input: { name: string; slug?: string | null; links?: Partial<Record<ProfileLinkType, string | null>>; allowDuplicate?: boolean },
+    makeId: () => string = this.randomId,
   ) {
     const name = blank(input.name);
     if (!name) throw new CmsError(`${{ presenter: "a presenter", organization: "an organization", playlist: "a playlist" }[collection]} needs a ${collection === "playlist" ? "title" : "name"}`);
@@ -291,7 +310,7 @@ export class Cms {
       throw new CmsError(`${collection} ${twin.data.id} (${twin.data.slug}) is already called "${name}"; pass --allow-duplicate to create another`);
     }
 
-    const id = this.nextId(collection);
+    const id = this.newId(collection, makeId, `a ${collection} with that ID`);
     const slugs = [...items.values()].map((i) => i.data.slug);
     let slug: string;
     if (input.slug) {
@@ -321,7 +340,6 @@ export class Cms {
       imageUrl: blank(input.imageUrl),
       slug,
       active: input.active ?? true,
-      videos: [],
     };
     this.items.presenter.set(id, { data, body: toBody(input.bio ?? null) });
     return data;
@@ -338,7 +356,6 @@ export class Cms {
       contactPerson: blank(input.contactPerson),
       slug,
       active: input.active ?? true,
-      videos: [],
     };
     this.items.organization.set(id, { data, body: toBody(input.description ?? null) });
     return data;
@@ -349,7 +366,16 @@ export class Cms {
    * no `playlistId` is left alone by the YouTube sync.
    */
   createPlaylist(input: NewPlaylist): Playlist {
-    const { name, id, slug } = this.prepareNew("playlist", { name: input.title, slug: input.slug, allowDuplicate: input.allowDuplicate });
+    const playlistId = blank(input.playlistId);
+    if (playlistId) {
+      const twin = [...this.items.playlist.values()].find((i) => (i.data as Playlist).playlistId === playlistId);
+      if (twin) throw new CmsError(`playlist ${twin.data.id} (${twin.data.slug}) is already YouTube playlist ${playlistId}`);
+    }
+    const { name, id, slug } = this.prepareNew(
+      "playlist",
+      { name: input.title, slug: input.slug, allowDuplicate: input.allowDuplicate },
+      playlistId ? () => playlistEntryId(playlistId) : this.randomId,
+    );
 
     const category = blank(input.category);
     let canonical: string | null = null;
@@ -361,12 +387,6 @@ export class Cms {
     const publishDate = blank(input.publishDate);
     if (publishDate && (!/^\d{4}-\d{2}-\d{2}$/.test(publishDate) || Number.isNaN(Date.parse(publishDate)))) {
       throw new CmsError(`publish date "${publishDate}" must be a date as YYYY-MM-DD`);
-    }
-
-    const playlistId = blank(input.playlistId);
-    if (playlistId) {
-      const twin = [...this.items.playlist.values()].find((i) => (i.data as Playlist).playlistId === playlistId);
-      if (twin) throw new CmsError(`playlist ${twin.data.id} (${twin.data.slug}) is already YouTube playlist ${playlistId}`);
     }
 
     // Field order as yt-export's sync writes it.
@@ -414,45 +434,75 @@ export class Cms {
     return links;
   }
 
-  /** Link a video and an entry of `field`'s collection on both sides. Returns false if already linked. */
+  /**
+   * Link a video and an entry of `field`'s collection: the video's `presenters` or `organizations`
+   * gets the entry, or the playlist's `videos` gets the video. Returns false if already linked.
+   */
   link(videoRef: string, field: VideoLinkField, otherRef: string): boolean {
     const video = this.find("video", videoRef) as Video;
-    const other = this.find(VIDEO_LINKS[field], otherRef) as AnyData & HasVideos;
+    const other = this.find(VIDEO_LINKS[field], otherRef);
     if (!video.active) this.warnings.add(`video ${video.id} is inactive, so the site doesn't show it`);
     if (!other.active) this.warnings.add(`${VIDEO_LINKS[field]} ${other.id} is inactive, so the site doesn't show it`);
-    const had = video[field].includes(other.id) && other.videos.includes(video.id);
+    if (field === "playlists") {
+      const playlist = other as Playlist;
+      const had = playlist.videos.includes(video.id);
+      playlist.videos = append(playlist.videos, video.id);
+      return !had;
+    }
+    const had = video[field].includes(other.id);
     video[field] = append(video[field], other.id);
-    other.videos = addVideo(field, other.videos, video.id, (id) => (this.items.video.get(id)?.data as Video | undefined)?.publishedAt);
     return !had;
   }
 
-  /** Remove the link between a video and an entry of `field`'s collection on both sides. Returns false if not linked. */
+  /** Remove the link between a video and an entry of `field`'s collection. Returns false if not linked. */
   unlink(videoRef: string, field: VideoLinkField, otherRef: string): boolean {
     const video = this.find("video", videoRef) as Video;
-    const other = this.find(VIDEO_LINKS[field], otherRef) as AnyData & HasVideos;
-    const had = video[field].includes(other.id) || other.videos.includes(video.id);
+    const other = this.find(VIDEO_LINKS[field], otherRef);
+    if (field === "playlists") {
+      const playlist = other as Playlist;
+      const had = playlist.videos.includes(video.id);
+      playlist.videos = without(playlist.videos, video.id);
+      return had;
+    }
+    const had = video[field].includes(other.id);
     video[field] = without(video[field], other.id);
-    other.videos = without(other.videos, video.id);
     return had;
   }
 
-  /** Complete every one-sided link, for all three relations. Returns how many entries changed per relation. */
-  reconcile(): Record<VideoLinkField, number> {
-    const videos = new Map([...this.items.video].map(([id, i]) => [id, i.data as Video]));
-    const counts = {} as Record<VideoLinkField, number>;
-    for (const field of Object.keys(VIDEO_LINKS) as VideoLinkField[]) {
-      const others = new Map([...this.items[VIDEO_LINKS[field]]].map(([id, i]) => [id, i.data as AnyData & HasVideos]));
-      const changed = reconcileLinks(field, videos, others);
-      counts[field] = changed.videos.size + changed.others.size;
+  /**
+   * Problems in the content: links to entries that don't exist, IDs that differ only in case (which
+   * overwrite each other on macOS and Windows), and leftover reverse link lists. Empty when all is well.
+   */
+  problems(): string[] {
+    const out: string[] = [];
+    const missing = (from: string, collection: Collection, ids: string[]) => {
+      for (const id of ids) if (!this.items[collection].has(id)) out.push(`${from} links to ${collection} ${id}, which doesn't exist`);
+    };
+    for (const [id, { data }] of this.items.video) {
+      missing(`video ${id}`, "presenter", (data as Video).presenters);
+      missing(`video ${id}`, "organization", (data as Video).organizations);
     }
-    return counts;
+    for (const [id, { data }] of this.items.playlist) {
+      missing(`playlist ${id}`, "video", (data as Playlist).videos);
+      missing(`playlist ${id}`, "playlist", (data as Playlist).subPlaylists);
+    }
+    for (const [collection, items] of Object.entries(this.items)) {
+      for (const group of caseClashes(items.keys())) out.push(`${collection} IDs differ only in case: ${group.join(", ")}`);
+    }
+    // Lists from before links were stored on one side; a branch made before then can bring them back.
+    for (const [collection, field] of [["video", "playlists"], ["presenter", "videos"], ["organization", "videos"]] as const) {
+      for (const [id, { data }] of this.items[collection]) {
+        if (field in data) out.push(`${collection} ${id} has a "${field}" list, which is no longer used: remove it (the other side holds the link)`);
+      }
+    }
+    return out;
   }
 
   /** The files that differ from what was read, new ones included, in collection then ID order. */
   changes(): Change[] {
     const out: Change[] = [];
     for (const [collection, items] of Object.entries(this.items)) {
-      const sorted = [...items.entries()].sort(([a], [b]) => Number(a) - Number(b) || a.localeCompare(b));
+      const sorted = [...items.entries()].sort(([a], [b]) => compareIds(a, b));
       for (const [id, item] of sorted) {
         const content = serializeEntry(item.data, item.body);
         if (item.before && content === item.before.text) continue;

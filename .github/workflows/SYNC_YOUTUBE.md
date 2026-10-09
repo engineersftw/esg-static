@@ -74,7 +74,7 @@ The workflow syncs:
 - Video titles, descriptions, and thumbnails
 - Playlist metadata and membership
 - Video publish dates
-- Two-way links between videos and playlists
+- New videos and playlists, named `yt-<YouTube ID>` (membership is stored on the playlist)
 
 Existing data is preserved:
 - Manual edits to video/presenter/organization links

@@ -12,7 +12,8 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "cms": "pnpm --silent --filter @esg/cms cms"
+    "cms": "pnpm --silent --filter @esg/cms cms",
+    "content": "pnpm --silent --filter @esg/cms cms check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

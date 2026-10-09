@@ -10,11 +10,14 @@ export function slugify(title: string, fallback = "playlist"): string {
   return slug || fallback;
 }
 
-/** Slugs unique within a collection: existing ones are reserved, collisions get -2, -3, … */
+/**
+ * Slugs unique within a collection: existing ones are reserved, collisions get -2, -3, … The
+ * fallback (for a title with no ASCII) is slugified too, since it may hold an ID like "yt-AbC_1".
+ */
 export function slugAllocator(existing: string[]) {
   const used = new Set(existing);
   return (text: string, fallback: string) => {
-    const base = slugify(text, fallback);
+    const base = slugify(text, slugify(fallback, "entry"));
     let slug = base;
     for (let n = 2; used.has(slug); n++) slug = `${base}-${n}`;
     used.add(slug);

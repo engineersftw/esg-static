@@ -41,6 +41,7 @@ pnpm install        # installs every package (pnpm workspace)
 pnpm test           # every package's tests
 pnpm typecheck      # every package's type-check (the website's is `astro check`)
 pnpm lint           # ESLint over the whole repo (pnpm lint:fix to autofix)
+pnpm content        # check the content: links to missing entries, case clashes, leftover reverse lists
 pnpm build          # builds the website and pg-export
 pnpm cms --help     # the content editor
 ```
@@ -97,7 +98,7 @@ New videos arrive with no organizations or presenters; link them with [`cms`](#p
 
 ## packages/cms
 
-A command-line editor for the content, run from the repo root with `pnpm cms`. Every link is written on both sides (the video's `presenters`/`organizations`/`playlists` and the other entry's `videos`), and only changed files are rewritten, in the same format as pg-export, so they diff cleanly.
+A command-line editor for the content, run from the repo root with `pnpm cms`. Each link is stored on one side only (a video's `presenters`/`organizations`, a playlist's `videos`), new entries get IDs that can't clash with another contributor's (`yt-<YouTube ID>` for videos, a random ID for presenters and organizations), and only changed files are rewritten, in the same format as pg-export, so they diff cleanly.
 
 ```bash
 pnpm cms find presenter yeo                  # look up entries: find <video|presenter|organization|playlist> <text>
@@ -108,7 +109,7 @@ pnpm cms organization create --name "Tech Circle" --website techcircle.sg --cont
 pnpm cms playlist create --title "PyCon SG 2026" --category Conference --date 2026-06-01 --video 4588 --dry-run
 pnpm cms links presenter jane-doe            # show a presenter's or organization's links
 pnpm cms links organization 42 --instagram @golangsg --remove x --dry-run
-pnpm cms check [--fix]                       # find (and complete) links stored on one side only
+pnpm cms check                               # links to missing entries, case clashes, leftover reverse lists
 YOUTUBE_API_KEY=... pnpm cms submission issue-body.md --dry-run   # add a "Submit a video" issue's video
 pnpm cms --help                              # all options
 ```
@@ -163,7 +164,7 @@ If you change a content field, update `content.ts`, the zod schema in `apps/webs
 
 GitHub Actions in `.github/workflows/`:
 
-- **CI** (`ci.yml`): runs `pnpm lint`, `pnpm typecheck` and `pnpm test` as three separate checks on every pull request and push to `main`, after a `pnpm install --frozen-lockfile`. Commit `pnpm-lock.yaml` with any dependency change, or the install fails.
+- **CI** (`ci.yml`): runs `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm content` (`pnpm cms check`) as four separate checks on every pull request and push to `main`, after a `pnpm install --frozen-lockfile`. Commit `pnpm-lock.yaml` with any dependency change, or the install fails.
 - **Sync YouTube** (`sync-youtube.yml`): runs yt-export against the channel daily at 02:00 UTC (10:00 Singapore time), or on demand from the Actions tab. If the content changed, it opens or updates a pull request from the `youtube-sync` branch, and can post a Telegram notification. It needs the `YOUTUBE_API_KEY` secret (and optionally `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`). Setup is in [SYNC_YOUTUBE.md](.github/workflows/SYNC_YOUTUBE.md).
 - **Video submission** (`video-submission.yml`): runs when someone opens or edits an issue made from the **Submit a video** form (`.github/ISSUE_TEMPLATE/submit-video.yml`, labelled `video-submission`). It runs `pnpm cms submission` on the issue, opens or updates a pull request from `video-submission/issue-<n>` that adds the video to the Community Contributed playlist and closes the issue, and comments on the issue with the result. It uses the same secrets as the sync. Setup and caveats are in [VIDEO_SUBMISSION.md](.github/workflows/VIDEO_SUBMISSION.md).
 

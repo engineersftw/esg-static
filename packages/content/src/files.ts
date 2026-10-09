@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import type { Collection } from "@esg/db-types/content";
 
 export interface Entry<T extends object = Record<string, unknown>> {
-  /** File name without `.md`: the database ID, also the collection entry ID. */
+  /** File name without `.md`: the collection entry ID (see ids.ts for its forms). */
   id: string;
   /** Relative to the content directory, e.g. "video/4442.md". */
   path: string;
