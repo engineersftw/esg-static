@@ -17,7 +17,6 @@ export function video(id: string, publishedAt: string, over: Partial<Video> = {}
     slug: `video-${id}`,
     organizations: [],
     presenters: [],
-    playlists: [],
     active: true,
     videoSite: "youtube",
     ...over,
@@ -34,7 +33,6 @@ export function presenter(id: string, name: string, over: Partial<Presenter> = {
     imageUrl: null,
     slug: name.toLowerCase().replace(/ /g, "-"),
     active: true,
-    videos: [],
     ...over,
   } satisfies Presenter);
 }
@@ -48,7 +46,6 @@ export function organization(id: string, over: Partial<Organization> = {}): Entr
     contactPerson: null,
     slug: `org-${id}`,
     active: true,
-    videos: [],
     ...over,
   } satisfies Organization);
 }
@@ -73,12 +70,22 @@ export function playlist(id: string, over: Partial<Playlist> = {}): Entry<Playli
 
 export function content(over: Partial<ContentEntries> = {}): ContentEntries {
   return {
-    video: [video("1", "2020-01-01T00:00:00Z"), video("2", "2021-01-01T00:00:00Z"), video("3", "2022-01-01T00:00:00Z")],
-    organization: [organization("5", { videos: ["3", "1"] })],
-    presenter: [presenter("7", "Jane Doe"), presenter("9", "Ann Lee", { videos: ["3", "1"] })],
+    video: [
+      video("1", "2020-01-01T00:00:00Z", { organizations: ["5"], presenters: ["9"] }),
+      video("2", "2021-01-01T00:00:00Z"),
+      video("3", "2022-01-01T00:00:00Z", { organizations: ["5"], presenters: ["9"] }),
+    ],
+    organization: [organization("5")],
+    presenter: [presenter("7", "Jane Doe"), presenter("9", "Ann Lee")],
     playlist: [playlist("4", { videos: ["1", "3"] })],
     ...over,
   };
+}
+
+/** Stand-in random IDs for new entries: "new1", "new2", … */
+export function counterIds() {
+  let n = 0;
+  return () => `new${++n}`;
 }
 
 export const data = (cms: Cms, path: string) => {

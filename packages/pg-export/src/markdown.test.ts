@@ -180,7 +180,6 @@ describe("toMarkdownFiles", () => {
         slug: "talk-1",
         organizations: ["10"],
         presenters: ["21", "20"],
-        playlists: ["30", "31"],
         active: true,
         videoSite: "youtube",
       },
@@ -188,16 +187,17 @@ describe("toMarkdownFiles", () => {
     });
   });
 
-  it("lists an organization's and a presenter's videos newest first", () => {
+  it("stores each link on one side: no videos on organizations and presenters, no playlists on videos", () => {
     const out = files();
-    expect(out.get("organization/10.md")!.data.videos).toEqual(["3", "1"]);
-    expect(out.get("presenter/20.md")!.data.videos).toEqual(["2", "1"]);
+    expect(out.get("organization/10.md")!.data).not.toHaveProperty("videos");
+    expect(out.get("presenter/20.md")!.data).not.toHaveProperty("videos");
+    expect(out.get("video/1.md")!.data).not.toHaveProperty("playlists");
   });
 
   it("turns blank strings into null and keeps an existing organization slug", () => {
     const out = files(source({ organizations: [org(10, { slug: "org-ten", description: "We meet monthly.", image: " " })] }));
     expect(out.get("organization/10.md")).toEqual({
-      data: { id: "10", orgTitle: "Org 10", links: [], logoImage: null, contactPerson: null, slug: "org-ten", active: true, videos: ["3", "1"] },
+      data: { id: "10", orgTitle: "Org 10", links: [], logoImage: null, contactPerson: null, slug: "org-ten", active: true },
       body: "We meet monthly.",
     });
   });
@@ -255,7 +255,6 @@ describe("toMarkdownFiles", () => {
       }),
     );
     expect(out.get("video/1.md")!.data.organizations).toEqual(["10"]);
-    expect(out.get("organization/10.md")!.data.videos).toEqual(["1"]);
   });
 
   it("maps a playlist, with videos in playlist order and sub-playlists in sequence order", () => {
@@ -298,7 +297,6 @@ describe("toMarkdownFiles", () => {
   it("breaks sort_order ties by item id and drops dangling playlist items", () => {
     const out = files(source({ playlist_items: [item(3, 30, 2, 0), item(1, 30, 3, 0), item(2, 30, 1, 1), item(4, 30, 99, 0), item(5, 99, 1, 0)] }));
     expect(out.get("playlist/30.md")!.data.videos).toEqual(["3", "2", "1"]);
-    expect(out.get("video/1.md")!.data.playlists).toEqual(["30"]);
   });
 
   it("keeps existing playlist slugs and leaves an unknown category null", () => {

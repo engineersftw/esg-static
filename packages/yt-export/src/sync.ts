@@ -3,17 +3,16 @@
  *
  * - A video or playlist that already has a file (matched by `videoId` / `playlistId`) gets its title,
  *   description (the Markdown body) and thumbnails refreshed. Everything else in the file is kept.
- * - One that has no file gets a new entry with the next free ID and a unique slug.
- * - Playlist membership is additive: a video YouTube lists in a playlist is added to the playlist's
- *   `videos` and the video's `playlists` if missing. Nothing is ever removed, and nothing is deleted
- *   for content YouTube no longer returns (those are reported instead).
- * - Every link between a video and a playlist ends up on both sides, whether it came from YouTube or
- *   was made on one side only, e.g. by hand (see `reconcileLinks`).
+ * - One that has no file gets a new entry named after its YouTube ID (`yt-<id>`, see @esg/content's
+ *   ids.ts) with a unique slug.
+ * - Playlist membership is additive: a video YouTube lists in a playlist is appended to the
+ *   playlist's `videos` if missing. Membership is stored on the playlist only. Nothing is ever
+ *   removed, and nothing is deleted for content YouTube no longer returns (those are reported instead).
  *
  * No I/O here, so it can be unit tested and run from a saved raw.json.
  */
 import type { Playlist as PlaylistEntry, Video as VideoEntry } from "@esg/db-types/content";
-import { reconcileLinks, serializeEntry, slugAllocator, toBody, type Entry } from "@esg/content";
+import { caseClashes, playlistEntryId as newPlaylistId, serializeEntry, slugAllocator, toBody, videoEntryId as newVideoId, type Entry } from "@esg/content";
 import { thumb, type RawExport } from "./transform.js";
 import type { YtPlaylist, YtVideo } from "./youtube.js";
 
@@ -52,11 +51,6 @@ export interface CollectionSummary {
   notFetched: number;
   /** Missing entries set to `active: false` (`deactivateMissing`); also counted in neither updated nor unchanged. */
   deactivated: number;
-  /**
-   * Entries otherwise left alone (not fetched, not on YouTube, not a YouTube entry) that were written
-   * only to complete a one-sided playlist link.
-   */
-  linked: number;
   /** Titles of new entries not created because they would be empty (playlists with no available videos). */
   skipped: string[];
   /** YouTube IDs left out of the sync on request (`excludeVideos`) that matched a fetched video or an entry. */
@@ -79,8 +73,6 @@ export interface SyncPlan {
 const byPublished = (a: { id: string; snippet: { publishedAt: string } }, b: typeof a) =>
   a.snippet.publishedAt.localeCompare(b.snippet.publishedAt) || a.id.localeCompare(b.id);
 
-const maxId = (entries: Entry<object>[]) => entries.reduce((m, e) => Math.max(m, Number(e.id)), 0);
-
 /** `current` plus any of `add` it lacks, in order. Returns `current` itself when nothing is added. */
 function appendMissing(current: string[], add: string[] = []): string[] {
   const missing = add.filter((id) => !current.includes(id));
@@ -96,7 +88,7 @@ function changedFields(before: object, after: object, bodyBefore: string, bodyAf
 }
 
 function summarize(): CollectionSummary {
-  return { created: 0, updated: 0, unchanged: 0, notOnYouTube: [], notFetched: 0, deactivated: 0, linked: 0, skipped: [], excluded: [] };
+  return { created: 0, updated: 0, unchanged: 0, notOnYouTube: [], notFetched: 0, deactivated: 0, skipped: [], excluded: [] };
 }
 
 export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOptions = {}): SyncPlan {
@@ -119,22 +111,29 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
   const videoEntries = new Map(existing.videos.filter((e) => e.data.videoSite === "youtube").map((e) => [e.data.videoId, e]));
   const playlistEntries = new Map(existing.playlists.filter((e) => e.data.playlistId).map((e) => [e.data.playlistId!, e]));
 
-  // Entry IDs: existing ones are kept; new ones continue after the highest, oldest first.
+  // Entry IDs: existing ones are kept; new ones are named after their YouTube IDs.
   const videoEntryId = new Map([...videoEntries].map(([yt, e]) => [yt, e.id]));
-  let nextVideoId = maxId(existing.videos);
   const newVideos = [...videos.values()].filter((v) => !videoEntries.has(v.id)).sort(byPublished);
-  for (const v of newVideos) videoEntryId.set(v.id, String(++nextVideoId));
+  for (const v of newVideos) videoEntryId.set(v.id, newVideoId("youtube", v.id));
 
   const playlistEntryId = new Map([...playlistEntries].map(([yt, e]) => [yt, e.id]));
-  let nextPlaylistId = maxId(existing.playlists);
   const hasVideos = (p: YtPlaylist) => (raw.playlistItems[p.id] ?? []).some((i) => videos.has(i.contentDetails.videoId));
   const unseenPlaylists = [...playlists.values()].filter((p) => !playlistEntries.has(p.id)).sort(byPublished);
   const newPlaylists = unseenPlaylists.filter(hasVideos);
-  for (const p of newPlaylists) playlistEntryId.set(p.id, String(++nextPlaylistId));
+  for (const p of newPlaylists) playlistEntryId.set(p.id, newPlaylistId(p.id));
+
+  // YouTube IDs are case-sensitive, but on macOS and Windows two files whose names differ only in
+  // case are the same file, so refuse to create one.
+  for (const [collection, ids] of [
+    ["video", [...existing.videos.map((e) => e.id), ...newVideos.map((v) => videoEntryId.get(v.id)!)]],
+    ["playlist", [...existing.playlists.map((e) => e.id), ...newPlaylists.map((p) => playlistEntryId.get(p.id)!)]],
+  ] as const) {
+    const clashes = caseClashes(ids);
+    if (clashes.length) throw new Error(`${collection} IDs that differ only in case: ${clashes.map((c) => c.join(" / ")).join(", ")}`);
+  }
 
   // Membership as YouTube lists it, by entry ID. Items without an entry (private, deleted, not Vimeo) are skipped.
   const videosByPlaylist = new Map<string, string[]>();
-  const playlistsByVideo = new Map<string, string[]>();
   for (const p of raw.playlists) {
     const playlistId = playlistEntryId.get(p.id);
     if (playlistId === undefined) continue; // new but empty, so not created
@@ -143,13 +142,11 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
       const videoId = videoEntryId.get(item.contentDetails.videoId);
       if (videoId === undefined || !videos.has(item.contentDetails.videoId)) continue;
       videosByPlaylist.set(playlistId, appendMissing(videosByPlaylist.get(playlistId) ?? [], [videoId]));
-      playlistsByVideo.set(videoId, appendMissing(playlistsByVideo.get(videoId) ?? [], [playlistId]));
     }
   }
 
-  // Every entry's final state, so the links can be reconciled across all of them before anything is
-  // written. `before` is the file it replaces (none for a new entry); `outcome` is how it counts in
-  // the summary. Excluded videos get no draft, so nothing touches them.
+  // Every entry's final state. `before` is the file it replaces (none for a new entry); `outcome` is
+  // how it counts in the summary. Excluded videos get no draft, so nothing touches them.
   const videoDrafts: Draft<VideoEntry>[] = [];
   const playlistDrafts: Draft<PlaylistEntry>[] = [];
   const videoSummary = summarize();
@@ -185,7 +182,6 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
         thumbnailDefault: thumb(t, "default") ?? e.data.thumbnailDefault,
         thumbnailMedium: thumb(t, "medium") ?? e.data.thumbnailMedium,
         thumbnailHigh: thumb(t, "high") ?? e.data.thumbnailHigh,
-        playlists: appendMissing(e.data.playlists, playlistsByVideo.get(e.id)),
       },
       body: toBody(v.snippet.description),
     });
@@ -210,7 +206,6 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
         slug: videoSlug(v.snippet.title, `video-${id}`),
         organizations: [],
         presenters: [],
-        playlists: [...(playlistsByVideo.get(id) ?? [])].sort((a, b) => Number(a) - Number(b)),
         active: v.status.privacyStatus === "public",
         videoSite: "youtube",
       },
@@ -276,13 +271,6 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
     });
   }
 
-  // --- Links: whatever one side lists, the other lists too ----------------------------------------
-  reconcileLinks(
-    "playlists",
-    new Map(videoDrafts.map((d) => [d.id, d.data])),
-    new Map(playlistDrafts.map((d) => [d.id, d.data])),
-  );
-
   const writes: SyncWrite[] = [];
   emit(writes, videoDrafts, videoSummary, (d) => d.videoTitle);
   emit(writes, playlistDrafts, playlistSummary, (d) => d.playlistTitle);
@@ -300,11 +288,11 @@ interface Draft<T extends object> {
   path: string;
   data: T;
   body: string;
-  /** "refresh": matched on YouTube; "keep": not, left as it was apart from links. */
+  /** "refresh": matched on YouTube; "keep": not, left as it was. */
   outcome: "create" | "refresh" | "deactivate" | "keep";
 }
 
-/** A copy of the entry as it is, so reconciling its links doesn't change the entry. */
+/** A copy of the entry as it is. */
 const keep = <T extends object>(e: Entry<T>): Draft<T> => ({ id: e.id, before: e, path: e.path, data: { ...e.data }, body: e.body, outcome: "keep" });
 
 const deactivate = <T extends { active: boolean }>(e: Entry<T>): Draft<T> => ({ ...keep(e), data: { ...e.data, active: false }, outcome: "deactivate" });
@@ -321,7 +309,6 @@ function emit<T extends object>(writes: SyncWrite[], drafts: Draft<T>[], summary
     const changed = content !== d.before.text;
     if (d.outcome === "refresh") summary[changed ? "updated" : "unchanged"]++;
     else if (d.outcome === "deactivate") summary.deactivated++;
-    else if (changed) summary.linked++;
     if (!changed) continue;
     writes.push({
       kind: "update",

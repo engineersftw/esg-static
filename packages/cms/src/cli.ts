@@ -92,7 +92,8 @@ Commands:
 
   find <video|presenter|organization|playlist> <text>
                         List entries whose ID, slug, title or YouTube ID contains the text
-  check [--fix]         Report links stored on one side only; --fix completes them
+  check                 Report links to entries that don't exist, IDs that differ only in
+                        case, and leftover reverse link lists; exits 1 if there are any
 
 A <ref> is an entry ID, a slug, a site URL or path (/video/<slug>), and for videos a YouTube
 video ID or URL, for playlists a YouTube playlist ID.
@@ -146,8 +147,6 @@ const { values: args, positionals } = parseArgs({
     date: { type: "string" },
     "playlist-id": { type: "string" },
     hashtag: { type: "string" },
-    // check
-    fix: { type: "boolean", default: false },
     // submission
     issue: { type: "string" },
     report: { type: "string" },
@@ -298,11 +297,14 @@ function find(cms: Cms) {
 }
 
 function check(cms: Cms) {
-  const counts = cms.reconcile();
-  for (const [field, n] of Object.entries(counts)) console.log(`${field}: ${n ? `${n} entries with one-sided links` : "all links two-way"}`);
-  if (!Object.values(counts).some(Boolean)) return;
-  if (args.fix) save(cms);
-  else console.log("Run with --fix to complete them.");
+  const problems = cms.problems();
+  for (const p of problems) console.log(`  ! ${p}`);
+  if (!problems.length) {
+    console.log("No problems found.");
+    return;
+  }
+  console.log(`${problems.length} problems`);
+  process.exitCode = 1;
 }
 
 /** Set a step output when running in GitHub Actions; a random delimiter keeps any value to one output. */

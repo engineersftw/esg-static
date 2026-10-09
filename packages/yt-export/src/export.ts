@@ -140,7 +140,6 @@ function printSummary(label: string, c: CollectionSummary, collection: string, d
     if (published.length > LIST_LIMIT) console.log(`  ! … and ${published.length - LIST_LIMIT} more`);
     if (published.length && !deactivating) console.log("  (--deactivate-missing hides them)");
   }
-  if (c.linked) console.log(`  ${c.linked} more written only to complete one-sided playlist links`);
   if (c.skipped.length) console.log(`  skipped (no available videos): ${c.skipped.join(", ")}`);
   if (c.excluded.length) console.log(`  excluded: ${c.excluded.join(", ")}`);
 }

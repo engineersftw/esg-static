@@ -20,7 +20,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [lint, typecheck, test]
+        # content: pnpm cms check (links to missing entries, case clashes, leftover reverse lists)
+        task: [lint, typecheck, test, content]
 
     steps:
       - uses: actions/checkout@v4

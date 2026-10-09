@@ -5,7 +5,7 @@ import { PROFILE_LINK_TYPES } from './consts';
 
 // Markdown written by pg-export (`-f markdown`), one <id>.md per entry; frontmatter types are in
 // @esg/db-types/content. The glob loader would otherwise use the frontmatter `slug` as the entry
-// ID, but references between collections use the database ID, which is the file name.
+// ID, but references between collections use the entry ID, which is the file name.
 const fromContent = (collection: string) =>
   glob({
     pattern: '*.md',
@@ -26,7 +26,6 @@ const video = defineCollection({
     slug: z.string(),
     organizations: z.array(reference('organization')),
     presenters: z.array(reference('presenter')),
-    playlists: z.array(reference('playlist')),
     active: z.boolean(),
     videoSite: z.enum(['youtube', 'vimeo']),
   }),
@@ -50,7 +49,6 @@ const organization = defineCollection({
     contactPerson: z.string().nullable(),
     slug: z.string(),
     active: z.boolean(),
-    videos: z.array(reference('video')),
   }),
 });
 
@@ -65,7 +63,6 @@ const presenter = defineCollection({
     imageUrl: z.string().nullable(),
     slug: z.string(),
     active: z.boolean(),
-    videos: z.array(reference('video')),
   }),
 });
 

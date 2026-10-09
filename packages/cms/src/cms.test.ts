@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Cms, CmsError, expandVideoRefs, refKey } from "./cms.js";
-import { content, data, organization, presenter, video } from "./testContent.js";
+import { content, counterIds, data, organization, presenter, video } from "./testContent.js";
 
 describe("refKey", () => {
   it("takes the key out of IDs, paths and URLs", () => {
@@ -55,8 +55,8 @@ describe("find", () => {
 });
 
 describe("createOrganization", () => {
-  it("takes the next ID, makes a unique slug and writes the fields in pg-export order", () => {
-    const cms = new Cms(content({ organization: [organization("5"), organization("9", { slug: "tech-circle" })] }));
+  it("takes a random ID, makes a unique slug and writes the fields in pg-export order", () => {
+    const cms = new Cms(content({ organization: [organization("5"), organization("9", { slug: "tech-circle" })] }), { randomId: counterIds() });
     const o = cms.createOrganization({
       name: " Tech Circle ",
       links: { website: "techcircle.sg", x: "@techcircle" },
@@ -65,21 +65,20 @@ describe("createOrganization", () => {
       description: "Monthly roundtables.\r\nFor leaders.",
     });
 
-    expect(o.id).toBe("10");
+    expect(o.id).toBe("new1");
     expect(cms.changes()).toEqual([
       {
         kind: "create",
-        path: "organization/10.md",
+        path: "organization/new1.md",
         title: "Tech Circle",
         content: `---
-id: "10"
+id: "new1"
 orgTitle: "Tech Circle"
 links: [{"type":"x","url":"https://x.com/techcircle"},{"type":"website","url":"https://techcircle.sg"}]
 logoImage: null
 contactPerson: "Jane Doe"
 slug: "tech-circle-2"
 active: true
-videos: []
 ---
 
 Monthly roundtables.
@@ -98,18 +97,24 @@ For leaders.
     expect(() => cms.createOrganization({ name: " " })).toThrow(/an organization needs a name/);
   });
 
-  it("can be linked to videos on both sides straight away", () => {
-    const cms = new Cms(content());
+  it("can be linked to videos straight away", () => {
+    const cms = new Cms(content(), { randomId: counterIds() });
     const o = cms.createOrganization({ name: "New Group" });
     cms.link("1", "organizations", o.id);
     cms.link("3", "organizations", "new-group");
-    expect(o.videos).toEqual(["3", "1"]);
-    expect(cms.changes().map((c) => c.path)).toEqual(["video/1.md", "video/3.md", "organization/6.md"]);
+    expect(data(cms, "video/1.md").data.organizations).toEqual(["5", "new1"]);
+    expect(cms.changes().map((c) => c.path)).toEqual(["video/1.md", "video/3.md", "organization/new1.md"]);
+  });
+
+  it("retries a random ID that is taken", () => {
+    const ids = ["5", "new1"];
+    const cms = new Cms(content(), { randomId: () => ids.shift()! });
+    expect(cms.createOrganization({ name: "New Group" }).id).toBe("new1");
   });
 });
 
 describe("createPlaylist", () => {
-  it("takes the next ID, makes a unique slug and writes the fields in sync order", () => {
+  it("names it after its YouTube playlist, makes a unique slug and writes the fields in sync order", () => {
     const cms = new Cms(content());
     const p = cms.createPlaylist({
       title: " PyCon SG 2026 ",
@@ -121,14 +126,14 @@ describe("createPlaylist", () => {
       description: "Two days of Python.",
     });
 
-    expect(p.id).toBe("5");
+    expect(p.id).toBe("yt-PLabc");
     expect(cms.changes()).toEqual([
       {
         kind: "create",
-        path: "playlist/5.md",
+        path: "playlist/yt-PLabc.md",
         title: "PyCon SG 2026",
         content: `---
-id: "5"
+id: "yt-PLabc"
 playlistId: "PLabc"
 playlistTitle: "PyCon SG 2026"
 publishDate: "2026-06-01"
@@ -158,13 +163,14 @@ Two days of Python.
     expect(() => cms.createPlaylist({ title: " " })).toThrow(/a playlist needs a title/);
   });
 
-  it("can be linked to videos on both sides straight away", () => {
-    const cms = new Cms(content());
+  it("gives a playlist without a YouTube playlist a random ID, and links videos to it", () => {
+    const cms = new Cms(content(), { randomId: counterIds() });
     const p = cms.createPlaylist({ title: "Brand New" });
     cms.link("1", "playlists", p.id);
     cms.link("3", "playlists", "brand-new");
+    expect(p.id).toBe("new1");
     expect(p.videos).toEqual(["1", "3"]);
-    expect(cms.changes().map((c) => c.path)).toEqual(["video/1.md", "video/3.md", "playlist/5.md"]);
+    expect(cms.changes().map((c) => c.path)).toEqual(["playlist/new1.md"]);
   });
 });
 
@@ -217,8 +223,8 @@ describe("editLinks", () => {
 });
 
 describe("createPresenter", () => {
-  it("takes the next ID, makes a unique slug and writes the fields in pg-export order", () => {
-    const cms = new Cms(content({ presenter: [presenter("7", "Jane Doe"), presenter("12", "Someone", { slug: "john-tan" })] }));
+  it("takes a random ID, makes a unique slug and writes the fields in pg-export order", () => {
+    const cms = new Cms(content({ presenter: [presenter("7", "Jane Doe"), presenter("12", "Someone", { slug: "john-tan" })] }), { randomId: counterIds() });
     const p = cms.createPresenter({
       name: "  John Tan ",
       links: { tiktok: "@jtan.dev", website: "jtan.dev", x: "@jtan" },
@@ -226,14 +232,14 @@ describe("createPresenter", () => {
       bio: "Builds things.\r\nSometimes.",
     });
 
-    expect(p.id).toBe("13");
+    expect(p.id).toBe("new1");
     expect(cms.changes()).toEqual([
       {
         kind: "create",
-        path: "presenter/13.md",
+        path: "presenter/new1.md",
         title: "John Tan",
         content: `---
-id: "13"
+id: "new1"
 presenterName: "John Tan"
 presenterByline: null
 links: [{"type":"x","url":"https://x.com/jtan"},{"type":"website","url":"https://jtan.dev"},{"type":"tiktok","url":"https://www.tiktok.com/@jtan.dev"}]
@@ -241,7 +247,6 @@ email: null
 imageUrl: null
 slug: "john-tan-2"
 active: true
-videos: []
 ---
 
 Builds things.
@@ -262,38 +267,36 @@ Sometimes.
   });
 
   it("can be linked to a video straight away", () => {
-    const cms = new Cms(content());
+    const cms = new Cms(content(), { randomId: counterIds() });
     const p = cms.createPresenter({ name: "New Person" });
     cms.link("2", "presenters", p.id);
-    expect(data(cms, "presenter/10.md").data.videos).toEqual(["2"]);
-    expect(data(cms, "video/2.md").data.presenters).toEqual(["10"]);
+    expect(data(cms, "presenter/new1.md").data).not.toHaveProperty("videos");
+    expect(data(cms, "video/2.md").data.presenters).toEqual(["new1"]);
   });
 });
 
 describe("link", () => {
-  it("writes both sides: presenters and organizations newest first", () => {
+  it("writes presenters and organizations on the video only", () => {
     const cms = new Cms(content());
     expect(cms.link("2", "presenters", "ann-lee")).toBe(true);
     expect(cms.link("yt2", "organizations", "5")).toBe(true);
 
-    expect(data(cms, "presenter/9.md").data.videos).toEqual(["3", "2", "1"]);
-    expect(data(cms, "organization/5.md").data.videos).toEqual(["3", "2", "1"]);
     expect(data(cms, "video/2.md").data).toMatchObject({ presenters: ["9"], organizations: ["5"] });
+    expect(cms.changes().map((c) => c.path)).toEqual(["video/2.md"]);
   });
 
-  it("appends to a playlist and to the video's existing links", () => {
-    const cms = new Cms(content({ video: [video("1", "2020-01-01T00:00:00Z"), video("2", "2021-01-01T00:00:00Z", { playlists: ["8"] })] }));
+  it("appends the video to a playlist, on the playlist only", () => {
+    const cms = new Cms(content());
     cms.link("2", "playlists", "PL4");
     expect(data(cms, "playlist/4.md").data.videos).toEqual(["1", "3", "2"]);
-    expect(data(cms, "video/2.md").data.playlists).toEqual(["8", "4"]);
+    expect(cms.changes().map((c) => c.path)).toEqual(["playlist/4.md"]);
   });
 
-  it("changes nothing when already linked, and completes a one-sided link", () => {
-    const cms = new Cms(content({ video: [video("1", "2020-01-01T00:00:00Z", { presenters: ["9"] }), video("3", "2022-01-01T00:00:00Z")] }));
+  it("changes nothing when already linked", () => {
+    const cms = new Cms(content());
     expect(cms.link("1", "presenters", "9")).toBe(false);
+    expect(cms.link("3", "playlists", "4")).toBe(false);
     expect(cms.changes()).toEqual([]);
-    expect(cms.link("3", "presenters", "9")).toBe(true);
-    expect(cms.changes().map((c) => c.path)).toEqual(["video/3.md"]);
   });
 
   it("warns about inactive entries", () => {
@@ -305,22 +308,42 @@ describe("link", () => {
 });
 
 describe("unlink", () => {
-  it("removes both sides", () => {
-    const cms = new Cms(content({ video: [video("1", "2020-01-01T00:00:00Z", { playlists: ["4"] }), video("3", "2022-01-01T00:00:00Z", { playlists: ["4"] })] }));
+  it("removes the link from the side that holds it", () => {
+    const cms = new Cms(content());
     expect(cms.unlink("1", "playlists", "4")).toBe(true);
+    expect(cms.unlink("3", "presenters", "9")).toBe(true);
     expect(data(cms, "playlist/4.md").data.videos).toEqual(["3"]);
-    expect(data(cms, "video/1.md").data.playlists).toEqual([]);
+    expect(data(cms, "video/3.md").data.presenters).toEqual([]);
     expect(cms.unlink("1", "playlists", "4")).toBe(false);
+    expect(cms.changes().map((c) => c.path)).toEqual(["video/3.md", "playlist/4.md"]);
   });
 });
 
-describe("reconcile", () => {
-  it("completes one-sided links of every relation", () => {
-    const cms = new Cms(content());
-    // Fixture: org 5, presenter 9 and playlist 4 list videos 1 and 3, which don't list them back.
-    expect(cms.reconcile()).toEqual({ organizations: 2, presenters: 2, playlists: 2 });
-    expect(data(cms, "video/1.md").data).toMatchObject({ organizations: ["5"], presenters: ["9"], playlists: ["4"] });
-    expect(cms.changes().map((c) => c.path)).toEqual(["video/1.md", "video/3.md"]);
+describe("problems", () => {
+  it("is empty for sound content", () => {
+    expect(new Cms(content()).problems()).toEqual([]);
+  });
+
+  it("reports links to missing entries and IDs that differ only in case", () => {
+    const cms = new Cms(
+      content({
+        video: [video("1", "2020-01-01T00:00:00Z", { presenters: ["9", "99"] }), video("yt-abc", "2021-01-01T00:00:00Z"), video("yt-ABC", "2021-01-01T00:00:00Z")],
+      }),
+    );
+    expect(cms.problems()).toEqual([
+      "video 1 links to presenter 99, which doesn't exist",
+      "playlist 4 links to video 3, which doesn't exist",
+      "video IDs differ only in case: yt-abc, yt-ABC",
+    ]);
+  });
+
+  it("reports reverse link lists from before links were one-sided", () => {
+    const old = video("1", "2020-01-01T00:00:00Z", { organizations: ["5"], presenters: ["9"] });
+    const cms = new Cms(content({ video: [{ ...old, data: { ...old.data, playlists: ["4"] } as typeof old.data }] }));
+    expect(cms.problems()).toEqual([
+      "playlist 4 links to video 3, which doesn't exist",
+      'video 1 has a "playlists" list, which is no longer used: remove it (the other side holds the link)',
+    ]);
   });
 });
 
@@ -333,11 +356,11 @@ describe("createVideo", () => {
     description: "About it\r\n",
   };
 
-  it("takes the next ID and a unique slug, with the fields the YouTube sync writes", () => {
+  it("names it yt-<YouTube ID>, with a unique slug and the fields the YouTube sync writes", () => {
     const cms = new Cms(content());
     const v = cms.createVideo(input);
     expect(v).toEqual({
-      id: "4",
+      id: "yt-dQw4w9WgXcQ",
       videoId: "dQw4w9WgXcQ",
       videoTitle: "Video 1",
       publishedAt: "2024-05-01T10:00:00Z",
@@ -347,11 +370,10 @@ describe("createVideo", () => {
       slug: "video-1-2",
       organizations: [],
       presenters: [],
-      playlists: [],
       active: true,
       videoSite: "youtube",
     });
-    const change = cms.changes().find((c) => c.path === "video/4.md");
+    const change = cms.changes().find((c) => c.path === "video/yt-dQw4w9WgXcQ.md");
     expect(change?.kind).toBe("create");
     expect(change?.content.endsWith("---\n\nAbout it\n")).toBe(true);
   });
@@ -360,6 +382,11 @@ describe("createVideo", () => {
     const cms = new Cms(content());
     expect(() => cms.createVideo({ ...input, videoId: "yt2" })).toThrow(/video 2 \(video-2\) is already YouTube video yt2/);
   });
+
+  it("refuses an ID that differs from an existing one only in case", () => {
+    const cms = new Cms(content({ video: [video("yt-dqw4w9wgxcq", "2020-01-01T00:00:00Z", { videoId: "dqw4w9wgxcq" })] }));
+    expect(() => cms.createVideo(input)).toThrow(/differs from yt-dQw4w9WgXcQ only in case/);
+  });
 });
 
 describe("presentersNamed", () => {
@@ -367,10 +394,15 @@ describe("presentersNamed", () => {
     const cms = new Cms(
       content({
         presenter: [
-          presenter("1", "José Tan", { active: false, videos: ["1", "2", "3"] }),
+          presenter("1", "José Tan", { active: false }),
           presenter("2", "jose  tan"),
-          presenter("3", "Jose Tan ", { videos: ["1"] }),
+          presenter("3", "Jose Tan "),
           presenter("4", "Josef Tan"),
+        ],
+        video: [
+          video("1", "2020-01-01T00:00:00Z", { presenters: ["1", "3"] }),
+          video("2", "2021-01-01T00:00:00Z", { presenters: ["1"] }),
+          video("3", "2022-01-01T00:00:00Z", { presenters: ["1"] }),
         ],
       }),
     );

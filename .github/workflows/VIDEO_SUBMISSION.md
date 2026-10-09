@@ -5,7 +5,7 @@ Anyone with a GitHub account can suggest a YouTube talk for the site's [Communit
 1. They open an issue with the **Submit a video** form (`.github/ISSUE_TEMPLATE/submit-video.yml`, which labels it `video-submission`). The form asks for the YouTube URL, the presenters (one per line, each optionally followed by `| link | link`), the event or group, and notes. The playlist page links to the form: `https://github.com/engineersftw/esg-static/issues/new?template=submit-video.yml`.
 2. `video-submission.yml` runs `pnpm cms submission` on the issue body. It:
    - fetches the video from the YouTube Data API (1 quota unit);
-   - creates `video/<id>.md` with the fields the daily sync writes, so the sync keeps its title, description and thumbnails up to date afterwards;
+   - creates `video/yt-<YouTube ID>.md` with the fields the daily sync writes, so the sync keeps its title, description and thumbnails up to date afterwards;
    - links each presenter whose name matches an existing presenter (ignoring case, spacing and accents; if several match, the active one with the most videos), and creates the others with the links given (the type is worked out from each link; an `@handle` is X);
    - adds the video to the `community-contributed` playlist.
 3. It opens a pull request from `video-submission/issue-<n>` that closes the issue. The description lists what was matched or created, the submitter's event and notes, and a review checklist. It then comments on the issue with the PR link.
@@ -22,6 +22,6 @@ Editing the issue runs it again from `main` and updates the same pull request, r
 ## Things to know
 
 - Pull requests opened with the workflow's `GITHUB_TOKEN` don't trigger other workflows, so the `lint`/`typecheck`/`test` CI checks don't run on them until someone pushes to the branch. The Cloudflare Pages preview builds anyway, since it comes from Cloudflare's GitHub app. The same is true of the YouTube sync PRs.
-- Each submission takes the next free video (and presenter) ID on `main`, so two submissions open at the same time get the same IDs, and the second PR has a merge conflict once the first is merged. Edit the second issue (any change, even to the title) to rebuild its PR from the new `main`.
+- Submissions open at the same time don't clash: the video's file is named after its YouTube ID and new presenters get random IDs, and existing presenters' files aren't touched. Two submissions of the same video do create the same file, so the second PR conflicts, which is the duplicate to close. Two PRs that both add to the Community Contributed playlist can conflict on its `videos` line once one is merged; edit the second issue (any change, even to the title) to rebuild its PR from the new `main`.
 - The issue body is untrusted. The workflow only passes it to the shell as a file, and the report escapes everything that came from the issue or from YouTube (Markdown, HTML and `@` mentions).
 - Locally: save an issue body to a file and run `YOUTUBE_API_KEY=... pnpm cms submission body.md --dry-run`.

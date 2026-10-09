@@ -19,7 +19,6 @@ function videoEntry(id: string, videoId: string, over: Partial<VideoEntry> = {},
     slug: `old-title-${id}`,
     organizations: ["7"],
     presenters: ["8"],
-    playlists: [],
     active: true,
     videoSite: "youtube",
     ...over,
@@ -62,7 +61,7 @@ describe("planSync: existing videos", () => {
     const v = video("yt1", "2023-11-03T06:41:58Z");
     v.snippet.title = "New title";
     v.snippet.description = "New\r\ndescription\r\n";
-    const existing = videoEntry("10", "yt1", { playlists: ["3"], active: false });
+    const existing = videoEntry("10", "yt1", { active: false });
 
     const plan = planSync(raw({ videos: [v] }), content([existing]));
 
@@ -152,7 +151,7 @@ describe("planSync: existing videos", () => {
       raw({ videos: [video("same", "2023-01-01T00:00:00Z")] }),
       content([videoEntry("10", "same", { videoSite: "vimeo" })]),
     );
-    expect(plan.writes.map((w) => [w.kind, w.path])).toEqual([["create", "video/11.md"]]);
+    expect(plan.writes.map((w) => [w.kind, w.path])).toEqual([["create", "video/yt-same.md"]]);
   });
 });
 
@@ -160,7 +159,7 @@ describe("planSync: existing videos", () => {
 // New videos
 // ---------------------------------------------------------------------------
 describe("planSync: new videos", () => {
-  it("creates an entry with the next IDs, oldest first", () => {
+  it("names new entries after their YouTube IDs, oldest first", () => {
     const plan = planSync(
       raw({
         videos: [
@@ -173,8 +172,8 @@ describe("planSync: new videos", () => {
     );
     const created = plan.writes.filter((w) => w.kind === "create").map((w) => [w.path, find(plan.writes, w.path).entry.data.videoId]);
     expect(created).toEqual([
-      ["video/4443.md", "b"],
-      ["video/4444.md", "c"],
+      ["video/yt-b.md", "b"],
+      ["video/yt-c.md", "c"],
     ]);
     expect(plan.videos).toMatchObject({ created: 2 });
   });
@@ -184,9 +183,9 @@ describe("planSync: new videos", () => {
     v.snippet.title = "Hackware v7.9: HDMI!";
     v.snippet.description = "Speaker: Someone\r\n\r\nProduced by Engineers.SG\r\n";
     const plan = planSync(raw({ videos: [v] }), content());
-    const w = find(plan.writes, "video/1.md");
+    const w = find(plan.writes, "video/yt-abc.md");
     expect(w.entry.data).toEqual({
-      id: "1",
+      id: "yt-abc",
       videoId: "abc",
       videoTitle: "Hackware v7.9: HDMI!",
       publishedAt: "2023-11-03T06:41:58Z",
@@ -196,7 +195,6 @@ describe("planSync: new videos", () => {
       slug: "hackware-v7-9-hdmi",
       organizations: [],
       presenters: [],
-      playlists: [],
       active: true,
       videoSite: "youtube",
     });
@@ -214,8 +212,8 @@ describe("planSync: new videos", () => {
       }),
       content(),
     );
-    expect(plan.writes.map((w) => w.path)).toEqual(["video/1.md"]);
-    expect(find(plan.writes, "video/1.md").entry.data.active).toBe(false);
+    expect(plan.writes.map((w) => w.path)).toEqual(["video/yt-unl.md"]);
+    expect(find(plan.writes, "video/yt-unl.md").entry.data.active).toBe(false);
   });
 
   it("gives unique slugs, also against existing and new entries", () => {
@@ -224,7 +222,7 @@ describe("planSync: new videos", () => {
     const c = video("c", "2020-01-03T00:00:00Z");
     a.snippet.title = b.snippet.title = c.snippet.title = "Talk";
     const plan = planSync(raw({ videos: [a, b, c] }), content([videoEntry("5", "known", { slug: "talk" })]));
-    expect(["video/6.md", "video/7.md", "video/8.md"].map((p) => find(plan.writes, p).entry.data.slug)).toEqual([
+    expect(["video/yt-a.md", "video/yt-b.md", "video/yt-c.md"].map((p) => find(plan.writes, p).entry.data.slug)).toEqual([
       "talk-2",
       "talk-3",
       "talk-4",
@@ -232,17 +230,17 @@ describe("planSync: new videos", () => {
   });
 
   it("falls back to video-<id> for a title with no ASCII", () => {
-    const v = video("a", "2020-01-01T00:00:00Z");
+    const v = video("AbC_d", "2020-01-01T00:00:00Z");
     v.snippet.title = "新加坡";
     const plan = planSync(raw({ videos: [v] }), content());
-    expect(find(plan.writes, "video/1.md").entry.data.slug).toBe("video-1");
+    expect(find(plan.writes, "video/yt-AbC_d.md").entry.data.slug).toBe("video-yt-abc-d");
   });
 
   it("uses null for missing thumbnails", () => {
     const v = video("a", "2020-01-01T00:00:00Z");
     v.snippet.thumbnails = {};
     const plan = planSync(raw({ videos: [v] }), content());
-    const data = find(plan.writes, "video/1.md").entry.data;
+    const data = find(plan.writes, "video/yt-a.md").entry.data;
     expect([data.thumbnailDefault, data.thumbnailMedium, data.thumbnailHigh]).toEqual([null, null, null]);
   });
 });
@@ -297,21 +295,19 @@ describe("planSync: existing playlists", () => {
       ),
     );
     expect(find(plan.writes, "playlist/9.md").entry.data.videos).toEqual(["3", "1", "5", "4", "2"]);
-    // The videos gain the playlist too, and the ones that already had it don't change.
-    expect(find(plan.writes, "video/4.md").entry.data.playlists).toEqual(["9"]);
-    expect(find(plan.writes, "video/2.md").entry.data.playlists).toEqual(["9"]);
+    // Membership is stored on the playlist only.
+    expect(find(plan.writes, "video/4.md").changed).not.toContain("playlists");
   });
 
-  it("adds a playlist to a video once", () => {
+  it("adds a video to a playlist once", () => {
     const plan = planSync(
       raw({
         videos: [video("a", "2020-01-01T00:00:00Z")],
         playlists: [playlist("PL1", "A", "2021-01-01T00:00:00Z")],
         playlistItems: { PL1: [item("PL1", "a", 0), item("PL1", "a", 1)] },
       }),
-      content([videoEntry("1", "a", { playlists: ["9"] })], [playlistEntry("9", "PL1", { videos: ["1"] })]),
+      content([videoEntry("1", "a")], [playlistEntry("9", "PL1", { videos: ["1"] })]),
     );
-    expect(plan.writes.filter((w) => w.path === "video/1.md" && w.changed.includes("playlists"))).toEqual([]);
     expect(find(plan.writes, "playlist/9.md").entry.data.videos).toEqual(["1"]);
   });
 
@@ -349,10 +345,10 @@ describe("planSync: new playlists", () => {
       raw({ videos, playlists: [p], playlistItems: { PL1: [item("PL1", "c", 0), item("PL1", "a", 1)] } }),
       content([videoEntry("4", "b")], [playlistEntry("119", "PLold")]),
     );
-    const w = find(plan.writes, "playlist/120.md");
+    const w = find(plan.writes, "playlist/yt-PL1.md");
     expect(w.kind).toBe("create");
     expect(w.entry.data).toEqual({
-      id: "120",
+      id: "yt-PL1",
       playlistId: "PL1",
       playlistTitle: "AWS Community Day 2023",
       publishDate: "2023-03-16",
@@ -362,29 +358,28 @@ describe("planSync: new playlists", () => {
       category: null,
       slug: "aws-community-day-2023",
       active: true,
-      videos: ["6", "5"], // new video IDs continue after 4: a → 5, c → 6
+      videos: ["yt-c", "yt-a"],
       subPlaylists: [],
     });
     expect(w.entry.body).toBe("About it");
     expect(plan.playlists).toMatchObject({ created: 1 });
   });
 
-  it("links the new playlist from the videos in it, new and existing", () => {
+  it("stores the membership on the new playlist only", () => {
     const plan = planSync(
       raw({
         videos,
         playlists: [playlist("PL1", "A", "2021-01-01T00:00:00Z")],
         playlistItems: { PL1: [item("PL1", "a", 0), item("PL1", "b", 1)] },
       }),
-      content([videoEntry("4", "b", { playlists: ["2"] })]),
+      content([videoEntry("4", "b")]),
     );
-    // Playlist 1 is new; b already exists and a and c are new (5, 6).
-    expect(find(plan.writes, "video/4.md").entry.data.playlists).toEqual(["2", "1"]);
-    expect(find(plan.writes, "video/5.md").entry.data.playlists).toEqual(["1"]);
-    expect(find(plan.writes, "video/6.md").entry.data.playlists).toEqual([]);
+    expect(find(plan.writes, "playlist/yt-PL1.md").entry.data.videos).toEqual(["yt-a", "4"]);
+    expect(find(plan.writes, "video/4.md").entry.data).not.toHaveProperty("playlists");
+    expect(find(plan.writes, "video/yt-a.md").entry.data).not.toHaveProperty("playlists");
   });
 
-  it("assigns IDs oldest first and gives unique slugs, also against existing ones", () => {
+  it("names them after their YouTube IDs and gives unique slugs oldest first, also against existing ones", () => {
     const plan = planSync(
       raw({
         videos,
@@ -393,7 +388,7 @@ describe("planSync: new playlists", () => {
       }),
       content([], [playlistEntry("10", "PLx", { slug: "meetup" })]),
     );
-    expect([find(plan.writes, "playlist/11.md"), find(plan.writes, "playlist/12.md")].map((w) => [w.entry.data.playlistId, w.entry.data.slug])).toEqual([
+    expect([find(plan.writes, "playlist/yt-PLold.md"), find(plan.writes, "playlist/yt-PLnew.md")].map((w) => [w.entry.data.playlistId, w.entry.data.slug])).toEqual([
       ["PLold", "meetup-2"],
       ["PLnew", "meetup-3"],
     ]);
@@ -408,7 +403,7 @@ describe("planSync: new playlists", () => {
       }),
       content(),
     );
-    expect(find(plan.writes, "playlist/1.md").entry.data.active).toBe(false);
+    expect(find(plan.writes, "playlist/yt-PL1.md").entry.data.active).toBe(false);
   });
 
   it("falls back to playlist-<id> for a title with no ASCII", () => {
@@ -420,10 +415,10 @@ describe("planSync: new playlists", () => {
       }),
       content(),
     );
-    expect(find(plan.writes, "playlist/1.md").entry.data.slug).toBe("playlist-1");
+    expect(find(plan.writes, "playlist/yt-PL1.md").entry.data.slug).toBe("playlist-yt-pl1");
   });
 
-  it("skips a playlist with no available videos, without using up an ID", () => {
+  it("skips a playlist with no available videos", () => {
     const plan = planSync(
       raw({
         videos,
@@ -432,7 +427,7 @@ describe("planSync: new playlists", () => {
       }),
       content(),
     );
-    expect(plan.writes.filter((w) => w.path.startsWith("playlist/")).map((w) => w.path)).toEqual(["playlist/1.md"]);
+    expect(plan.writes.filter((w) => w.path.startsWith("playlist/")).map((w) => w.path)).toEqual(["playlist/yt-PL1.md"]);
     expect(plan.playlists.skipped).toEqual(["Empty"]);
   });
 });
@@ -513,11 +508,11 @@ describe("planSync: missing entries", () => {
 describe("planSync: excludeVideos", () => {
   const videos = ["a", "b", "c"].map((id, i) => video(id, `2020-01-0${i + 1}T00:00:00Z`));
 
-  it("does not create an excluded video and does not use up an ID", () => {
+  it("does not create an excluded video", () => {
     const plan = planSync(raw({ videos }), content(), { excludeVideos: ["b"] });
     expect(plan.writes.map((w) => [w.path, find(plan.writes, w.path).entry.data.videoId])).toEqual([
-      ["video/1.md", "a"],
-      ["video/2.md", "c"],
+      ["video/yt-a.md", "a"],
+      ["video/yt-c.md", "c"],
     ]);
     expect(plan.videos).toMatchObject({ created: 2, excluded: ["b"] });
   });
@@ -532,8 +527,8 @@ describe("planSync: excludeVideos", () => {
       content(),
       { excludeVideos: ["b"] },
     );
-    expect(find(plan.writes, "playlist/1.md").entry.data.videos).toEqual(["1"]);
-    expect(plan.writes.some((w) => w.path === "playlist/2.md")).toBe(false);
+    expect(find(plan.writes, "playlist/yt-PL1.md").entry.data.videos).toEqual(["yt-a"]);
+    expect(plan.writes.some((w) => w.path === "playlist/yt-PL2.md")).toBe(false);
     expect(plan.playlists.skipped).toEqual(["Only b"]);
   });
 
@@ -565,53 +560,16 @@ describe("planSync: excludeVideos", () => {
   });
 });
 
-describe("planSync: one-sided links", () => {
-  it("adds a playlist that lists a video by hand to the video, also when neither is fetched", () => {
-    const plan = planSync(raw({}), content([videoEntry("10", "yt1", { playlists: ["1"] })], [playlistEntry("3", "PLx", { videos: ["10"] })]));
-
-    expect(plan.writes.map((w) => w.path)).toEqual(["video/10.md"]);
-    const w = find(plan.writes, "video/10.md");
-    expect(w.entry.data.playlists).toEqual(["1", "3"]);
-    expect(w.changed).toEqual(["playlists"]);
-    expect(plan.videos).toMatchObject({ updated: 0, unchanged: 0, notFetched: 1, linked: 1 });
-  });
-
-  it("adds a video that lists a playlist by hand to the end of the playlist", () => {
-    const plan = planSync(
-      raw({ videos: [video("yt1", "2023-01-01T00:00:00Z")] }),
-      content([videoEntry("10", "yt1", { videoTitle: "Video yt1", playlists: ["3"] })], [playlistEntry("3", null, { videos: ["11"] })]),
-    );
-
-    expect(find(plan.writes, "playlist/3.md").entry.data.videos).toEqual(["11", "10"]);
-    expect(plan.playlists).toMatchObject({ linked: 1 });
-  });
-
-  it("completes links of refreshed entries in the same write", () => {
-    const plan = planSync(
-      raw({ playlists: [playlist("PLx", "PyCon", "2019-01-01T00:00:00Z")], videos: [video("yt1", "2023-01-01T00:00:00Z")] }),
-      content([videoEntry("10", "yt1")], [playlistEntry("3", "PLx", { videos: ["10"] })]),
-    );
-
-    const w = find(plan.writes, "video/10.md");
-    expect(w.entry.data.playlists).toEqual(["3"]);
-    expect(w.changed).toContain("playlists");
-    expect(plan.videos).toMatchObject({ updated: 1, linked: 0 });
-  });
-
-  it("leaves dangling IDs and excluded videos alone", () => {
-    const plan = planSync(
-      raw({}),
-      content([videoEntry("10", "yt1", { playlists: ["99"] })], [playlistEntry("3", "PLx", { videos: ["10", "98"] })]),
-      { excludeVideos: ["yt1"] },
-    );
-
+describe("planSync: IDs and links", () => {
+  it("leaves hand-made links alone and writes nothing when nothing changed", () => {
+    const plan = planSync(raw({}), content([videoEntry("10", "yt1")], [playlistEntry("3", null, { videos: ["10", "98"] })]));
     expect(plan.writes).toEqual([]);
   });
 
-  it("writes nothing when every link is two-way", () => {
-    const plan = planSync(raw({}), content([videoEntry("10", "yt1", { playlists: ["3"] })], [playlistEntry("3", "PLx", { videos: ["10"] })]));
-
-    expect(plan.writes).toEqual([]);
+  it("refuses to create an entry whose ID differs from another only in case", () => {
+    expect(() => planSync(raw({ videos: [video("AbC", "2020-01-01T00:00:00Z")] }), content([videoEntry("yt-abc", "abc")]))).toThrow(
+      "video IDs that differ only in case: yt-abc / yt-AbC",
+    );
   });
 });
 
