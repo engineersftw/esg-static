@@ -21,6 +21,7 @@ pnpm cms links presenter jane-doe            # show a presenter's or organizatio
 pnpm cms links organization 42 --instagram @golangsg --remove x
 
 pnpm cms check                               # also `pnpm content`; CI runs it
+YOUTUBE_API_KEY=... pnpm cms video add dQw4w9WgXcQ --presenter jane-doe --playlist pyconsg-2019 --dry-run
 YOUTUBE_API_KEY=... pnpm cms submission issue-body.md --issue 12 --report report.md --dry-run
 
 pnpm cms --help                              # every option

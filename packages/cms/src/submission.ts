@@ -146,6 +146,19 @@ export function assertNewVideo(cms: Cms, videoId: string): void {
 const url = (u: string | null | undefined) => u?.trim() || null;
 const thumbnail = (t: YtThumbnails, size: keyof YtThumbnails) => url(t[size]?.url);
 
+/** A new video entry made from what the YouTube API returned for it (what yt-export's sync writes). */
+export function createVideoFromYouTube(cms: Cms, youtube: YtVideo, active = true): Video {
+  const t = youtube.snippet.thumbnails;
+  return cms.createVideo({
+    videoId: youtube.id,
+    title: youtube.snippet.title,
+    publishedAt: youtube.snippet.publishedAt,
+    thumbnails: { default: thumbnail(t, "default"), medium: thumbnail(t, "medium"), high: thumbnail(t, "high") },
+    description: youtube.snippet.description,
+    active,
+  });
+}
+
 /**
  * Add the submitted video to the content: a new video entry, linked to each presenter (an existing
  * one with the same name, else a new one with the submitted links) and to `playlistRef`.
@@ -159,14 +172,7 @@ export function applySubmission(cms: Cms, submission: Submission, youtube: YtVid
   }
 
   const playlist = cms.find("playlist", playlistRef) as Playlist;
-  const t = youtube.snippet.thumbnails;
-  const video = cms.createVideo({
-    videoId: youtube.id,
-    title: youtube.snippet.title,
-    publishedAt: youtube.snippet.publishedAt,
-    thumbnails: { default: thumbnail(t, "default"), medium: thumbnail(t, "medium"), high: thumbnail(t, "high") },
-    description: youtube.snippet.description,
-  });
+  const video = createVideoFromYouTube(cms, youtube);
 
   const presenters = submission.presenters.map(({ name, links }): PresenterOutcome => {
     const [match, ...otherMatches] = cms.presentersNamed(name);
