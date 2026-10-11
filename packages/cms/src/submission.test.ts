@@ -5,23 +5,26 @@ import {
   addedReport,
   applySubmission,
   escapeMarkdown,
+  groupOptionProblems,
+  groupOptions,
   parseIssueForm,
   parsePresenters,
   parseSubmission,
   rejectedReport,
   SubmissionError,
+  withGroupOptions,
   youtubeVideoId,
   type Submission,
 } from "./submission.js";
-import { content, counterIds, data, playlist, presenter, video } from "./testContent.js";
+import { content, counterIds, data, organization, playlist, presenter, video } from "./testContent.js";
 
 /** An issue body as GitHub renders the submit-video form. */
-const issueBody = (fields: { url?: string; presenters?: string; event?: string; notes?: string }) =>
+const issueBody = (fields: { url?: string; presenters?: string; group?: string; notes?: string }) =>
   [
     `### YouTube URL\n\n${fields.url ?? "_No response_"}`,
     `### Presenters\n\n${fields.presenters ?? "_No response_"}`,
-    `### Event or group\n\n${fields.event ?? "_No response_"}`,
-    `### Anything else\n\n${fields.notes ?? "_No response_"}`,
+    `### Group\n\n${fields.group ?? "_No response_"}`,
+    `### Others (not in list)\n\n${fields.notes ?? "_No response_"}`,
   ].join("\n\n");
 
 const yt = (over: Partial<YtVideo["snippet"]> = {}, privacyStatus: YtVideo["status"]["privacyStatus"] = "public"): YtVideo => ({
@@ -43,18 +46,18 @@ const yt = (over: Partial<YtVideo["snippet"]> = {}, privacyStatus: YtVideo["stat
   status: { privacyStatus },
 });
 
-const submission = (over: Partial<Submission> = {}): Submission => ({ videoId: "dQw4w9WgXcQ", presenters: [], event: null, notes: null, ...over });
+const submission = (over: Partial<Submission> = {}): Submission => ({ videoId: "dQw4w9WgXcQ", presenters: [], group: null, notes: null, ...over });
 
 const community = () =>
   content({ playlist: [playlist("4"), playlist("8", { playlistId: null, slug: "community-contributed", playlistTitle: "Community Contributed" })] });
 
 describe("parseIssueForm", () => {
   it("reads each heading's value, with GitHub's empty marker as empty", () => {
-    const fields = parseIssueForm("### YouTube URL\r\n\r\nhttps://youtu.be/x\r\n\r\n### Presenters\n\n_No response_\n\n### Anything else\n\nLine 1\n\nLine 2\n");
+    const fields = parseIssueForm("### YouTube URL\r\n\r\nhttps://youtu.be/x\r\n\r\n### Presenters\n\n_No response_\n\n### Others (not in list)\n\nLine 1\n\nLine 2\n");
     expect([...fields]).toEqual([
       ["YouTube URL", "https://youtu.be/x"],
       ["Presenters", ""],
-      ["Anything else", "Line 1\n\nLine 2"],
+      ["Others (not in list)", "Line 1\n\nLine 2"],
     ]);
   });
 });
@@ -110,10 +113,10 @@ describe("parsePresenters", () => {
 
 describe("parseSubmission", () => {
   it("reads the form", () => {
-    expect(parseSubmission(issueBody({ url: "https://youtu.be/dQw4w9WgXcQ", presenters: "Jane Doe", event: "PyCon SG", notes: "Great talk" }))).toEqual({
+    expect(parseSubmission(issueBody({ url: "https://youtu.be/dQw4w9WgXcQ", presenters: "Jane Doe", group: "PyCon SG", notes: "Great talk" }))).toEqual({
       videoId: "dQw4w9WgXcQ",
       presenters: [{ name: "Jane Doe", links: [] }],
-      event: "PyCon SG",
+      group: "PyCon SG",
       notes: "Great talk",
     });
   });
@@ -175,6 +178,25 @@ describe("applySubmission", () => {
     expect(result.presenters[0].otherMatches.map((p) => p.id)).toEqual(["7"]);
   });
 
+  it("links the organization named by the group, ignoring case, and reports it", () => {
+    const cms = new Cms(community(), { randomId: counterIds() });
+    const sub = submission({ group: "org 5" });
+    const result = applySubmission(cms, sub, yt());
+    expect(result.organization?.id).toBe("5");
+    expect(result.video.organizations).toEqual(["5"]);
+    expect(addedReport(result, sub)).toContain("Group: org 5. Linked to organization 5, `/organization/org-5`.");
+  });
+
+  it("links nothing for a group that is unknown, inactive or absent", () => {
+    const c = community();
+    const orgs = [...c.organization, organization("6", { orgTitle: "Gone", active: false })];
+    for (const group of ["Nowhere", "Gone", null]) {
+      const result = applySubmission(new Cms({ ...c, organization: orgs }), submission({ group }), yt());
+      expect(result.organization).toBeNull();
+      expect(result.video.organizations).toEqual([]);
+    }
+  });
+
   it("rejects a video that is already there, missing or not public, and writes nothing", () => {
     const shown = new Cms(community());
     expect(() => applySubmission(shown, submission({ videoId: "yt2" }), yt())).toThrow("This video is already on Engineers.SG: https://engineers.sg/video/video-2");
@@ -198,6 +220,31 @@ describe("escapeMarkdown", () => {
   });
 });
 
+describe("withGroupOptions", () => {
+  const form = ["body:", "  - type: dropdown", "    id: group", "    attributes:", "      options:", '        - "Old"', '        - "Older"', "    validations:", "      required: false", ""].join("\n");
+
+  it("replaces the options and keeps the rest", () => {
+    expect(withGroupOptions(form, ["A & B", 'Say "hi"'])).toBe(
+      ["body:", "  - type: dropdown", "    id: group", "    attributes:", "      options:", '        - "A & B"', '        - "Say \\"hi\\""', "    validations:", "      required: false", ""].join("\n"),
+    );
+  });
+
+  it("reads the options back, and reports what is out of step", () => {
+    expect(groupOptions(form)).toEqual(["Old", "Older"]);
+    expect(groupOptionProblems(form, ["Old", "Older"])).toEqual([]);
+    expect(groupOptionProblems(form, ["Older", "Old"])).toEqual(["submission form: Group options are not sorted by name"]);
+    expect(groupOptionProblems(form, ["Old", "New"])).toEqual([
+      'submission form: Group options lack "New"',
+      'submission form: Group options list "Older", which is not an active organization',
+    ]);
+  });
+
+  it("is a no-op for the same names, and fails without a group dropdown", () => {
+    expect(withGroupOptions(form, ["Old", "Older"])).toBe(form);
+    expect(() => withGroupOptions("body: []\n", ["A"])).toThrow("no \"group\" dropdown");
+  });
+});
+
 describe("reports", () => {
   it("describes what was added, for the pull request", () => {
     const cms = new Cms(community(), { randomId: counterIds() });
@@ -206,7 +253,7 @@ describe("reports", () => {
         { name: "Jane Doe", links: [] },
         { name: "Bob Lee", links: ["@boblee"] },
       ],
-      event: "PyCon SG 2024",
+      group: "PyCon SG 2024",
       notes: "Great talk by @someone\n<b>really</b>",
     });
     const report = addedReport(applySubmission(cms, sub, yt({ title: "Rust *in* production" })), sub, 42);
@@ -217,7 +264,7 @@ describe("reports", () => {
     expect(report).toContain("- Added to the playlist Community Contributed (`/playlist/community-contributed`)");
     expect(report).toContain("- **Jane Doe**: existing presenter 7, `/presenter/jane-doe`");
     expect(report).toContain("- **Bob Lee**: new presenter new1, `/presenter/bob-lee`, with links: x `https://x.com/boblee`");
-    expect(report).toContain("Event or group: PyCon SG 2024.");
+    expect(report).toContain("Group: PyCon SG 2024.");
     expect(report).toContain("> Great talk by &#64;someone\n> &lt;b&gt;really&lt;/b&gt;");
     expect(report.trimEnd().endsWith("Closes #42")).toBe(true);
   });

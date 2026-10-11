@@ -55,6 +55,15 @@ describe("find", () => {
 });
 
 describe("createOrganization", () => {
+  it("lists the active organization names sorted, for the submission form", () => {
+    const cms = new Cms(
+      content({
+        organization: [organization("1", { orgTitle: "beta" }), organization("2", { orgTitle: "Alpha" }), organization("3", { orgTitle: "Gone", active: false }), organization("4", { orgTitle: " Alpha " })],
+      }),
+    );
+    expect(cms.organizationNames()).toEqual(["Alpha", "beta"]);
+  });
+
   it("takes a random ID, makes a unique slug and writes the fields in pg-export order", () => {
     const cms = new Cms(content({ organization: [organization("5"), organization("9", { slug: "tech-circle" })] }), { randomId: counterIds() });
     const o = cms.createOrganization({
