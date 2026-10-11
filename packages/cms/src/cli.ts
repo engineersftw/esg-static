@@ -13,7 +13,7 @@ import { PROFILE_LINK_TYPES, readEntries, VIDEO_LINKS, writeEntryFiles, type Vid
 import { Collection, type Organization, type Presenter, type ProfileLinkType } from "@esg/db-types/content";
 import { YouTubeClient } from "@esg/yt-export/youtube";
 import { Cms, CmsError, expandVideoRefs, PLAYLIST_CATEGORIES, titleOf, type Change } from "./cms.js";
-import { addedReport, applySubmission, assertNewVideo, COMMUNITY_PLAYLIST, parseSubmission, rejectedReport, SubmissionError } from "./submission.js";
+import { addedReport, applySubmission, assertNewVideo, COMMUNITY_PLAYLIST, createVideoFromYouTube, parseSubmission, rejectedReport, SubmissionError, youtubeVideoId } from "./submission.js";
 
 const HELP = `
 Usage: cms <command> [options]
@@ -58,6 +58,14 @@ Commands:
                         Description (the Markdown body)
       --slug, --inactive, --allow-duplicate, --video
                         As for presenter create
+
+  video add <youtube-id-or-url> [options]
+                        Add a YouTube video: its title, description, date and thumbnails are
+                        fetched from the YouTube Data API (needs YOUTUBE_API_KEY). A public
+                        video is shown; an unlisted one is added hidden (active: false)
+      --presenter <ref>, --organization <ref>, --playlist <ref>
+                        Also link it to these (repeatable)
+      --inactive        Add it hidden from the site
 
   links <presenter|organization> <ref> [options]
                         Show an entry's links, or change them: a link option replaces the
@@ -215,6 +223,33 @@ function organizationCreate(cms: Cms) {
   save(cms);
 }
 
+/** What the YouTube API returns for a video ID (undefined if it has nothing); fails without YOUTUBE_API_KEY. */
+async function fetchYouTubeVideo(videoId: string, command: string) {
+  const key = process.env.YOUTUBE_API_KEY;
+  if (!key) fail(`${command} needs YOUTUBE_API_KEY to fetch the video from YouTube`);
+  const [video] = await new YouTubeClient(key).getVideos([videoId]);
+  return video;
+}
+
+async function videoAdd(cms: Cms) {
+  const input = positionals[2];
+  if (!input) fail("video add needs a YouTube video ID or URL");
+  const videoId = youtubeVideoId(input);
+  if (!videoId) fail(`"${input}" is not a YouTube video ID or URL`);
+  const dup = cms.search("video", videoId).find((v) => "videoId" in v && v.videoSite === "youtube" && v.videoId === videoId);
+  if (dup) fail(`video ${dup.id} (${dup.slug}) is already YouTube video ${videoId}`);
+  // Fail early on bad link targets, before calling YouTube.
+  for (const [field, refs] of LINK_OPTIONS) for (const ref of refs) cms.find(VIDEO_LINKS[field], ref);
+  const youtube = await fetchYouTubeVideo(videoId, "video add");
+  if (!youtube) fail(`YouTube has no public or unlisted video ${videoId}; it may be private or deleted`);
+  const hidden = args.inactive || youtube.status.privacyStatus !== "public";
+  if (hidden && !args.inactive) console.warn(`  ! the video is ${youtube.status.privacyStatus} on YouTube, so it is added inactive`);
+  const video = createVideoFromYouTube(cms, youtube, !hidden);
+  for (const [field, refs] of LINK_OPTIONS) for (const ref of refs) cms.link(video.id, field, ref);
+  console.log(`Video ${video.id}: ${video.videoTitle} → /video/${video.slug}`);
+  save(cms);
+}
+
 function playlistCreate(cms: Cms) {
   if (!args.title) fail("playlist create needs --title");
   const p = cms.createPlaylist({
@@ -330,9 +365,7 @@ async function submission(cms: Cms) {
   try {
     const sub = parseSubmission(readFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), file), "utf8"));
     assertNewVideo(cms, sub.videoId);
-    const key = process.env.YOUTUBE_API_KEY;
-    if (!key) fail("submission needs YOUTUBE_API_KEY to fetch the video");
-    const [video] = await new YouTubeClient(key).getVideos([sub.videoId]);
+    const video = await fetchYouTubeVideo(sub.videoId, "submission");
     const result = applySubmission(cms, sub, video, playlist);
     report(addedReport(result, sub, issue));
     save(cms);
@@ -363,6 +396,9 @@ async function main() {
     case "playlist":
       if (sub !== "create") fail(`unknown playlist command "${sub ?? ""}"; try playlist create`);
       return playlistCreate(cms);
+    case "video":
+      if (sub !== "add") fail(`unknown video command "${sub ?? ""}"; try video add`);
+      return videoAdd(cms);
     case "links":
       return links(cms);
     case "assign":
