@@ -247,6 +247,25 @@ export class Cms {
       .sort((a, b) => Number(b.active) - Number(a.active) || this.videoCount("presenters", b.id) - this.videoCount("presenters", a.id) || compareIds(a.id, b.id));
   }
 
+  /** Organizations with this name (see `nameKey`), active ones first, then by most videos. */
+  organizationsNamed(name: string): Organization[] {
+    const key = nameKey(name);
+    return [...this.items.organization.values()]
+      .map((i) => i.data as Organization)
+      .filter((o) => nameKey(o.orgTitle) === key)
+      .sort((a, b) => Number(b.active) - Number(a.active) || this.videoCount("organizations", b.id) - this.videoCount("organizations", a.id) || compareIds(a.id, b.id));
+  }
+
+  /** The names of the active organizations, sorted: the Group options of the video submission form. */
+  organizationNames(): string[] {
+    const names = new Set<string>();
+    for (const { data } of this.items.organization.values()) {
+      const o = data as Organization;
+      if (o.active && blank(o.orgTitle)) names.add(o.orgTitle.trim());
+    }
+    return [...names].sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }) || (a < b ? -1 : 1));
+  }
+
   /** How many videos list this presenter or organization. */
   videoCount(field: "presenters" | "organizations", id: string): number {
     let n = 0;

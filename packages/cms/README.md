@@ -33,6 +33,7 @@ Commands that write take `--dry-run` (show what would change, write nothing), an
 - **Many videos:** `--video` can be repeated, comma-separated, or an ID range (`4609-4618`), and `--from-playlist <ref>` takes every video in a playlist. The `create` commands' `--video` accepts the same forms.
 - **Links** are `{ "type", "url" }` entries of type `x`, `website`, `linkedin`, `instagram` or `tiktok`, with a flag each (`--x` or `--twitter`, `--website`, `--linkedin`, `--instagram`, `--tiktok`) that takes a handle or URL. `links` replaces a type's link where it is or adds it at the end, and `--remove <type>` deletes one.
 - **Playlist categories** are Conference, Conference Track, Meetup, Tutorial, Training and Shows (any case). `--date` (YYYY-MM-DD) is the event date, which sorts conferences.
+- **Submission form:** `organization create` also rewrites the Group options of `.github/ISSUE_TEMPLATE/submit-video.yml` to the active organizations, sorted (`--form <file>` picks another form; with a custom `--content` and no `--form` it leaves the form alone, and `--dry-run` writes nothing). `pnpm cms form sync` does the same rewrite on its own, and `check` (so CI) reports Group options that differ from the active organizations, which is how a rename, a deactivation or a hand-added organization gets noticed.
 - **Names:** `presenter create` and `organization create` refuse a name another entry already has, ignoring case, spacing and accents, unless you pass `--allow-duplicate`.
 
 ## How it writes
@@ -55,12 +56,13 @@ It exits 1 if it finds any, so CI fails.
 
 `submission <issue-body-file>` is what the video submission workflow (`.github/workflows/video-submission.yml`, see `VIDEO_SUBMISSION.md` there) runs on an issue made from the **Submit a video** form. It:
 
-1. reads the YouTube URL, presenters (one per line, each optionally followed by `| link | link`), event and notes from the form;
+1. reads the YouTube URL, presenters (one per line, each optionally followed by `| link | link`), the group (a dropdown of organization names) and "Others (not in list)" from the form;
 2. rejects a video already in the content before calling YouTube, then fetches it (needs `YOUTUBE_API_KEY`) and rejects one that is missing or not public;
 3. creates the video entry with the same fields the YouTube sync writes, so the sync keeps it up to date;
 4. links each presenter to an existing presenter with the same name (active first, then most videos; others with the name are listed for the reviewer), or creates one with the given links (the type is worked out from each link; `@handle` is X);
-5. adds the video to the `community-contributed` playlist (or `--playlist <ref>`);
-6. prints a Markdown report for the pull request (`--report <file>` also writes it), escaping everything from the issue and YouTube.
+5. links the active organization named by the group, if there is one (matched by name, ignoring case and accents);
+6. adds the video to the `community-contributed` playlist (or `--playlist <ref>`);
+7. prints a Markdown report for the pull request (`--report <file>` also writes it), escaping everything from the issue and YouTube.
 
 A submission it can't add is reported with the reason and exits 0 with step output `status=rejected`. In GitHub Actions, success sets `status=added`, `title` and `video`.
 

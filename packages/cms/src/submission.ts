@@ -7,7 +7,7 @@
  * from the issue or from YouTube is untrusted text, so the reports escape it.
  */
 import { detectProfileLink } from "@esg/content";
-import type { Playlist, Presenter, ProfileLink, Video } from "@esg/db-types/content";
+import type { Organization, Playlist, Presenter, ProfileLink, Video } from "@esg/db-types/content";
 import type { YtThumbnails, YtVideo } from "@esg/yt-export/youtube";
 import { type Cms } from "./cms.js";
 
@@ -15,8 +15,8 @@ import { type Cms } from "./cms.js";
 export const FORM_FIELDS = {
   url: "YouTube URL",
   presenters: "Presenters",
-  event: "Event or group",
-  notes: "Anything else",
+  group: "Group",
+  notes: "Others (not in list)",
 } as const;
 
 /** The playlist every submission is added to, by slug. */
@@ -37,7 +37,7 @@ export interface SubmittedPresenter {
 export interface Submission {
   videoId: string;
   presenters: SubmittedPresenter[];
-  event: string | null;
+  group: string | null;
   notes: string | null;
 }
 
@@ -108,7 +108,7 @@ export function parseSubmission(body: string): Submission {
   return {
     videoId,
     presenters: parsePresenters(fields.get(FORM_FIELDS.presenters) ?? ""),
-    event: fields.get(FORM_FIELDS.event)?.slice(0, 200) || null,
+    group: fields.get(FORM_FIELDS.group)?.slice(0, 200) || null,
     notes: fields.get(FORM_FIELDS.notes)?.slice(0, 2000) || null,
   };
 }
@@ -130,6 +130,8 @@ export interface SubmissionResult {
   youtube: YtVideo;
   playlist: Playlist;
   presenters: PresenterOutcome[];
+  /** The active organization named by the submission's group, now linked to the video. */
+  organization: Organization | null;
 }
 
 /** Throws if the content already has the YouTube video, so it isn't fetched for nothing. */
@@ -193,8 +195,67 @@ export function applySubmission(cms: Cms, submission: Submission, youtube: YtVid
     return { name, presenter, created: true, otherMatches: [], links: presenter.links, unused };
   });
 
+  // The form's Group options are organization names, so a match is the organization itself.
+  const organization = (submission.group && cms.organizationsNamed(submission.group).find((o) => o.active)) || null;
+  if (organization) cms.link(video.id, "organizations", organization.id);
+
   cms.link(video.id, "playlists", playlist.id);
-  return { video, youtube, playlist, presenters };
+  return { video, youtube, playlist, presenters, organization };
+}
+
+/** The Group dropdown's option lines in the submission form, with the indentation they have there. */
+const FORM_OPTION = /^( +)- (.*)$/;
+
+/** Where the `group` dropdown's option lines are in the form's lines: `options` is the `options:` line, `end` is after the last option. */
+function groupOptionLines(lines: string[]): { options: number; end: number } {
+  const id = lines.findIndex((l) => /^ +id: group\s*$/.test(l));
+  const options = id < 0 ? -1 : lines.findIndex((l, i) => i > id && /^ +options:\s*$/.test(l));
+  if (options < 0) throw new Error('the submission form has no "group" dropdown with options');
+  let end = options + 1;
+  while (end < lines.length && FORM_OPTION.test(lines[end])) end++;
+  return { options, end };
+}
+
+/** The options of the submission form's `group` dropdown, in order. Throws if the form has no such dropdown. */
+export function groupOptions(form: string): string[] {
+  const lines = form.split("\n");
+  const { options, end } = groupOptionLines(lines);
+  return lines.slice(options + 1, end).map((l) => {
+    const text = FORM_OPTION.exec(l)![2].trim();
+    try {
+      const value: unknown = JSON.parse(text);
+      return typeof value === "string" ? value : text;
+    } catch {
+      return text;
+    }
+  });
+}
+
+/**
+ * The submission form (`.github/ISSUE_TEMPLATE/submit-video.yml`) with the options of its `group`
+ * dropdown replaced by `names`, one per line, quoted as JSON (valid YAML). Throws if the form has no
+ * such dropdown. Everything else is kept as is.
+ */
+export function withGroupOptions(form: string, names: string[]): string {
+  const lines = form.split("\n");
+  const { options, end } = groupOptionLines(lines);
+  const indent = FORM_OPTION.exec(lines[options + 1] ?? "")?.[1] ?? `${/^ */.exec(lines[options])![0]}  `;
+  lines.splice(options + 1, end - options - 1, ...names.map((n) => `${indent}- ${JSON.stringify(n)}`));
+  return lines.join("\n");
+}
+
+/** What differs between the form's Group options and the organization names they should list; empty when in step. */
+export function groupOptionProblems(form: string, names: string[]): string[] {
+  const options = groupOptions(form);
+  const have = new Set(options);
+  const want = new Set(names);
+  const out: string[] = [];
+  const missing = names.filter((n) => !have.has(n));
+  const extra = options.filter((o) => !want.has(o));
+  if (missing.length) out.push(`submission form: Group options lack ${missing.map((n) => `"${n}"`).join(", ")}`);
+  if (extra.length) out.push(`submission form: Group options list ${extra.map((n) => `"${n}"`).join(", ")}, which is not an active organization`);
+  if (!missing.length && !extra.length && options.join("\n") !== names.join("\n")) out.push("submission form: Group options are not sorted by name");
+  return out;
 }
 
 /**
@@ -253,14 +314,16 @@ export function addedReport(result: SubmissionResult, submission: Submission, is
       lines.push(`  - Links ${why}: ${p.unused.map(escapeMarkdown).join(", ")}`);
     }
   }
-  if (submission.event || submission.notes) {
+  if (submission.group || submission.notes) {
     lines.push("", "### From the submitter", "");
-    if (submission.event) {
+    if (submission.group && result.organization) {
+      lines.push(`Group: ${escapeMarkdown(submission.group)}. Linked to organization ${result.organization.id}, ${code(`/organization/${result.organization.slug}`)}.`);
+    } else if (submission.group) {
       lines.push(
-        `Event or group: ${escapeMarkdown(submission.event)}. Not linked to an organization: use \`pnpm cms assign --video ${video.id} --organization <ref>\` if there is one.`,
+        `Group: ${escapeMarkdown(submission.group)}. Not linked to an organization: use \`pnpm cms assign --video ${video.id} --organization <ref>\` if there is one.`,
       );
     }
-    if (submission.event && submission.notes) lines.push("");
+    if (submission.group && submission.notes) lines.push("");
     if (submission.notes) lines.push(quote(submission.notes));
   }
   lines.push(
