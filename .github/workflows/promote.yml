@@ -1,0 +1,51 @@
+# Promote staging to production: merge a staging commit that passed CI into main (a merge commit).
+# It follows the CI run of every push to staging, and waits for a maintainer to approve it, because the
+# `production` environment (Settings > Environments) lists the maintainers as required reviewers.
+# Details are in PROMOTE.md next to this file.
+name: Promote to production
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [staging]
+  # Promote the current head of staging without a CI run waiting for approval (e.g. it expired).
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    name: merge staging into main
+    # After a CI run only if it was a push to staging that passed; a manual run is always fine.
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge into main
+        env:
+          # The commit CI tested, not whatever staging has moved on to since.
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF" != refs/heads/staging ]; then
+            echo "::error::Run this workflow on the staging branch."
+            exit 1
+          fi
+          if git merge-base --is-ancestor "$SHA" HEAD; then
+            echo "main already has $SHA; nothing to promote."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git merge --no-ff -m "Promote staging to production (${SHA:0:7})" "$SHA"
+          git push origin main
+          echo "Promoted $SHA to main." >> "$GITHUB_STEP_SUMMARY"

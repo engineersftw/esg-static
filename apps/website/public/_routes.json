@@ -24,7 +24,6 @@
     "/videos/*",
     "/conferences",
     "/conferences/*",
-    "/conference/*",
     "/playlist/*",
     "/organizations/list/*",
     "/presenters/list/*"

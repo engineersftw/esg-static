@@ -1,17 +1,23 @@
-// ID → slug for every active video, organization and presenter from the Rails site (the numeric
-// IDs), used by the Pages Function in functions/_middleware.ts to redirect the old ID-based URLs.
+// ID → slug for every active video, organization, presenter and conference from the Rails site (the
+// numeric IDs), plus lowercase X handle → presenter slug (the old /presenter/<twitter_id> and
+// /s/<twitter_id>). Used by the Pages Function in functions/_middleware.ts to redirect the old URLs.
 // Entries added since have no old URLs. Inactive entries are left out, so their old URLs 404 like
 // their pages do.
-import type { CollectionEntry } from 'astro:content';
-import { getActiveOrganizations, getActivePresenters, getActiveVideos } from '../helpers/collections';
-
-const bySlug = (entries: CollectionEntry<'video' | 'organization' | 'presenter'>[]) =>
-  Object.fromEntries(entries.filter((entry) => /^\d+$/.test(entry.id)).map((entry) => [entry.id, entry.data.slug]));
+import { getActiveOrganizations, getActivePresenters, getActiveVideos, getConferencePages } from '../helpers/collections';
+import { handleSlugs, slugsById } from '../helpers/legacyRedirects';
 
 export async function GET() {
+  const presenters = await getActivePresenters();
+  // Playlists with a /conference page: conferences and their tracks.
+  // An ID that is also the slug of a conference page is left out, so that page keeps working.
+  const pages = (await getConferencePages()).map(({ playlist }) => playlist);
+  const pageSlugs = new Set(pages.map((playlist) => playlist.data.slug));
+  const conferences = pages.filter((playlist) => !pageSlugs.has(playlist.id));
   return Response.json({
-    video: bySlug(await getActiveVideos()),
-    organization: bySlug(await getActiveOrganizations()),
-    presenter: bySlug(await getActivePresenters()),
+    video: slugsById(await getActiveVideos()),
+    organization: slugsById(await getActiveOrganizations()),
+    presenter: slugsById(presenters),
+    presenterHandle: handleSlugs(presenters),
+    conference: slugsById(conferences),
   });
 }
