@@ -1,10 +1,9 @@
 // Pure helpers for src/pages/legacy-redirects.json.ts: the maps the Pages Function in
 // functions/_middleware.ts uses to redirect the old Rails URLs.
-import type { ProfileLink } from '@esg/db-types/content';
-
+// The website doesn't depend on @esg/db-types, so the link shape is spelled out here.
 export interface Entry {
   id: string;
-  data: { slug: string; links?: ProfileLink[] };
+  data: { slug: string; links?: { type: string; url: string }[] };
 }
 
 /** Rails ids were plain numbers; entries added since have no old URLs. */
