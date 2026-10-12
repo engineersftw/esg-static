@@ -3,7 +3,9 @@
  *
  * These used to be ~21k static redirect pages, which pushed the site past Cloudflare Pages' 20k
  * file limit. Here, one function handles them all, and the `<name>--<id>` forms accept any name
- * (only the ID matters, as in Rails), so links made before a rename still work.
+ * (only the ID matters, as in Rails), so links made before a rename still work. The old
+ * `/presenter/<twitter_id>` and `/s/<twitter_id>` look the X handle up (case-insensitively), and
+ * `/conference/<id>` redirects a conference or track.
  *
  * The ID → slug map is dist/legacy-redirects.json (src/pages/legacy-redirects.json.ts), bundled in
  * when wrangler builds this function, so build the site before `wrangler pages deploy`/`dev`.
@@ -12,7 +14,7 @@
  */
 import slugs from '../dist/legacy-redirects.json';
 
-type Collection = keyof typeof slugs;
+type Collection = Exclude<keyof typeof slugs, 'presenterHandle'>;
 
 interface Context {
   request: Request;
@@ -20,7 +22,7 @@ interface Context {
 }
 
 /** Old path → [collection, captured ID or slug]. First match wins. */
-const RULES: [RegExp, Collection | 'organization-slug'][] = [
+const RULES: [RegExp, Collection | 'organization-slug' | 'presenter-handle'][] = [
   [/^\/v\/(\d+)\/?$/, 'video'], // /v/601
   [/^\/(\d+)\/?$/, 'video'], // /601
   [/^\/episodes\/(\d+)\/?$/, 'video'], // /episodes/601
@@ -33,6 +35,8 @@ const RULES: [RegExp, Collection | 'organization-slug'][] = [
   [/^\/presenters?\/(\d+)\/?$/, 'presenter'], // /presenter/7, /presenters/7
   [/^\/s\/(\d+)\/?$/, 'presenter'], // /s/7
   [/^\/presenter\/.+--(\d+)\/?$/, 'presenter'], // /presenter/<name>--7
+  [/^\/(?:presenter|s)\/([^/]+)\/?$/, 'presenter-handle'], // /presenter/<twitter_id>, /s/<twitter_id>
+  [/^\/conference\/(\d+)\/?$/, 'conference'], // /conference/12
 ];
 
 const knownSlugs = {
@@ -45,6 +49,10 @@ function target(pathname: string): string | null {
     if (!match) continue;
     if (collection === 'organization-slug') {
       return knownSlugs.organization.has(match[1]) ? `/organization/${match[1]}` : null;
+    }
+    if (collection === 'presenter-handle') {
+      const slug = (slugs.presenterHandle as Record<string, string>)[match[1].toLowerCase()];
+      return slug ? `/presenter/${slug}` : null;
     }
     const slug = (slugs[collection] as Record<string, string>)[match[1]];
     return slug ? `/${collection}/${slug}` : null;

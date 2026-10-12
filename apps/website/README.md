@@ -166,6 +166,8 @@ Links to the old site keep working. A Cloudflare Pages Function, [`functions/_mi
 - `/v/:id`, `/:id` (e.g. `/601`), `/episodes/:id` and `/video/<anything>--<id>` go to the video.
 - `/organization/:id`, `/organizations/:id`, `/organizations/<slug>`, `/org/:id`, `/o/:id` and `/organization/<anything>--<id>` go to the organization.
 - `/presenter/:id`, `/presenters/:id`, `/s/:id` and `/presenter/<anything>--<id>` go to the presenter.
+- `/presenter/<twitter_id>` and `/s/<twitter_id>` go to the presenter whose X link has that handle (case-insensitive). Only presenters from Rails count. If two share a handle the first wins, and a handle that is also the slug of a presenter page is left out so that page keeps working.
+- `/conference/:id` goes to the conference or conference track (Rails playlist IDs only).
 - `/episodes` goes to `/videos` (the one redirect left in `astro.config.mjs`).
 
 As in Rails, only the ID matters in `<name>--<id>`, so links made before a title changed still work. Unknown and inactive IDs fall through to the 404 page.
@@ -174,7 +176,7 @@ How it fits together:
 
 - **The map:** the function looks IDs up in `dist/legacy-redirects.json`, which `src/pages/legacy-redirects.json.ts` builds from the active entries. Wrangler bundles that file into the function when it deploys, so **always build before deploying.**
 - **Why a function:** these used to be static redirect pages, about 21,000 of them. That put the deployment over Cloudflare Pages' 20,000-file limit, so don't bring back routes that generate a page per entry just to redirect.
-- **Invocation cost:** `public/_routes.json` keeps the function off paths that can never redirect (assets, lists, conference and playlist pages). Every other request runs it, and those count against the Workers request quota (100,000 a day on the free plan). Static files don't.
+- **Invocation cost:** `public/_routes.json` keeps the function off paths that can never redirect (assets, lists, playlist pages). Every other request runs it (conference pages too, since `/conference/<id>` has to reach the function), and those count against the Workers request quota (100,000 a day on the free plan). Static files don't.
 - **Testing:** `pnpm preview` doesn't run the function. Use `pnpm exec wrangler pages dev ./dist`.
 
 ### Page metadata
