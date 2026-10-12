@@ -33,7 +33,7 @@ pnpm --filter @esg/yt-export <script>   # run one package's script from the root
 pnpm cms --help    # the content editor (see "cms" below)
 ```
 
-`.github/workflows/ci.yml` runs `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm content` (`pnpm cms check` on the content) as four checks (`lint`, `typecheck`, `test`, `content`) on every pull request and push to `main`, after a `--frozen-lockfile` install, so a stale `pnpm-lock.yaml` fails too. `.github/workflows/sync-youtube.yml` is the daily yt-export sync (see `SYNC_YOUTUBE.md` next to it). `.github/workflows/video-submission.yml` turns a "Submit a video" issue into a pull request with `pnpm cms submission` (see `VIDEO_SUBMISSION.md` and "cms" below).
+`.github/workflows/ci.yml` runs `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm content` (`pnpm cms check` on the content) as four checks (`lint`, `typecheck`, `test`, `content`) on every pull request and push to `main` or `staging`, after a `--frozen-lockfile` install, so a stale `pnpm-lock.yaml` fails too. `.github/workflows/sync-youtube.yml` is the daily yt-export sync (see `SYNC_YOUTUBE.md` next to it). `.github/workflows/video-submission.yml` turns a "Submit a video" issue into a pull request with `pnpm cms submission` (see `VIDEO_SUBMISSION.md` and "cms" below).
 
 ## apps/website
 
