@@ -15,5 +15,9 @@ export default defineConfig({
   // the Pages Function in functions/_middleware.ts, not by pages, to stay under Cloudflare's file limit.
   redirects: {
     "/episodes": "/videos",
+    // The list pages live at /<name>/list/<page>; the bare /list has no page of its own.
+    "/conferences/list": "/conferences",
+    "/organizations/list": "/organizations",
+    "/presenters/list": "/presenters",
   },
 });
