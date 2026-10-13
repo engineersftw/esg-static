@@ -21,6 +21,7 @@
     "/organizations.json",
     "/sitemap-*",
     "/favicon.svg",
+    "/apple-touch-icon.png",
     "/videos",
     "/videos/*",
     "/conferences",
