@@ -12,6 +12,7 @@
     "/about/",
     "/404.html",
     "/feed",
+    "/robots.txt",
     "/legacy-redirects.json",
     "/search",
     "/search/",
