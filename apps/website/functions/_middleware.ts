@@ -5,7 +5,7 @@
  * file limit. Here, one function handles them all, and the `<name>--<id>` forms accept any name
  * (only the ID matters, as in Rails), so links made before a rename still work. The old
  * `/presenter/<twitter_id>` and `/s/<twitter_id>` look the X handle up (case-insensitively), and
- * `/conference/<id>` redirects a conference or track. `cleanLegacyPath` first strips a search-engine
+ * `/conference/<id>` redirects a conference or track, and `/playlist/<id>` the same or any other playlist. `cleanLegacyPath` first strips a search-engine
  * `&sa=U` tail and a stray `/null` segment.
  *
  * The ID → slug map is dist/legacy-redirects.json (src/pages/legacy-redirects.json.ts), bundled in
@@ -39,6 +39,7 @@ const RULES: [RegExp, Collection | 'organization-slug' | 'presenter-handle'][] =
   [/^\/presenter\/.+--(\d+)\/?$/, 'presenter'], // /presenter/<name>--7
   [/^\/(?:presenter|s)\/([^/]+)\/?$/, 'presenter-handle'], // /presenter/<twitter_id>, /s/<twitter_id>
   [/^\/conference\/(\d+)\/?$/, 'conference'], // /conference/12
+  [/^\/playlist\/(\d+)\/?$/, 'playlist'], // /playlist/37 (a conference or track goes to /conference/<slug>)
 ];
 
 const knownSlugs = {
@@ -55,6 +56,10 @@ function target(pathname: string): string | null {
     if (collection === 'presenter-handle') {
       const slug = (slugs.presenterHandle as Record<string, string>)[match[1].toLowerCase()];
       return slug ? `/presenter/${slug}` : null;
+    }
+    if (collection === 'playlist') {
+      const conference = (slugs.conference as Record<string, string>)[match[1]];
+      if (conference) return `/conference/${conference}`;
     }
     const slug = (slugs[collection] as Record<string, string>)[match[1]];
     return slug ? `/${collection}/${slug}` : null;
