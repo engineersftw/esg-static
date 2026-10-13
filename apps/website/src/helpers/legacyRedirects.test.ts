@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { handleSlugs, slugsById, xHandle, type Entry } from './legacyRedirects';
+import { cleanLegacyPath, handleSlugs, slugsById, xHandle, type Entry } from './legacyRedirects';
 
 const presenter = (id: string, slug: string, x?: string): Entry => ({
   id,
@@ -39,5 +39,27 @@ describe('handleSlugs', () => {
   it('leaves out a handle that is a presenter page slug, including the presenter’s own', () => {
     const map = handleSlugs([presenter('1', 'jacklenox', 'https://x.com/jacklenox'), presenter('2', 'bob', 'https://x.com/bob_x'), presenter('3', 'other', 'https://x.com/Bob')]);
     expect(map).toEqual({ bob_x: 'bob' });
+  });
+});
+
+describe('cleanLegacyPath', () => {
+  it('drops a search-engine tracking tail', () => {
+    expect(cleanLegacyPath('/video/declarative-vs-imperative-programming-talk-js--1005&sa=U')).toBe('/video/declarative-vs-imperative-programming-talk-js--1005');
+    expect(cleanLegacyPath('/presenter/jane-doe&sa=U&ved=2ah')).toBe('/presenter/jane-doe');
+  });
+
+  it('drops a stray /null after a video, presenter or organization', () => {
+    expect(cleanLegacyPath('/video/sg-geek-girls-maker-series-3-with-cindy-lin/null')).toBe('/video/sg-geek-girls-maker-series-3-with-cindy-lin');
+    expect(cleanLegacyPath('/organization/rubysg/null/')).toBe('/organization/rubysg');
+  });
+
+  it('sends a bare tracking tail to the home page', () => {
+    expect(cleanLegacyPath('/&sa=U')).toBe('/');
+  });
+
+  it('leaves every other path alone', () => {
+    for (const path of ['/video/some-talk', '/video/null', '/video/a/b/null', '/playlist/x/null', '/', '/v/601']) {
+      expect(cleanLegacyPath(path)).toBe(path);
+    }
   });
 });

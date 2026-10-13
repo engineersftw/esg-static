@@ -44,3 +44,14 @@ export function handleSlugs(presenters: Entry[]): Record<string, string> {
   }
   return map;
 }
+
+/**
+ * Old links with junk on the end: a search-engine tracking tail glued to the path (`…--1005&sa=U`,
+ * from Google's `&sa=U` query parameters) or a literal `/null` segment after a video, presenter or
+ * organization (`/video/<slug>/null`, from a missing value in the Rails view). Returns the path
+ * without it, or the path itself when it has none. Slugs, IDs and handles never contain `&`.
+ */
+export function cleanLegacyPath(pathname: string): string {
+  const withoutTail = pathname.replace(/&.*$/, '') || pathname;
+  return withoutTail.replace(/^(\/(?:video|presenter|organization)\/[^/]+)\/null\/?$/, '$1');
+}
