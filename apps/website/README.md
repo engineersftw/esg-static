@@ -170,7 +170,7 @@ Links to the old site keep working. A Cloudflare Pages Function, [`functions/_mi
 - `/presenter/<twitter_id>` and `/s/<twitter_id>` go to the presenter whose X link has that handle (case-insensitive). Only presenters from Rails count. If two share a handle the first wins, and a handle that is also the slug of a presenter page is left out so that page keeps working.
 - `/conference/:id` goes to the conference or conference track (Rails playlist IDs only).
 - `/playlist/:id` goes to the playlist: a conference or track to its `/conference/<slug>`, any other to `/playlist/<slug>` (Rails playlist IDs only).
-- `/episodes` goes to `/videos` (the one redirect left in `astro.config.mjs`).
+- `/episodes` goes to `/videos`, and the bare `/conferences/list`, `/organizations/list` and `/presenters/list` to `/conferences`, `/organizations` and `/presenters` (the redirects in `astro.config.mjs`).
 
 As in Rails, only the ID matters in `<name>--<id>`, so links made before a title changed still work. Unknown and inactive IDs fall through to the 404 page.
 
