@@ -40,10 +40,11 @@ Both are read at **build time**, from `.env` locally or `.env.production` for pr
 |---|---|
 | `HOSTNAME` | The site's public URL (e.g. `https://engineers.sg`). It is used for canonical URLs, the sitemap and the `/feed` links. If it isn't set, they point at `http://localhost:4321`, so **always set it for a deploy build.** |
 | `PUBLIC_GTM_ID` | Google Tag Manager container ID (`GTM-…`). If it isn't set, no tracking code is added, which is what you want for dev and preview builds. A malformed ID fails the build. |
+| `PUBLIC_ALLOW_INDEXING` | Set to exactly `true` in the **production** build to let search engines in. Otherwise `/robots.txt` says `Disallow: /`, which is what you want for preview and staging deployments. When it is `true`, `robots.txt` also points at `/sitemap-index.xml` (built from `HOSTNAME`) and keeps crawlers out of `/api/` and `/search`. |
 
 ## Deploying
 
-The Cloudflare Pages project builds from GitHub. Its build settings must use **`apps/website` as the root directory**, with `dist` as the output directory. The build picks its Node version from `apps/website/.nvmrc`, a copy of the repo's `.nvmrc`; update both together. Cloudflare only looks for `functions/` in the root directory, so with the repo root there, the site deploys but the legacy-URL redirects don't. Set `HOSTNAME` and `PUBLIC_GTM_ID` as environment variables in the project settings, because they are read at build time.
+The Cloudflare Pages project builds from GitHub. Its build settings must use **`apps/website` as the root directory**, with `dist` as the output directory. The build picks its Node version from `apps/website/.nvmrc`, a copy of the repo's `.nvmrc`; update both together. Cloudflare only looks for `functions/` in the root directory, so with the repo root there, the site deploys but the legacy-URL redirects don't. Set `HOSTNAME`, `PUBLIC_GTM_ID` and (production only) `PUBLIC_ALLOW_INDEXING` as environment variables in the project settings, because they are read at build time.
 
 To deploy by hand instead, `pnpm run deploy` (preview) and `pnpm deploy:production` upload whatever is in `dist/`, so build with the production settings first:
 
