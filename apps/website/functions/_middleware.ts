@@ -5,7 +5,8 @@
  * file limit. Here, one function handles them all, and the `<name>--<id>` forms accept any name
  * (only the ID matters, as in Rails), so links made before a rename still work. The old
  * `/presenter/<twitter_id>` and `/s/<twitter_id>` look the X handle up (case-insensitively), and
- * `/conference/<id>` redirects a conference or track.
+ * `/conference/<id>` redirects a conference or track. `cleanLegacyPath` first strips a search-engine
+ * `&sa=U` tail and a stray `/null` segment.
  *
  * The ID → slug map is dist/legacy-redirects.json (src/pages/legacy-redirects.json.ts), bundled in
  * when wrangler builds this function, so build the site before `wrangler pages deploy`/`dev`.
@@ -13,6 +14,7 @@
  * site. public/_routes.json keeps the function off paths that can never match.
  */
 import slugs from '../dist/legacy-redirects.json';
+import { cleanLegacyPath } from '../src/helpers/legacyRedirects';
 
 type Collection = Exclude<keyof typeof slugs, 'presenterHandle'>;
 
@@ -62,7 +64,11 @@ function target(pathname: string): string | null {
 
 export const onRequest = async ({ request, next }: Context): Promise<Response> => {
   const url = new URL(request.url);
-  const location = target(decodeURIComponent(url.pathname));
+  const path = decodeURIComponent(url.pathname);
+  const cleaned = cleanLegacyPath(path);
+  // A path with junk removed goes to its clean form even when no ID rule matches it (that page, if
+  // it exists, is a static one).
+  const location = target(cleaned) ?? (cleaned !== path ? cleaned : null);
   if (!location) return next();
   return Response.redirect(new URL(location + url.search, url), 301);
 };
