@@ -170,6 +170,13 @@ Two days of Python.
     expect(() => cms.createPlaylist({ title: "New", category: "Party" })).toThrow(/unknown category/);
     expect(() => cms.createPlaylist({ title: "New", publishDate: "June 2026" })).toThrow(/YYYY-MM-DD/);
     expect(() => cms.createPlaylist({ title: " " })).toThrow(/a playlist needs a title/);
+    expect(() => cms.createPlaylist({ title: "New", website: "not a url" })).toThrow(/must be a web address/);
+  });
+
+  it("stores a website as a full URL", () => {
+    const cms = new Cms(content());
+    cms.createPlaylist({ title: "New", website: " pycon.sg/2026 " });
+    expect(cms.changes()[0].content).toContain('website: "https://pycon.sg/2026"');
   });
 
   it("gives a playlist without a YouTube playlist a random ID, and links videos to it", () => {
