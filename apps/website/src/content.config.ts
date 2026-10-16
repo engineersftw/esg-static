@@ -74,7 +74,8 @@ const playlist = defineCollection({
     playlistTitle: z.string(),
     publishDate: z.string().nullable(),
     image: z.string().nullable(),
-    website: z.string().nullable(),
+    // A full URL: without a scheme the page would link to a path on this site.
+    website: z.url({ protocol: /^https?$/ }).nullable(),
     hashtag: z.string().nullable(),
     category: z.string().nullable(),
     slug: z.string(),

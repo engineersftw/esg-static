@@ -408,6 +408,11 @@ export class Cms {
       throw new CmsError(`publish date "${publishDate}" must be a date as YYYY-MM-DD`);
     }
 
+    // The site's schema needs a full URL, so a bare domain gets https:// (as for profile links).
+    const rawWebsite = blank(input.website);
+    const website = rawWebsite && normalizeProfileLink("website", rawWebsite);
+    if (rawWebsite && !website) throw new CmsError(`website "${rawWebsite}" must be a web address`);
+
     // Field order as yt-export's sync writes it.
     const data: Playlist = {
       id,
@@ -415,7 +420,7 @@ export class Cms {
       playlistTitle: name,
       publishDate,
       image: blank(input.image),
-      website: blank(input.website),
+      website,
       hashtag: blank(input.hashtag),
       category: canonical,
       slug,
