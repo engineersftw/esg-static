@@ -1,15 +1,15 @@
 ---
-// A filter box for the presenter and organization lists, which searches every name, not just the
+// A filter box for the presenter, organization and conference lists, which searches every name, not just the
 // page shown. On the first keystroke it loads every name from `source` (a static JSON file, so
 // there are no Function requests), then shows the matches in place of the paginated list.
 //
 // The page provides the pieces, so that the matches look exactly like its own list:
 //   [data-name-filter-page]       the list and pagination, hidden while filtering
 //   [data-name-filter-results]    an empty <ul hidden> for the matches
-//   template[data-name-filter-item]  one <li> with an <a>, an <img>, an <h4> and, for presenters,
-//                                    a <p data-byline>
+//   template[data-name-filter-item]  one <li> with an <a>, an <img>, an <h4> and, for presenters
+//                                    and conferences, a <p data-byline> (the byline or the date)
 interface Props {
-  kind: 'presenter' | 'organization';
+  kind: 'presenter' | 'organization' | 'conference';
   /** Plural, for the placeholder and status text: "presenters". */
   label: string;
   source: string;
@@ -66,7 +66,8 @@ const { kind, label, source } = Astro.props;
 
   if (root && input && status && page && results && template) {
     const { kind, label, source } = root.dataset as { kind: string; label: string; source: string };
-    const placeholder = `/placeholder-${kind}.svg`;
+    // Conferences have no placeholder picture: the page shows a gray block for a missing image.
+    const placeholder = kind === 'conference' ? '' : `/placeholder-${kind}.svg`;
     let entries: Promise<NameEntry[]> | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let latest = 0;
@@ -82,8 +83,8 @@ const { kind, label, source } = Astro.props;
       const li = (template.content.firstElementChild as HTMLLIElement).cloneNode(true) as HTMLLIElement;
       li.querySelector('a')!.href = `/${kind}/${entry.slug}`;
       const img = li.querySelector('img')!;
-      img.addEventListener('error', () => (img.src = placeholder), { once: true });
-      img.src = entry.image || placeholder;
+      img.addEventListener('error', () => (placeholder ? (img.src = placeholder) : img.removeAttribute('src')), { once: true });
+      if (entry.image || placeholder) img.src = entry.image || placeholder;
       li.querySelector('h4')!.textContent = entry.name;
       const byline = li.querySelector<HTMLElement>('[data-byline]');
       if (byline) {

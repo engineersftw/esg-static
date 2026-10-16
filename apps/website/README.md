@@ -158,7 +158,7 @@ The search icon in the header leads to `/search`, which searches every active vi
 
 ### Presenter and organization filters
 
-`/presenters` and `/organizations` have a filter box that searches every name, not just the 48 on the page. It runs in the browser with no Function: the first keystroke loads `/presenters.json` or `/organizations.json` (built by `src/pages/*.json.ts`), and the matches replace the list until the box is cleared. `NameFilter.astro` has the details, including the `data-name-filter-*` elements a list page provides; the matching is in `src/helpers/nameFilter.ts`, with tests.
+`/presenters`, `/organizations` and `/conferences` have a filter box that searches every name, not just the page shown. It runs in the browser with no Function: the first keystroke loads `/presenters.json`, `/organizations.json` or `/conferences.json` (built by `src/pages/*.json.ts`), and the matches replace the list until the box is cleared. `NameFilter.astro` has the details, including the `data-name-filter-*` elements a list page provides; the matching is in `src/helpers/nameFilter.ts`, with tests.
 
 ### Old Rails URLs
 
