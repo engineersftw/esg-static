@@ -19,6 +19,7 @@
     "/search-index.json",
     "/presenters.json",
     "/organizations.json",
+    "/conferences.json",
     "/sitemap-*",
     "/favicon.svg",
     "/apple-touch-icon.png",

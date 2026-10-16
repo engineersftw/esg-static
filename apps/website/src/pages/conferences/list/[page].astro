@@ -4,6 +4,7 @@ import BaseHead from "../../../components/BaseHead.astro";
 import Header from "../../../components/Header.astro";
 import Footer from "../../../components/Footer.astro";
 import Pagination from "../../../components/Pagination.astro";
+import NameFilter from "../../../components/NameFilter.astro";
 import FormattedDate from "../../../components/FormattedDate.astro";
 import { getConferences } from "../../../helpers/collections";
 
@@ -89,6 +90,8 @@ const { page } = Astro.props;
     <Header />
     <main>
       <h1>Conferences</h1>
+      <NameFilter kind="conference" label="conferences" source="/conferences.json" />
+      <div data-name-filter-page>
       <section>
         <ul>
           {
@@ -114,6 +117,17 @@ const { page } = Astro.props;
         </ul>
       </section>
       <Pagination page={page} />
+      </div>
+      <ul data-name-filter-results hidden></ul>
+      <template data-name-filter-item>
+        <li>
+          <a>
+            <img class="playlistImage" alt="" loading="lazy" />
+            <h4 class="title"></h4>
+            <p class="date" data-byline></p>
+          </a>
+        </li>
+      </template>
     </main>
     <Footer />
   </body>
