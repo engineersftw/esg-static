@@ -30,17 +30,18 @@ export function xHandle(url: string): string | null {
 /**
  * Old `/presenter/<twitter_id>` and `/s/<twitter_id>` URLs: lowercase X handle → presenter slug, for
  * the Rails presenters. Two presenters can share a handle; the first in `presenters` order wins.
- * A handle that is also the slug of a presenter page is left out, since that page must keep working
- * (and a presenter whose slug is their handle would redirect to itself).
+ * A handle that is the slug of another presenter's page is left out, since that page must keep
+ * working. A presenter whose slug is their own handle stays in, so `/s/<handle>` finds them; the
+ * function leaves `/presenter/<handle>` alone when it would redirect to itself.
  */
 export function handleSlugs(presenters: Entry[]): Record<string, string> {
-  const slugs = new Set(presenters.map((presenter) => presenter.data.slug.toLowerCase()));
+  const slugOwners = new Map(presenters.map((presenter) => [presenter.data.slug.toLowerCase(), presenter.id]));
   const map: Record<string, string> = {};
   for (const presenter of presenters) {
     if (!isLegacyId(presenter.id)) continue;
     const link = presenter.data.links?.find((l) => l.type === 'x');
     const handle = link && xHandle(link.url);
-    if (handle && !slugs.has(handle) && !(handle in map)) map[handle] = presenter.data.slug;
+    if (handle && (slugOwners.get(handle) ?? presenter.id) === presenter.id && !(handle in map)) map[handle] = presenter.data.slug;
   }
   return map;
 }
