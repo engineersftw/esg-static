@@ -74,6 +74,7 @@ export const onRequest = async ({ request, next }: Context): Promise<Response> =
   // A path with junk removed goes to its clean form even when no ID rule matches it (that page, if
   // it exists, is a static one).
   const location = target(cleaned) ?? (cleaned !== path ? cleaned : null);
-  if (!location) return next();
+  // A presenter whose slug is their X handle maps to their own page: no redirect to itself.
+  if (!location || location === path) return next();
   return Response.redirect(new URL(location + url.search, url), 301);
 };
