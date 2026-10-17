@@ -36,9 +36,9 @@ describe('handleSlugs', () => {
     expect(handleSlugs([presenter('198', 'tony-a', 'https://x.com/tonybuiwr'), presenter('633', 'tony-b', 'https://x.com/TonyBuiWR')])).toEqual({ tonybuiwr: 'tony-a' });
   });
 
-  it('leaves out a handle that is a presenter page slug, including the presenter’s own', () => {
+  it('leaves out a handle that is another presenter’s page slug, but keeps the presenter’s own', () => {
     const map = handleSlugs([presenter('1', 'jacklenox', 'https://x.com/jacklenox'), presenter('2', 'bob', 'https://x.com/bob_x'), presenter('3', 'other', 'https://x.com/Bob')]);
-    expect(map).toEqual({ bob_x: 'bob' });
+    expect(map).toEqual({ jacklenox: 'jacklenox', bob_x: 'bob' });
   });
 });
 
