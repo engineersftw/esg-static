@@ -5,6 +5,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import VideoCard from '../components/VideoCard.astro';
 import { getListedVideos } from '../helpers/collections';
+import { siteJsonLd } from '../helpers/jsonLd';
 
 const videos = await getListedVideos();
 
@@ -14,7 +15,7 @@ const content = videos.slice(0, 9);
 <!doctype html>
 <html lang="en">
   <head>
-    <BaseHead />
+    <BaseHead jsonLd={siteJsonLd(Astro.site!)} />
     <style>
       main {
         width: 960px;

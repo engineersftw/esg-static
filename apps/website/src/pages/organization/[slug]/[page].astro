@@ -10,6 +10,7 @@ import ProfileLinks from '../../../components/ProfileLinks.astro';
 import LinkedText from '../../../components/LinkedText.astro';
 import VideoCard from '../../../components/VideoCard.astro';
 import { getActiveOrganizations, getOrganizationVideos } from '../../../helpers/collections';
+import { organizationJsonLd } from '../../../helpers/jsonLd';
 
 export const getStaticPaths = (async ({ paginate }) => {
   const organizations = await getActiveOrganizations();
@@ -36,6 +37,16 @@ const { page, organization } = Astro.props;
       description={organization.body || `${page.total.toLocaleString('en')} ${page.total === 1 ? 'video' : 'videos'} from ${organization.data.orgTitle.trim()} meetups and events, recorded by Engineers.SG.`}
       image={organization.data.logoImage}
       card="summary"
+      jsonLd={page.currentPage === 1
+        ? organizationJsonLd({
+            site: Astro.site!,
+            slug: organization.data.slug,
+            name: organization.data.orgTitle,
+            image: organization.data.logoImage,
+            description: organization.body,
+            links: organization.data.links,
+          })
+        : undefined}
       pageNumber={page.currentPage}
     />
     <style>

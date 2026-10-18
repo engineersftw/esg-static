@@ -8,6 +8,7 @@ import EntityImage from '../../components/EntityImage.astro';
 import LinkedText from '../../components/LinkedText.astro';
 import { YouTube } from 'astro-embed';
 import { getActiveVideos, listedOrganizations, listedPresenters } from '../../helpers/collections';
+import { videoJsonLd } from '../../helpers/jsonLd';
 
 export async function getStaticPaths() {
   const videos = await getActiveVideos();
@@ -32,6 +33,18 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
         : undefined)}
       image={video.data.thumbnailHigh ?? video.data.thumbnailMedium ?? video.data.thumbnailDefault}
       type="video.other"
+      jsonLd={videoJsonLd({
+        site: Astro.site!,
+        slug: video.data.slug,
+        title: video.data.videoTitle,
+        description: video.body,
+        publishedAt: video.data.publishedAt,
+        thumbnails: [video.data.thumbnailHigh, video.data.thumbnailMedium, video.data.thumbnailDefault],
+        videoId: video.data.videoId,
+        videoSite: video.data.videoSite,
+        presenters: presenters.map((p) => ({ name: p.data.presenterName, slug: p.data.slug })),
+        organizations: organizations.map((o) => ({ name: o.data.orgTitle, slug: o.data.slug })),
+      })}
     />
     <style>
       main {
