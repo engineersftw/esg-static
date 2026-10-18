@@ -10,6 +10,7 @@ import ProfileLinks from '../../../components/ProfileLinks.astro';
 import LinkedText from '../../../components/LinkedText.astro';
 import VideoCard from '../../../components/VideoCard.astro';
 import { getActivePresenters, getPresenterVideos } from '../../../helpers/collections';
+import { personJsonLd } from '../../../helpers/jsonLd';
 
 export const getStaticPaths = (async ({ paginate }) => {
   const presenters = await getActivePresenters();
@@ -38,6 +39,17 @@ const { page, presenter } = Astro.props;
       card="summary"
       pageNumber={page.currentPage}
       type="profile"
+      jsonLd={page.currentPage === 1
+        ? personJsonLd({
+            site: Astro.site!,
+            slug: presenter.data.slug,
+            name: presenter.data.presenterName,
+            image: presenter.data.imageUrl,
+            description: presenter.body,
+            byline: presenter.data.presenterByline,
+            links: presenter.data.links,
+          })
+        : undefined}
     />
     <style>
       main {

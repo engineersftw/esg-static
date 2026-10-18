@@ -9,6 +9,7 @@ import Pagination from './Pagination.astro';
 import FormattedDate from './FormattedDate.astro';
 import VideoCard from './VideoCard.astro';
 import LinkedText from './LinkedText.astro';
+import { playlistJsonLd } from '../helpers/jsonLd';
 
 interface Props {
   page: Page<CollectionEntry<'video'>>;
@@ -28,6 +29,17 @@ const { page, playlist: conference, parent, subPlaylists, basePath } = Astro.pro
       title={conference.data.playlistTitle}
       description={conference.body || `${page.total.toLocaleString('en')} ${page.total === 1 ? 'video' : 'videos'} from ${conference.data.playlistTitle.trim()}, recorded by Engineers.SG.`}
       image={conference.data.image}
+      jsonLd={page.currentPage === 1
+        ? playlistJsonLd({
+            site: Astro.site!,
+            path: `${basePath}/${conference.data.slug}`,
+            title: conference.data.playlistTitle,
+            description: conference.body,
+            image: conference.data.image,
+            publishDate: conference.data.publishDate,
+            videos: page.data.map((v) => ({ name: v.data.videoTitle, slug: v.data.slug })),
+          })
+        : undefined}
       pageNumber={page.currentPage}
     />
     <style>
