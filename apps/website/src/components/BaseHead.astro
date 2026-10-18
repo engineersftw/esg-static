@@ -4,6 +4,7 @@
 import '../styles/global.css';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import GoogleTagManager from './GoogleTagManager.astro';
+import { serializeJsonLd } from '../helpers/jsonLd';
 
 // Every page passes its own title, description and image, so links shared on social media and
 // chat apps preview the page itself rather than the site.
@@ -19,9 +20,11 @@ interface Props {
 	/** Defaults to the large card when there is an image; pass "summary" for logos and headshots. */
 	card?: 'summary' | 'summary_large_image';
 	type?: 'website' | 'video.other' | 'profile';
+	/** schema.org structured data (helpers/jsonLd.ts), written as a JSON-LD script. */
+	jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-const { title, description, image, pageNumber, card: cardProp, type = 'website' } = Astro.props;
+const { title, description, image, pageNumber, card: cardProp, type = 'website', jsonLd } = Astro.props;
 
 // The first page of a list is also served at its bare URL (e.g. /videos rewrites to /videos/1),
 // which is the one the site links to, so that is its canonical URL.
@@ -90,3 +93,6 @@ const card = cardProp ?? (image ? 'summary_large_image' : 'summary');
 <meta name="twitter:title" content={fullTitle} />
 <meta name="twitter:description" content={pageDescription} />
 <meta name="twitter:image" content={imageURL} />
+
+<!-- Structured data -->
+{jsonLd && <script type="application/ld+json" set:html={serializeJsonLd(jsonLd)} />}
