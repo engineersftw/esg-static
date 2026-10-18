@@ -14,7 +14,7 @@
  * site. public/_routes.json keeps the function off paths that can never match.
  */
 import slugs from '../dist/legacy-redirects.json';
-import { cleanLegacyPath } from '../src/helpers/legacyRedirects';
+import { cleanLegacyPath, handleKey, pastLastPage } from '../src/helpers/legacyRedirects';
 
 type Collection = Exclude<keyof typeof slugs, 'presenterHandle'>;
 
@@ -44,6 +44,7 @@ const RULES: [RegExp, Collection | 'organization-slug' | 'presenter-handle'][] =
 
 const knownSlugs = {
   organization: new Set(Object.values(slugs.organization)),
+  presenter: new Set(Object.values(slugs.presenter)),
 };
 
 function target(pathname: string): string | null {
@@ -54,7 +55,7 @@ function target(pathname: string): string | null {
       return knownSlugs.organization.has(match[1]) ? `/organization/${match[1]}` : null;
     }
     if (collection === 'presenter-handle') {
-      const slug = (slugs.presenterHandle as Record<string, string>)[match[1].toLowerCase()];
+      const slug = (slugs.presenterHandle as Record<string, string>)[handleKey(match[1])];
       return slug ? `/presenter/${slug}` : null;
     }
     if (collection === 'playlist') {
@@ -75,6 +76,16 @@ export const onRequest = async ({ request, next }: Context): Promise<Response> =
   // it exists, is a static one).
   const location = target(cleaned) ?? (cleaned !== path ? cleaned : null);
   // A presenter whose slug is their X handle maps to their own page: no redirect to itself.
-  if (!location || location === path) return next();
-  return Response.redirect(new URL(location + url.search, url), 301);
+  if (location && location !== path) return Response.redirect(new URL(location + url.search, url), 301);
+  // `/organization/<slug>/<n>` and `/presenter/<slug>/<n>` are real pages up to the last one. Beyond
+  // it (old Rails pagination, or a stale link), the entry's first page is the best answer.
+  const past = pastLastPage(cleaned);
+  if (past) {
+    const response = await next();
+    if (response.status === 404 && knownSlugs[past.kind].has(past.slug)) {
+      return Response.redirect(new URL(`/${past.kind}/${past.slug}${url.search}`, url), 301);
+    }
+    return response;
+  }
+  return next();
 };

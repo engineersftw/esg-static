@@ -24,6 +24,8 @@
     "/sitemap-*",
     "/favicon.svg",
     "/apple-touch-icon.png",
+    "/apple-touch-icon-precomposed.png",
+    "/favicon.ico",
     "/videos",
     "/videos/*",
     "/conferences",

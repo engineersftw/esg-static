@@ -1,0 +1,2 @@
+# The feed has no trailing slash; Pages would otherwise look for feed/index.html.
+/feed/ /feed 301
