@@ -49,10 +49,26 @@ export function handleSlugs(presenters: Entry[]): Record<string, string> {
 /**
  * Old links with junk on the end: a search-engine tracking tail glued to the path (`…--1005&sa=U`,
  * from Google's `&sa=U` query parameters) or a literal `/null` segment after a video, presenter or
- * organization (`/video/<slug>/null`, from a missing value in the Rails view). Returns the path
- * without it, or the path itself when it has none. Slugs, IDs and handles never contain `&`.
+ * organization (`/video/<slug>/null`, from a missing value in the Rails view). Also the feed's old
+ * trailing slashes (`/feed/`, `//feed/`). Returns the clean path, or the path itself when it has no
+ * junk. Slugs, IDs and handles never contain `&`.
  */
 export function cleanLegacyPath(pathname: string): string {
   const withoutTail = pathname.replace(/&.*$/, '') || pathname;
-  return withoutTail.replace(/^(\/(?:video|presenter|organization)\/[^/]+)\/null\/?$/, '$1');
+  return withoutTail
+    .replace(/^(\/(?:video|presenter|organization)\/[^/]+)\/null\/?$/, '$1')
+    .replace(/^\/+feed\/+$/, '/feed');
+}
+
+/** The key in `presenterHandle` for the handle in an old URL: lowercase, without a leading `@` (`/s/@Jane`). */
+export const handleKey = (handle: string): string => handle.replace(/^@/, '').toLowerCase();
+
+/**
+ * A page number after an organization or presenter slug (`/organization/geekcampsg/5`) is the old
+ * Rails pagination, or a page beyond the last one. Returns the entry's own page for the caller to
+ * redirect to once the static site has said it has no such page, or null for any other path.
+ */
+export function pastLastPage(pathname: string): { kind: 'organization' | 'presenter'; slug: string } | null {
+  const match = /^\/(organization|presenter)\/([^/]+)\/\d+\/?$/.exec(pathname);
+  return match ? { kind: match[1] as 'organization' | 'presenter', slug: match[2] } : null;
 }

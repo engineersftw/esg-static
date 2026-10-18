@@ -1,0 +1,9 @@
+# The feed has no trailing slash; Pages would otherwise look for feed/index.html.
+/feed/ /feed 301
+# Old links to pages the Rails site had, now covered by the About page.
+/support_us /about/ 301
+/support_us/ /about/ 301
+/contact /about/ 301
+/contact/ /about/ 301
+/terms /about/ 301
+/terms/ /about/ 301

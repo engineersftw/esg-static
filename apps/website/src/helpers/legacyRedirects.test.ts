@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanLegacyPath, handleSlugs, slugsById, xHandle, type Entry } from './legacyRedirects';
+import { cleanLegacyPath, handleKey, handleSlugs, pastLastPage, slugsById, xHandle, type Entry } from './legacyRedirects';
 
 const presenter = (id: string, slug: string, x?: string): Entry => ({
   id,
@@ -53,6 +53,11 @@ describe('cleanLegacyPath', () => {
     expect(cleanLegacyPath('/organization/rubysg/null/')).toBe('/organization/rubysg');
   });
 
+  it('drops the feed’s trailing slashes', () => {
+    expect(cleanLegacyPath('/feed/')).toBe('/feed');
+    expect(cleanLegacyPath('//feed/')).toBe('/feed');
+  });
+
   it('sends a bare tracking tail to the home page', () => {
     expect(cleanLegacyPath('/&sa=U')).toBe('/');
   });
@@ -61,5 +66,23 @@ describe('cleanLegacyPath', () => {
     for (const path of ['/video/some-talk', '/video/null', '/video/a/b/null', '/playlist/x/null', '/', '/v/601']) {
       expect(cleanLegacyPath(path)).toBe(path);
     }
+  });
+});
+
+describe('handleKey', () => {
+  it('lowercases and drops a leading @', () => {
+    expect(handleKey('@GrahamDumpleton')).toBe('grahamdumpleton');
+    expect(handleKey('jane')).toBe('jane');
+  });
+});
+
+describe('pastLastPage', () => {
+  it('finds the entry behind a page-number path', () => {
+    expect(pastLastPage('/organization/geekcampsg/5')).toEqual({ kind: 'organization', slug: 'geekcampsg' });
+    expect(pastLastPage('/presenter/jane-doe/12/')).toEqual({ kind: 'presenter', slug: 'jane-doe' });
+  });
+
+  it('ignores everything else', () => {
+    for (const path of ['/organization/geekcampsg', '/organization/a/b', '/video/x/2', '/conference/x/2']) expect(pastLastPage(path)).toBeNull();
   });
 });
