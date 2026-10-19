@@ -62,6 +62,15 @@ export function cleanLegacyPath(pathname: string): string {
     .replace(/^\/+feed\/+$/, '/feed');
 }
 
+/**
+ * Where to send a path that `cleanLegacyPath` changed but no ID rule matches: its clean form, or
+ * null when it didn't change or the clean form starts with two slashes (`//evil.com`, or `/\evil.com`,
+ * which URL parsing treats the same way). Redirecting there would leave the site.
+ */
+export function cleanedFallback(path: string, cleaned: string): string | null {
+  return cleaned !== path && !/^[/\\]{2}/.test(cleaned) ? cleaned : null;
+}
+
 /** The key in `presenterHandle` for the handle in an old URL: lowercase, without a leading `@` (`/s/@Jane`). */
 export const handleKey = (handle: string): string => handle.replace(/^@/, '').toLowerCase();
 

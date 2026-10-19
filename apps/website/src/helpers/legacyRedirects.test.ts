@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanLegacyPath, handleKey, handleSlugs, pastLastPage, slugsById, xHandle, type Entry } from './legacyRedirects';
+import { cleanedFallback, cleanLegacyPath, handleKey, handleSlugs, pastLastPage, slugsById, xHandle, type Entry } from './legacyRedirects';
 
 const presenter = (id: string, slug: string, x?: string): Entry => ({
   id,
@@ -89,5 +89,24 @@ describe('pastLastPage', () => {
 
   it('ignores everything else', () => {
     for (const path of ['/organization/geekcampsg', '/organization/a/b', '/video/x/2', '/conference/x/2']) expect(pastLastPage(path)).toBeNull();
+  });
+});
+
+describe('cleanedFallback', () => {
+  it('is the clean path when it changed', () => {
+    expect(cleanedFallback('/video/some-talk/null', '/video/some-talk')).toBe('/video/some-talk');
+    expect(cleanedFallback('//feed/', '/feed')).toBe('/feed');
+    expect(cleanedFallback('/&sa=U', '/')).toBe('/');
+  });
+
+  it('is null when nothing changed', () => {
+    expect(cleanedFallback('/video/some-talk', '/video/some-talk')).toBeNull();
+  });
+
+  it('never points at another site', () => {
+    expect(cleanedFallback('//evil.com&sa=U', cleanLegacyPath('//evil.com&sa=U'))).toBeNull();
+    expect(cleanedFallback('//evil.com\\', cleanLegacyPath('//evil.com\\'))).toBeNull();
+    expect(cleanedFallback('/\\evil.com&sa=U', cleanLegacyPath('/\\evil.com&sa=U'))).toBeNull();
+    expect(cleanedFallback('///evil.com&sa=U', cleanLegacyPath('///evil.com&sa=U'))).toBeNull();
   });
 });
