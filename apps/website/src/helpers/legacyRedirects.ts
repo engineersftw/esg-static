@@ -49,13 +49,15 @@ export function handleSlugs(presenters: Entry[]): Record<string, string> {
 /**
  * Old links with junk on the end: a search-engine tracking tail glued to the path (`…--1005&sa=U`,
  * from Google's `&sa=U` query parameters) or a literal `/null` segment after a video, presenter or
- * organization (`/video/<slug>/null`, from a missing value in the Rails view). Also the feed's old
+ * organization (`/video/<slug>/null`, from a missing value in the Rails view), and trailing backslashes
+ * (`/video/<slug>--3273\`, from a link copied with its escape characters). Also the feed's old
  * trailing slashes (`/feed/`, `//feed/`). Returns the clean path, or the path itself when it has no
  * junk. Slugs, IDs and handles never contain `&`.
  */
 export function cleanLegacyPath(pathname: string): string {
   const withoutTail = pathname.replace(/&.*$/, '') || pathname;
   return withoutTail
+    .replace(/\\+$/, '')
     .replace(/^(\/(?:video|presenter|organization)\/[^/]+)\/null\/?$/, '$1')
     .replace(/^\/+feed\/+$/, '/feed');
 }

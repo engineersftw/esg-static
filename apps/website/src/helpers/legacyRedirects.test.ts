@@ -53,6 +53,11 @@ describe('cleanLegacyPath', () => {
     expect(cleanLegacyPath('/organization/rubysg/null/')).toBe('/organization/rubysg');
   });
 
+  it('drops trailing backslashes', () => {
+    expect(cleanLegacyPath('/video/css-code-splitting-talk-css--3273\\')).toBe('/video/css-code-splitting-talk-css--3273');
+    expect(cleanLegacyPath('/presenter/ken-lee--1229\\\\\\')).toBe('/presenter/ken-lee--1229');
+  });
+
   it('drops the feed’s trailing slashes', () => {
     expect(cleanLegacyPath('/feed/')).toBe('/feed');
     expect(cleanLegacyPath('//feed/')).toBe('/feed');
