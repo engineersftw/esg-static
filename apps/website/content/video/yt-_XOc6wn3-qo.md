@@ -8,7 +8,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/_XOc6wn3-qo/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/_XOc6wn3-qo/hqdefault.jpg"
 slug: "de-fragmenting-ai-in-testing-by-pradeep-soundararajan"
 organizations: ["198"]
-presenters: []
+presenters: ["1591"]
 active: true
 videoSite: "youtube"
 ---
