@@ -112,6 +112,33 @@ describe("planSync: existing videos", () => {
     expect(data.thumbnailHigh).toBe("https://old/high.jpg");
   });
 
+  it("adds the duration after publishedAt, lists it as changed, and is idempotent", () => {
+    const v = video("yt1", "2020-01-01T00:00:00Z", { duration: "PT27M13S" });
+    const existing = videoEntry("10", "yt1", { videoTitle: v.snippet.title }, v.snippet.description);
+    const first = find(planSync(raw({ videos: [v] }), content([existing])).writes, "video/10.md");
+    expect(first.changed).toContain("duration");
+    expect(Object.keys(first.entry.data).slice(0, 4)).toEqual(["id", "videoId", "videoTitle", "publishedAt"]);
+    expect(Object.keys(first.entry.data)[4]).toBe("duration");
+    expect(first.entry.data).toMatchObject({ duration: "PT27M13S" });
+
+    const again = planSync(raw({ videos: [v] }), content([parseEntry("video/10.md", first.content)]));
+    expect(again.writes.filter((w) => w.path === "video/10.md")).toEqual([]);
+  });
+
+  it("keeps the stored duration when YouTube sends none or a zero one (a live stream not yet aired)", () => {
+    const stored = videoEntry("10", "yt1", { duration: "PT5M" });
+    for (const v of [video("yt1", "2020-01-01T00:00:00Z"), video("yt1", "2020-01-01T00:00:00Z", { duration: "P0D" })]) {
+      const data = find(planSync(raw({ videos: [v] }), content([stored])).writes, "video/10.md").entry.data;
+      expect(data).toMatchObject({ duration: "PT5M" });
+    }
+  });
+
+  it("does not add a duration field when YouTube has none", () => {
+    const v = video("yt1", "2020-01-01T00:00:00Z");
+    const data = find(planSync(raw({ videos: [v] }), content([videoEntry("10", "yt1")])).writes, "video/10.md").entry.data;
+    expect(data).not.toHaveProperty("duration");
+  });
+
   it("empties the body when YouTube's description is empty", () => {
     const v = video("yt1", "2023-01-01T00:00:00Z");
     v.snippet.description = "";
@@ -200,6 +227,16 @@ describe("planSync: new videos", () => {
     });
     expect(Object.keys(w.entry.data)).toEqual(Object.keys(videoEntry("1", "x").data));
     expect(w.entry.body).toBe("Speaker: Someone\n\nProduced by Engineers.SG");
+  });
+
+  it("writes the duration of a new video after publishedAt, and leaves it out when YouTube has none", () => {
+    const withLength = find(planSync(raw({ videos: [video("abc", "2023-11-03T06:41:58Z", { duration: "PT1H2M3S" })] }), content()).writes, "video/yt-abc.md");
+    expect(Object.keys(withLength.entry.data).slice(3, 5)).toEqual(["publishedAt", "duration"]);
+    expect(withLength.entry.data).toMatchObject({ duration: "PT1H2M3S" });
+    expect(withLength.content).toContain('publishedAt: "2023-11-03T06:41:58Z"\nduration: "PT1H2M3S"\n');
+
+    const without = find(planSync(raw({ videos: [video("def", "2023-11-03T06:41:58Z")] }), content()).writes, "video/yt-def.md");
+    expect(without.entry.data).not.toHaveProperty("duration");
   });
 
   it("marks unlisted videos inactive and skips private ones", () => {

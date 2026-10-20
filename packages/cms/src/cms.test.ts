@@ -394,6 +394,15 @@ describe("createVideo", () => {
     expect(change?.content.endsWith("---\n\nAbout it\n")).toBe(true);
   });
 
+  it("stores the duration after publishedAt, and leaves it out when missing or zero", () => {
+    const cms = new Cms(content());
+    const v = cms.createVideo({ ...input, duration: "PT27M13S" });
+    expect(Object.keys(v).slice(0, 5)).toEqual(["id", "videoId", "videoTitle", "publishedAt", "duration"]);
+    expect(v.duration).toBe("PT27M13S");
+    expect(cms.changes().find((c) => c.path === "video/yt-dQw4w9WgXcQ.md")?.content).toContain('publishedAt: "2024-05-01T10:00:00Z"\nduration: "PT27M13S"\n');
+    expect(new Cms(content()).createVideo({ ...input, duration: "P0D" })).not.toHaveProperty("duration");
+  });
+
   it("refuses a YouTube video that is already there", () => {
     const cms = new Cms(content());
     expect(() => cms.createVideo({ ...input, videoId: "yt2" })).toThrow(/video 2 \(video-2\) is already YouTube video yt2/);

@@ -149,6 +149,9 @@ import Footer from '../components/Footer.astro';
     li.className = 'video-card';
     const a = document.createElement('a');
     a.href = `/video/${result.slug}`;
+    // The thumbnail, with the length in a badge on it, as in VideoCard.astro.
+    const thumb = document.createElement('span');
+    thumb.className = 'video-card-thumb';
     let image: HTMLElement;
     const thumbnail = result.thumbnail ? thumbnailSource({ high: result.thumbnail, medium: null, default: null }) : null;
     if (thumbnail) {
@@ -169,6 +172,13 @@ import Footer from '../components/Footer.astro';
       image = document.createElement('div');
     }
     image.className = 'video-card-image';
+    thumb.append(image);
+    if (result.duration) {
+      const duration = document.createElement('span');
+      duration.className = 'video-card-duration';
+      duration.textContent = result.duration;
+      thumb.append(duration);
+    }
     const title = document.createElement('h4');
     title.className = 'video-card-title';
     title.textContent = result.title;
@@ -177,7 +187,7 @@ import Footer from '../components/Footer.astro';
     meta.textContent = [formatDate(result.date), [...result.presenters, ...result.organizations].join(', ')]
       .filter(Boolean)
       .join(' · ');
-    a.append(image, title, meta);
+    a.append(thumb, title, meta);
     li.append(a);
     return li;
   }

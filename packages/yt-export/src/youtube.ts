@@ -55,6 +55,8 @@ export interface YtVideo {
   };
   /** Absent fields are hidden by the owner (e.g. viewCount is always present, likeCount may not be). */
   statistics?: { viewCount?: string };
+  /** `duration` is ISO 8601 (`PT27M13S`); `P0D` for a live stream or premiere that hasn't happened. */
+  contentDetails?: { duration?: string };
   status: { privacyStatus: YtPrivacyStatus };
 }
 
@@ -143,6 +145,6 @@ export class YouTubeClient {
   }
 
   getVideos(ids: string[]): Promise<YtVideo[]> {
-    return this.listByIds<YtVideo>("videos", ids, { part: "snippet,statistics,status" });
+    return this.listByIds<YtVideo>("videos", ids, { part: "snippet,statistics,status,contentDetails" });
   }
 }

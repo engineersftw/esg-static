@@ -152,7 +152,7 @@ Paginated pages use the shared `Pagination` component, which always shows 7 page
 The search icon in the header leads to `/search`, which searches every active video's title, presenters, organizations, playlists and description.
 
 - **How it works:** the page is static. Its script calls the Pages Function `functions/api/search.ts` (`/api/search?q=<words>&page=<n>`) once the visitor pauses typing, and shows 20 results at a time with a "More results" button. The query stays in the address (`/search?q=kubernetes`), so searches can be shared.
-- **The index:** `src/pages/search-index.json.ts` builds `dist/search-index.json`, which wrangler bundles into the function, so **build before deploying**. Nothing else needs updating when content changes.
+- **The index:** `src/pages/search-index.json.ts` builds `dist/search-index.json`, which wrangler bundles into the function, so **build before deploying**. Each entry carries the formatted `duration` for the badge. Nothing else needs updating when content changes.
 - **Matching:** every word must appear somewhere, ignoring case and accents ("kube" finds "Kubernetes"). Title matches rank first, then presenter and organization names, then playlists, then descriptions. The logic is in `src/helpers/search.ts`, with tests in `search.test.ts`.
 - **Limits:** each search request counts against the Workers quota (100,000 a day on the free plan), which is why the page waits for a pause in typing. The Functions bundle is about 1 MB gzipped, against the free plan's 3 MB limit.
 - **Testing:** `pnpm preview` doesn't run Functions, so search shows "Search isn't available right now" there. Use `pnpm exec wrangler pages dev ./dist`.
@@ -199,7 +199,7 @@ Photos we host ourselves are in `public/images/presenters/<id>.jpg` (400×400), 
 
 ### Video cards
 
-Every list of videos (the home page, `/videos`, and the organization, presenter and playlist pages) and the search results show the same card: a 16:9 thumbnail, the title, and the date with the presenters' and organizations' names. `VideoCard.astro` renders it inside `<ul class="video-grid">`. The first video of a list is `featured`: full width with a larger title. An organization or presenter page leaves its own name out of the byline (`without`). The styles are global in `src/styles/global.css`, because `search.astro` builds the same card in the browser; if you change the card, change both.
+Every list of videos (the home page, `/videos`, and the organization, presenter and playlist pages) and the search results show the same card: a 16:9 thumbnail with the video's length (`27:13`, `1:02:03`) as a badge in its corner, the title, and the date with the presenters' and organizations' names. The badge comes from the video's `duration` (an ISO 8601 string such as `PT27M13S`, written by the YouTube sync and formatted by `helpers/duration.ts`); a video without one gets no badge. `VideoCard.astro` renders it inside `<ul class="video-grid">`. The first video of a list is `featured`: full width with a larger title. An organization or presenter page leaves its own name out of the byline (`without`). The styles are global in `src/styles/global.css`, because `search.astro` builds the same card in the browser; if you change the card, change both.
 
 Thumbnails are the stored 480 px YouTube image, cropped to 16:9. For YouTube videos the card also offers the 1280 px `maxresdefault`, so phones and other high-density screens (and the full-width featured card) get a sharp image, and normal screens keep the small download. About 6% of videos have no large thumbnail; `src/helpers/thumbnailFallback.ts` notices (YouTube sends a small 4:3 stand-in picture) and shows the stored one instead.
 
@@ -234,7 +234,7 @@ To add a link type: add it to `ProfileLinkType` in `@esg/db-types/content`, `PRO
 
 Don't edit hundreds of files by hand: use the tools in this repo, which write `content/` in the right format.
 
-**From YouTube** (the usual way to add new videos and playlists). `packages/yt-export` syncs the channel into `content/`. It updates titles, descriptions and thumbnails of existing entries, adds new ones, and never deletes anything:
+**From YouTube** (the usual way to add new videos and playlists). `packages/yt-export` syncs the channel into `content/`. It updates titles, descriptions, thumbnails and video lengths (`duration`) of existing entries, adds new ones, and never deletes anything:
 
 ```bash
 cd packages/yt-export

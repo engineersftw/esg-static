@@ -158,16 +158,34 @@ hr {
 	display: block;
 	text-decoration: none;
 }
+/* The thumbnail and its duration badge, which sits in the bottom right corner. */
+.video-card-thumb {
+	position: relative;
+	display: block;
+	margin-bottom: 0.5rem;
+}
 .video-card-image {
 	display: block;
 	width: 100%;
 	height: auto;
 	aspect-ratio: 16 / 9;
 	object-fit: cover;
-	margin-bottom: 0.5rem;
 	border-radius: 12px;
 	background: rgb(var(--gray-light));
 	transition: box-shadow 0.2s ease;
+}
+.video-card-duration {
+	position: absolute;
+	right: 0.5rem;
+	bottom: 0.5rem;
+	padding: 0.1rem 0.4rem;
+	border-radius: 4px;
+	background: rgb(0 0 0 / 0.8);
+	color: #fff;
+	font-size: 0.8rem;
+	font-weight: 600;
+	line-height: 1.4;
+	font-variant-numeric: tabular-nums;
 }
 .video-card-title {
 	margin: 0;
