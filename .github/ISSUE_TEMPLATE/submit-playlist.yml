@@ -1,0 +1,66 @@
+# Community playlist submissions. .github/workflows/playlist-submission.yml turns an issue made from
+# this form into a pull request that adds the playlist and its videos (pnpm cms playlist submission).
+# The field labels are what packages/cms/src/playlistSubmission.ts reads (PLAYLIST_FORM_FIELDS), so
+# change both together. The categories are PLAYLIST_CATEGORIES in packages/cms/src/cms.ts (Conference
+# Track is left out: tracks are nested under a conference by a maintainer).
+name: Submit a playlist
+description: Suggest a whole YouTube playlist, such as a conference or a meetup series
+title: "Playlist submission: "
+labels: ["playlist-submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a playlist! Once you submit this form, a pull request adding the playlist and its public videos is created automatically, and a maintainer reviews it. The titles, descriptions and thumbnails come from YouTube, and the presenters are added during the review.
+  - type: input
+    id: url
+    attributes:
+      label: YouTube playlist URL
+      description: The playlist must be public on YouTube. Its link has "list=" in it.
+      placeholder: https://www.youtube.com/playlist?list=…
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What kind of playlist it is, if you know.
+      options:
+        - Conference
+        - Meetup
+        - Tutorial
+        - Training
+        - Shows
+    validations:
+      required: false
+  - type: input
+    id: group
+    attributes:
+      label: Conference, meetup or group
+      description: Who organized the talks. If it matches a group on Engineers.SG, the new videos are linked to it.
+      placeholder: PyCon SG
+    validations:
+      required: false
+  - type: input
+    id: date
+    attributes:
+      label: Event date
+      description: For a conference, the day it started, as YYYY-MM-DD. Without one, the date the playlist was created on YouTube is used.
+      placeholder: "2024-06-01"
+    validations:
+      required: false
+  - type: input
+    id: website
+    attributes:
+      label: Website
+      description: The event's or group's website, if there is one.
+      placeholder: https://pycon.sg
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Anything the reviewer should know, such as the presenters.
+    validations:
+      required: false

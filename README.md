@@ -115,6 +115,7 @@ GitHub Actions in `.github/workflows/`:
 - **Promote to production** (`promote.yml`): after CI passes on a push to `staging`, it waits for a maintainer to approve (the `production` environment's required reviewers), then merges that commit into `main` with a merge commit. It can also be run by hand on `staging`. Setup and caveats are in [PROMOTE.md](.github/workflows/PROMOTE.md).
 - **Sync YouTube** (`sync-youtube.yml`): runs yt-export against the channel daily at 02:00 UTC (10:00 Singapore time), or on demand from the Actions tab. If the content changed, it opens or updates a pull request from the `youtube-sync` branch, and can post a Telegram notification. It needs the `YOUTUBE_API_KEY` secret (and optionally `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`). Setup is in [SYNC_YOUTUBE.md](.github/workflows/SYNC_YOUTUBE.md).
 - **Video submission** (`video-submission.yml`): runs when someone opens or edits an issue made from the **Submit a video** form (`.github/ISSUE_TEMPLATE/submit-video.yml`, labelled `video-submission`). It runs `pnpm cms submission` on the issue, opens or updates a pull request from `video-submission/issue-<n>` that adds the video to the Community Contributed playlist and closes the issue, and comments on the issue with the result. It uses the same secrets as the sync. Setup and caveats are in [VIDEO_SUBMISSION.md](.github/workflows/VIDEO_SUBMISSION.md).
+- **Playlist submission** (`playlist-submission.yml`): the same for the **Submit a playlist** form (`.github/ISSUE_TEMPLATE/submit-playlist.yml`, labelled `playlist-submission`). It runs `pnpm cms playlist submission`, which adds the YouTube playlist with its public videos (reusing the ones already on the site), opens or updates a pull request from `playlist-submission/issue-<n>`, comments on the issue and posts to Telegram. Setup and caveats are in [PLAYLIST_SUBMISSION.md](.github/workflows/PLAYLIST_SUBMISSION.md).
 
 ## Repo layout
 
@@ -127,7 +128,7 @@ packages/pg-export/    Postgres export / Markdown generator
 packages/yt-export/    YouTube sync
 docs/                  design notes, e.g. content-id-migration.md (why IDs and links work as they do)
 output/                generated data, git-ignored (backup/, yt-export runs, scratch exports)
-.github/workflows/     CI, the daily YouTube sync and video submissions
+.github/workflows/     CI, the daily YouTube sync, and video and playlist submissions
 eslint.config.js       ESLint config for the whole repo
 tsconfig.base.json     compiler options every package extends
 CLAUDE.md              detailed notes for AI coding agents (also handy for humans)
