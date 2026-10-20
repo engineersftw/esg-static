@@ -4,6 +4,8 @@ import type { YtPlaylist, YtPlaylistItem, YtVideo } from "@esg/yt-export/youtube
 import { Cms, PLAYLIST_CATEGORIES } from "./cms.js";
 import {
   applyPlaylistSubmission,
+  assertPlaylistSize,
+  itemVideoIds,
   MAX_PLAYLIST_VIDEOS,
   PLAYLIST_FORM_FIELDS,
   parsePlaylistSubmission,
@@ -215,6 +217,20 @@ describe("applyPlaylistSubmission", () => {
     const cms = new Cms(content());
     expect(() => applyPlaylistSubmission(cms, submission(), youtube({ videos: [] }))).toThrow(SubmissionError);
     expect(cms.changes()).toEqual([]);
+  });
+});
+
+describe("assertPlaylistSize", () => {
+  it("allows up to the limit and rejects more", () => {
+    expect(() => assertPlaylistSize(MAX_PLAYLIST_VIDEOS)).not.toThrow();
+    expect(() => assertPlaylistSize(MAX_PLAYLIST_VIDEOS + 1)).toThrow(SubmissionError);
+    expect(() => assertPlaylistSize(5000)).toThrow(/has 5000 videos, more than the 300/);
+  });
+});
+
+describe("itemVideoIds", () => {
+  it("lists each video once, in order", () => {
+    expect(itemVideoIds([item("bbbbbbbbbbb", 0), item("aaaaaaaaaaa", 1), item("bbbbbbbbbbb", 2)])).toEqual(["bbbbbbbbbbb", "aaaaaaaaaaa"]);
   });
 });
 

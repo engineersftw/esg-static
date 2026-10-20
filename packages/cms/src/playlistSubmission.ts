@@ -131,9 +131,23 @@ export function assertNewPlaylist(cms: Cms, playlistId: string): void {
   );
 }
 
+/**
+ * Throws if a playlist with `count` videos is too big to add. The CLI calls it with YouTube's item
+ * count before fetching the items, and with the number of distinct videos before looking them up, so
+ * a huge playlist doesn't use up the YouTube quota only to be rejected.
+ */
+export function assertPlaylistSize(count: number): void {
+  if (count > MAX_PLAYLIST_VIDEOS) {
+    throw new SubmissionError(`The playlist has ${count} videos, more than the ${MAX_PLAYLIST_VIDEOS} a submission can add. A maintainer will take a look.`);
+  }
+}
+
+/** The distinct YouTube video IDs of a playlist's items, in their order. */
+export const itemVideoIds = (items: YtPlaylistItem[]): string[] => [...new Set(items.map((i) => i.contentDetails.videoId))];
+
 /** The YouTube video IDs of the playlist's items that the content doesn't have yet: the ones to look up. */
 export function videosToFetch(cms: Cms, items: YtPlaylistItem[]): string[] {
-  return [...new Set(items.map((i) => i.contentDetails.videoId))].filter((id) => !findYouTubeVideo(cms, id));
+  return itemVideoIds(items).filter((id) => !findYouTubeVideo(cms, id));
 }
 
 function findYouTubeVideo(cms: Cms, videoId: string): Video | undefined {
@@ -158,10 +172,8 @@ export function applyPlaylistSubmission(cms: Cms, submission: PlaylistSubmission
   if (privacy !== "public") throw new SubmissionError(`The playlist is ${privacy} on YouTube. Only public playlists can be added.`);
 
   const items = [...youtube.items].sort((a, b) => a.snippet.position - b.snippet.position);
-  const ids = [...new Set(items.map((i) => i.contentDetails.videoId))];
-  if (ids.length > MAX_PLAYLIST_VIDEOS) {
-    throw new SubmissionError(`The playlist has ${ids.length} videos, more than the ${MAX_PLAYLIST_VIDEOS} a submission can add. A maintainer will take a look.`);
-  }
+  const ids = itemVideoIds(items);
+  assertPlaylistSize(ids.length);
 
   const fetched = new Map(youtube.videos.map((v) => [v.id, v]));
   const planned: { videoId: string; existing?: Video; youtube?: YtVideo }[] = [];

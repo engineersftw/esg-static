@@ -6,7 +6,7 @@ Anyone with a GitHub account can suggest a whole public YouTube playlist, such a
 2. `playlist-submission.yml` runs `pnpm cms playlist submission` on the issue body. It:
    - rejects a playlist already in the content before calling YouTube;
    - fetches the playlist, its items and the videos not yet in the content from the YouTube Data API (about 1 quota unit per 50 videos, twice, plus one);
-   - rejects a playlist that is missing, not public, has no public videos, or has more than 300 videos (`MAX_PLAYLIST_VIDEOS`; a maintainer handles those);
+   - rejects a playlist that is missing, not public, has no public videos, or has more than 300 videos (`MAX_PLAYLIST_VIDEOS`; a maintainer handles those). The size is checked against YouTube's item count before the items are fetched, and again before the videos are looked up, so a huge playlist costs only a few quota units;
    - creates `playlist/yt-<playlist ID>.md` with the YouTube playlist ID, the title, description and image from YouTube, the category, website, and the event date (or the playlist's creation date);
    - fills its `videos` in YouTube's order: videos already on the site are reused as they are, new public ones are created like the sync creates them, and private, deleted or unlisted ones are left out (listed in the report);
    - links the new videos (not the existing ones) to the active organization whose name matches the group, ignoring case, spacing and accents.

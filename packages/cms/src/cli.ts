@@ -13,7 +13,7 @@ import { PROFILE_LINK_TYPES, readEntries, VIDEO_LINKS, writeEntryFiles, type Vid
 import { Collection, type Organization, type Presenter, type ProfileLinkType } from "@esg/db-types/content";
 import { YouTubeClient } from "@esg/yt-export/youtube";
 import { Cms, CmsError, expandVideoRefs, PLAYLIST_CATEGORIES, titleOf, type Change } from "./cms.js";
-import { applyPlaylistSubmission, assertNewPlaylist, parsePlaylistSubmission, playlistAddedReport, playlistPath, videosToFetch } from "./playlistSubmission.js";
+import { applyPlaylistSubmission, assertNewPlaylist, assertPlaylistSize, itemVideoIds, parsePlaylistSubmission, playlistAddedReport, playlistPath, videosToFetch } from "./playlistSubmission.js";
 import { addedReport, applySubmission, assertNewVideo, COMMUNITY_PLAYLIST, createVideoFromYouTube, groupOptionProblems, parseSubmission, rejectedReport, SubmissionError, withGroupOptions, youtubeVideoId } from "./submission.js";
 
 const HELP = `
@@ -445,7 +445,11 @@ async function playlistSubmission(cms: Cms) {
     if (!key) fail("playlist submission needs YOUTUBE_API_KEY to fetch the playlist from YouTube");
     const client = new YouTubeClient(key);
     const [playlist] = await client.getPlaylists([sub.playlistId]);
+    // Reject a huge playlist before paging through its items, and again (the count can be stale)
+    // before looking up its videos.
+    if (playlist?.contentDetails) assertPlaylistSize(playlist.contentDetails.itemCount);
     const items = playlist ? await client.getPlaylistItems(sub.playlistId) : [];
+    assertPlaylistSize(itemVideoIds(items).length);
     const videos = items.length ? await client.getVideos(videosToFetch(cms, items)) : [];
     const result = applyPlaylistSubmission(cms, sub, { playlist, items, videos });
     report(playlistAddedReport(result, sub, issue));

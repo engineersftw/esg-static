@@ -33,6 +33,8 @@ export interface YtPlaylist {
     thumbnails: YtThumbnails;
   };
   status?: { privacyStatus: YtPrivacyStatus };
+  /** Only from getPlaylists. The number of items, private and deleted videos included. */
+  contentDetails?: { itemCount: number };
 }
 
 export interface YtPlaylistItem {
@@ -133,7 +135,7 @@ export class YouTubeClient {
   }
 
   getPlaylists(ids: string[]): Promise<YtPlaylist[]> {
-    return this.listByIds<YtPlaylist>("playlists", ids, { part: "snippet,status" });
+    return this.listByIds<YtPlaylist>("playlists", ids, { part: "snippet,status,contentDetails" });
   }
 
   getPlaylistItems(playlistId: string): Promise<YtPlaylistItem[]> {
