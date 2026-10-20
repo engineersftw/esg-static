@@ -8,7 +8,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/p8yGHX8DdIQ/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/p8yGHX8DdIQ/hqdefault.jpg"
 slug: "lightningtalks2020-identifying-kpis-bottlenecks-in-web-applications-by-sandra-sebastian-john"
 organizations: ["198"]
-presenters: []
+presenters: ["g30qnijx21"]
 active: true
 videoSite: "youtube"
 ---

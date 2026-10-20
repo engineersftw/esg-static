@@ -8,7 +8,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/mlOrrbv6tPk/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/mlOrrbv6tPk/hqdefault.jpg"
 slug: "lightningtalks2020-visual-testing-toolbox-by-martin-schneider"
 organizations: ["198"]
-presenters: []
+presenters: ["avymarjbc6"]
 active: true
 videoSite: "youtube"
 ---

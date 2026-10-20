@@ -8,7 +8,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/JZNL9JhC7us/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/JZNL9JhC7us/hqdefault.jpg"
 slug: "lightningtalks2020-automated-gui-testing-for-uwp-apps-by-goh-chun-lin"
 organizations: ["198"]
-presenters: []
+presenters: ["hawh6tuiy7"]
 active: true
 videoSite: "youtube"
 ---
