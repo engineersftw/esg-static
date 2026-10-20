@@ -6,7 +6,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { PROFILE_LINK_TYPES, readEntries, VIDEO_LINKS, writeEntryFiles, type VideoLinkField } from "@esg/content";
@@ -44,9 +44,10 @@ Commands:
                         Description (the Markdown body)
       --slug, --inactive, --allow-duplicate, --video
                         As for presenter create
-      --form <file>     The submit-video issue form whose Group dropdown lists the active
-                        organizations; it is updated with the new one. Default: the repo's
-                        form when --content is also the default, otherwise none
+      --form <file>     An issue form whose Group dropdown lists the active organizations; it
+                        is updated with the new one. Repeatable. Default: the repo's
+                        submit-video and submit-playlist forms when --content is also the
+                        default, otherwise none
 
   playlist create --title <title> [options]
                         Create a playlist (ID and slug are assigned); videos are added with
@@ -111,14 +112,14 @@ Commands:
                         not public) is reported and exits 0 with status "rejected"; in GitHub
                         Actions, status, title and video are also step outputs
 
-  form sync             Rewrite the Group options of the submit-video issue form to the active
-                        organizations (what organization create does for a new one); takes --form
-                        as there
+  form sync             Rewrite the Group options of the submit-video and submit-playlist issue
+                        forms to the active organizations (what organization create does for a
+                        new one); takes --form as there
 
   find <video|presenter|organization|playlist> <text>
                         List entries whose ID, slug, title or YouTube ID contains the text
   check                 Report links to entries that don't exist, IDs that differ only in
-                        case, leftover reverse link lists, and Group options in the issue form
+                        case, leftover reverse link lists, and Group options in the issue forms
                         that are out of step with the organizations; exits 1 if there are any
 
 A <ref> is an entry ID, a slug, a site URL or path (/video/<slug>), and for videos a YouTube
@@ -131,7 +132,8 @@ Options:
 `;
 
 const DEFAULT_CONTENT = fileURLToPath(new URL("../../../apps/website/content", import.meta.url));
-const DEFAULT_FORM = fileURLToPath(new URL("../../../.github/ISSUE_TEMPLATE/submit-video.yml", import.meta.url));
+/** The issue forms with a Group dropdown of the organizations. */
+const DEFAULT_FORMS = ["submit-video.yml", "submit-playlist.yml"].map((f) => fileURLToPath(new URL(`../../../.github/ISSUE_TEMPLATE/${f}`, import.meta.url)));
 /** Most matches `find` lists. */
 const FIND_LIMIT = 30;
 
@@ -140,7 +142,7 @@ const { values: args, positionals } = parseArgs({
   options: {
     content: { type: "string" },
     "dry-run": { type: "boolean", default: false },
-    form: { type: "string" },
+    form: { type: "string", multiple: true, default: [] },
     help: { type: "boolean", short: "h", default: false },
     // presenter create
     name: { type: "string" },
@@ -244,25 +246,25 @@ function organizationCreate(cms: Cms) {
   updateSubmissionForm(cms);
 }
 
-/** The submission form to keep in step with the organizations: --form, else the repo's when --content is the default too. */
-function formFile(): string | undefined {
-  return args.form ? resolve(process.env.INIT_CWD ?? process.cwd(), args.form) : args.content ? undefined : DEFAULT_FORM;
+/** The submission forms to keep in step with the organizations: the --form files, else the repo's when --content is the default too. */
+function formFiles(): string[] {
+  return args.form.length ? args.form.map((f) => resolve(process.env.INIT_CWD ?? process.cwd(), f)) : args.content ? [] : DEFAULT_FORMS;
 }
 
 function formSync(cms: Cms) {
-  if (!formFile()) fail("form sync needs --form <file> when --content is not the default");
+  if (!formFiles().length) fail("form sync needs --form <file> when --content is not the default");
   updateSubmissionForm(cms);
 }
 
-/** Rewrite the Group options of the video submission form to the active organizations, if the form is known. */
+/** Rewrite the Group options of the submission forms to the active organizations, for the forms that are known. */
 function updateSubmissionForm(cms: Cms) {
-  const file = formFile();
-  if (!file) return;
-  const before = readFileSync(file, "utf8");
-  const after = withGroupOptions(before, cms.organizationNames());
-  if (after === before) return;
-  if (!args["dry-run"]) writeFileSync(file, after);
-  console.log(`${args["dry-run"] ? "Dry run: would update" : "Updated"} the Group options in ${file}`);
+  for (const file of formFiles()) {
+    const before = readFileSync(file, "utf8");
+    const after = withGroupOptions(before, cms.organizationNames());
+    if (after === before) continue;
+    if (!args["dry-run"]) writeFileSync(file, after);
+    console.log(`${args["dry-run"] ? "Dry run: would update" : "Updated"} the Group options in ${file}`);
+  }
 }
 
 /** What the YouTube API returns for a video ID (undefined if it has nothing); fails without YOUTUBE_API_KEY. */
@@ -375,8 +377,7 @@ function find(cms: Cms) {
 
 function check(cms: Cms) {
   const problems = cms.problems();
-  const form = formFile();
-  if (form) problems.push(...groupOptionProblems(readFileSync(form, "utf8"), cms.organizationNames()));
+  for (const form of formFiles()) problems.push(...groupOptionProblems(readFileSync(form, "utf8"), cms.organizationNames(), basename(form)));
   for (const p of problems) console.log(`  ! ${p}`);
   if (!problems.length) {
     console.log("No problems found.");

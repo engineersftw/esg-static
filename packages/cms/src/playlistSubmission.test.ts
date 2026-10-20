@@ -15,17 +15,18 @@ import {
   type PlaylistSubmission,
   type YouTubePlaylistData,
 } from "./playlistSubmission.js";
-import { SubmissionError } from "./submission.js";
+import { groupOptions, SubmissionError } from "./submission.js";
 import { content, counterIds, data, organization, playlist, video } from "./testContent.js";
 
 const PL = "PLabcdefghijklmnop";
 
 /** An issue body as GitHub renders the submit-playlist form. */
-const issueBody = (fields: { url?: string; category?: string; group?: string; date?: string; website?: string; notes?: string }) =>
+const issueBody = (fields: { url?: string; category?: string; group?: string; others?: string; date?: string; website?: string; notes?: string }) =>
   [
     `### YouTube playlist URL\n\n${fields.url ?? "_No response_"}`,
     `### Category\n\n${fields.category ?? "_No response_"}`,
-    `### Conference, meetup or group\n\n${fields.group ?? "_No response_"}`,
+    `### Group\n\n${fields.group ?? "_No response_"}`,
+    `### Others (not in list)\n\n${fields.others ?? "_No response_"}`,
     `### Event date\n\n${fields.date ?? "_No response_"}`,
     `### Website\n\n${fields.website ?? "_No response_"}`,
     `### Anything else\n\n${fields.notes ?? "_No response_"}`,
@@ -35,6 +36,7 @@ const submission = (over: Partial<PlaylistSubmission> = {}): PlaylistSubmission 
   playlistId: PL,
   category: null,
   group: null,
+  others: null,
   date: null,
   website: null,
   notes: null,
@@ -87,6 +89,12 @@ describe("the Submit a playlist form", () => {
     for (const label of Object.values(PLAYLIST_FORM_FIELDS)) expect(form).toContain(`label: ${label}\n`);
   });
 
+  it("lists the same Group options as the video form", () => {
+    const video = readFileSync(new URL("../../../.github/ISSUE_TEMPLATE/submit-video.yml", import.meta.url), "utf8");
+    expect(groupOptions(form)).toEqual(groupOptions(video));
+    expect(groupOptions(form).length).toBeGreaterThan(0);
+  });
+
   it("offers only known categories", () => {
     const options = form.slice(form.indexOf("id: category")).split("validations:")[0].match(/^ +- (.+)$/gm)!.map((l) => l.replace(/^ +- /, ""));
     expect(options.length).toBeGreaterThan(0);
@@ -115,9 +123,9 @@ describe("youtubePlaylistId", () => {
 describe("parsePlaylistSubmission", () => {
   it("reads every field", () => {
     const sub = parsePlaylistSubmission(
-      issueBody({ url: `https://www.youtube.com/playlist?list=${PL}`, category: "conference", group: " PyCon  SG ", date: "2024-06-01", website: "pycon.sg", notes: "Thanks!" }),
+      issueBody({ url: `https://www.youtube.com/playlist?list=${PL}`, category: "conference", group: " PyCon  SG ", others: "Some meetup", date: "2024-06-01", website: "pycon.sg", notes: "Thanks!" }),
     );
-    expect(sub).toEqual({ playlistId: PL, category: "Conference", group: "PyCon SG", date: "2024-06-01", website: "https://pycon.sg", notes: "Thanks!" });
+    expect(sub).toEqual({ playlistId: PL, category: "Conference", group: "PyCon SG", others: "Some meetup", date: "2024-06-01", website: "https://pycon.sg", notes: "Thanks!" });
   });
 
   it("leaves the optional fields empty", () => {
@@ -259,5 +267,13 @@ describe("playlistAddedReport", () => {
     const cms = new Cms(content());
     const sub = submission({ group: "Nobody" });
     expect(playlistAddedReport(applyPlaylistSubmission(cms, sub, youtube()), sub)).toContain(`pnpm cms assign --from-playlist yt-${PL} --organization <ref>`);
+  });
+
+  it("quotes the free-text group and the notes, escaped", () => {
+    const cms = new Cms(content());
+    const sub = submission({ others: "Rust <SG> meetup", notes: "Thanks @all" });
+    const report = playlistAddedReport(applyPlaylistSubmission(cms, sub, youtube()), sub);
+    expect(report).toContain("Others (not in list):\n> Rust &lt;SG&gt; meetup");
+    expect(report).toContain("Anything else:\n> Thanks &#64;all");
   });
 });
