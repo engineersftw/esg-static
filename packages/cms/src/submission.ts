@@ -244,17 +244,17 @@ export function withGroupOptions(form: string, names: string[]): string {
   return lines.join("\n");
 }
 
-/** What differs between the form's Group options and the organization names they should list; empty when in step. */
-export function groupOptionProblems(form: string, names: string[]): string[] {
+/** What differs between a form's Group options and the organization names they should list; empty when in step. `label` names the form in the messages. */
+export function groupOptionProblems(form: string, names: string[], label = "submission form"): string[] {
   const options = groupOptions(form);
   const have = new Set(options);
   const want = new Set(names);
   const out: string[] = [];
   const missing = names.filter((n) => !have.has(n));
   const extra = options.filter((o) => !want.has(o));
-  if (missing.length) out.push(`submission form: Group options lack ${missing.map((n) => `"${n}"`).join(", ")}`);
-  if (extra.length) out.push(`submission form: Group options list ${extra.map((n) => `"${n}"`).join(", ")}, which is not an active organization`);
-  if (!missing.length && !extra.length && options.join("\n") !== names.join("\n")) out.push("submission form: Group options are not sorted by name");
+  if (missing.length) out.push(`${label}: Group options lack ${missing.map((n) => `"${n}"`).join(", ")}`);
+  if (extra.length) out.push(`${label}: Group options list ${extra.map((n) => `"${n}"`).join(", ")}, which is not an active organization`);
+  if (!missing.length && !extra.length && options.join("\n") !== names.join("\n")) out.push(`${label}: Group options are not sorted by name`);
   return out;
 }
 

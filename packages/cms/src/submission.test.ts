@@ -233,6 +233,7 @@ describe("withGroupOptions", () => {
     expect(groupOptions(form)).toEqual(["Old", "Older"]);
     expect(groupOptionProblems(form, ["Old", "Older"])).toEqual([]);
     expect(groupOptionProblems(form, ["Older", "Old"])).toEqual(["submission form: Group options are not sorted by name"]);
+    expect(groupOptionProblems(form, ["Old", "New"], "submit-playlist.yml")[0]).toBe('submit-playlist.yml: Group options lack "New"');
     expect(groupOptionProblems(form, ["Old", "New"])).toEqual([
       'submission form: Group options lack "New"',
       'submission form: Group options list "Older", which is not an active organization',
