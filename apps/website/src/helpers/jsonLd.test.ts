@@ -40,6 +40,11 @@ describe('videoJsonLd', () => {
     });
   });
 
+  it('adds the duration as ISO 8601, and leaves out a missing or zero one', () => {
+    expect(videoJsonLd({ ...base, duration: 'PT27M13S' })).toMatchObject({ duration: 'PT27M13S' });
+    for (const duration of [undefined, null, 'P0D', 'nonsense']) expect(videoJsonLd({ ...base, duration })).not.toHaveProperty('duration');
+  });
+
   it('falls back to the title, leaves out empty lists and embeds Vimeo', () => {
     const ld = videoJsonLd({ ...base, videoSite: 'vimeo', description: '' });
     expect(ld.description).toBe('A talk');

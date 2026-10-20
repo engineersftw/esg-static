@@ -37,6 +37,8 @@ export interface Video {
   videoId: string;
   videoTitle: string;
   publishedAt: IsoTimestamp;
+  /** The video's length as an ISO 8601 duration (`PT27M13S`), from the YouTube API. Absent until the sync has seen it. */
+  duration?: string;
   thumbnailDefault: string | null;
   thumbnailMedium: string | null;
   thumbnailHigh: string | null;

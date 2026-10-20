@@ -1,6 +1,7 @@
 // schema.org JSON-LD for the pages (rendered by BaseHead's `jsonLd` prop). Pure: pages pass plain
 // values, and every URL is made absolute from `site`. Nothing private goes in: no emails.
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { durationSeconds } from './duration';
 
 type Site = URL | string;
 type Json = Record<string, unknown>;
@@ -60,6 +61,8 @@ export interface VideoLdInput {
   description?: string | null;
   /** ISO 8601 timestamp. */
   publishedAt: string;
+  /** ISO 8601 duration (`PT27M13S`), as stored in the content. */
+  duration?: string | null;
   thumbnails: (string | null | undefined)[];
   videoId: string;
   videoSite: 'youtube' | 'vimeo';
@@ -79,6 +82,7 @@ export function videoJsonLd(input: VideoLdInput): Json {
     name: text(input.title),
     description: text(input.description) ?? text(input.title),
     uploadDate: new Date(input.publishedAt).toISOString(),
+    duration: durationSeconds(input.duration) ? input.duration : undefined,
     thumbnailUrl: input.thumbnails.filter((t): t is string => !!t).map((t) => absolute(t, site)),
     embedUrl,
     creator: input.presenters.map((p) => ({ '@type': 'Person', name: text(p.name), url: absolute(`/presenter/${p.slug}`, site) })),

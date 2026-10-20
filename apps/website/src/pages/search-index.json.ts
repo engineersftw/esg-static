@@ -2,6 +2,7 @@
 // organizations and playlists, and its description. Built to dist/search-index.json and bundled
 // into the Pages Function functions/api/search.ts, which searches it (src/helpers/search.ts).
 import { getActiveOrganizations, getActivePresenters, getListedVideos, getVideoPlaylists } from '../helpers/collections';
+import { formatDuration } from '../helpers/duration';
 import type { SearchEntry } from '../helpers/search';
 
 const names = <T extends { id: string }>(entries: T[], name: (entry: T) => string) =>
@@ -19,6 +20,7 @@ export async function GET() {
     date: video.data.publishedAt,
     // The stored high-quality thumbnail: the card crops it to 16:9 (see helpers/thumbnails.ts).
     thumbnail: video.data.thumbnailHigh ?? video.data.thumbnailMedium ?? video.data.thumbnailDefault,
+    duration: formatDuration(video.data.duration),
     presenters: resolve(video.data.presenters, presenters),
     organizations: resolve(video.data.organizations, organizations),
     playlists: (await getVideoPlaylists(video.id)).map((playlist) => playlist.data.playlistTitle.trim()),

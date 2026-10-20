@@ -128,6 +128,12 @@ describe("parseSubmission", () => {
 });
 
 describe("applySubmission", () => {
+  it("stores the length YouTube reports for the submitted video", () => {
+    const cms = new Cms(community(), { randomId: counterIds() });
+    const video = { ...yt(), contentDetails: { duration: "PT12M5S" } };
+    expect(applySubmission(cms, submission(), video).video).toMatchObject({ duration: "PT12M5S" });
+  });
+
   it("adds the video, links existing presenters, creates new ones and adds it to the community playlist", () => {
     const cms = new Cms(community(), { randomId: counterIds() });
     const result = applySubmission(

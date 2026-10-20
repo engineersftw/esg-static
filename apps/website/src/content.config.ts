@@ -2,6 +2,7 @@ import { defineCollection, reference } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { PROFILE_LINK_TYPES } from './consts';
+import { ISO_DURATION } from './helpers/duration';
 
 // Markdown written by pg-export (`-f markdown`), one <id>.md per entry; frontmatter types are in
 // @esg/db-types/content. The glob loader would otherwise use the frontmatter `slug` as the entry
@@ -20,6 +21,8 @@ const video = defineCollection({
     videoId: z.string(),
     videoTitle: z.string(),
     publishedAt: z.string(),
+    // The length as an ISO 8601 duration (`PT27M13S`), written by the YouTube sync. Absent until it has seen the video.
+    duration: z.string().regex(ISO_DURATION).optional(),
     thumbnailDefault: z.string().nullable(),
     thumbnailMedium: z.string().nullable(),
     thumbnailHigh: z.string().nullable(),

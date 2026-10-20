@@ -155,6 +155,7 @@ export function createVideoFromYouTube(cms: Cms, youtube: YtVideo, active = true
     videoId: youtube.id,
     title: youtube.snippet.title,
     publishedAt: youtube.snippet.publishedAt,
+    duration: youtube.contentDetails?.duration,
     thumbnails: { default: thumbnail(t, "default"), medium: thumbnail(t, "medium"), high: thumbnail(t, "high") },
     description: youtube.snippet.description,
     active,
