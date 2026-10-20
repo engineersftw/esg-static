@@ -16,7 +16,8 @@ import { createVideoFromYouTube, escapeMarkdown, parseIssueForm, SITE_URL, Submi
 export const PLAYLIST_FORM_FIELDS = {
   url: "YouTube playlist URL",
   category: "Category",
-  group: "Conference, meetup or group",
+  group: "Group",
+  others: "Others (not in list)",
   date: "Event date",
   website: "Website",
   notes: "Anything else",
@@ -31,7 +32,10 @@ export interface PlaylistSubmission {
   playlistId: string;
   /** One of `PLAYLIST_CATEGORIES`, or null. */
   category: string | null;
+  /** The Group dropdown's value: the name of an organization. */
   group: string | null;
+  /** The "Others (not in list)" text: a group that isn't in the dropdown, or anything else about it. */
+  others: string | null;
   /** YYYY-MM-DD. */
   date: string | null;
   /** A full http(s) URL. */
@@ -87,6 +91,7 @@ export function parsePlaylistSubmission(body: string): PlaylistSubmission {
     playlistId,
     category,
     group: fields.get(PLAYLIST_FORM_FIELDS.group)?.replace(/\s+/g, " ").trim().slice(0, 200) || null,
+    others: fields.get(PLAYLIST_FORM_FIELDS.others)?.slice(0, 2000) || null,
     date,
     website: website || null,
     notes: fields.get(PLAYLIST_FORM_FIELDS.notes)?.slice(0, 2000) || null,
@@ -256,19 +261,19 @@ export function playlistAddedReport(result: PlaylistSubmissionResult, submission
     if (skipped.length > REPORT_VIDEOS) lines.push(`- … and ${skipped.length - REPORT_VIDEOS} more`);
   }
 
-  if (submission.group || submission.notes) {
+  if (submission.group || submission.others || submission.notes) {
     lines.push("", "### From the submitter", "");
+    const parts: string[] = [];
     if (submission.group && result.organization) {
-      lines.push(
-        `Group: ${escapeMarkdown(submission.group)}. Linked the new videos to organization ${result.organization.id}, ${code(`/organization/${result.organization.slug}`)}.`,
-      );
+      parts.push(`Group: ${escapeMarkdown(submission.group)}. Linked the new videos to organization ${result.organization.id}, ${code(`/organization/${result.organization.slug}`)}.`);
     } else if (submission.group) {
-      lines.push(
-        `Group: ${escapeMarkdown(submission.group)}. No organization has this name: link one with \`pnpm cms assign --from-playlist ${playlist.id} --organization <ref>\` if there is one.`,
+      parts.push(
+        `Group: ${escapeMarkdown(submission.group)}. Not linked to an organization: use \`pnpm cms assign --from-playlist ${playlist.id} --organization <ref>\` if there is one.`,
       );
     }
-    if (submission.group && submission.notes) lines.push("");
-    if (submission.notes) lines.push(quote(submission.notes));
+    if (submission.others) parts.push(`Others (not in list):\n${quote(submission.others)}`);
+    if (submission.notes) parts.push(`Anything else:\n${quote(submission.notes)}`);
+    lines.push(parts.join("\n\n"));
   }
 
   lines.push(
