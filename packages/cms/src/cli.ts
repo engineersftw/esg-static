@@ -246,9 +246,9 @@ function organizationCreate(cms: Cms) {
   updateSubmissionForm(cms);
 }
 
-/** The submission forms to keep in step with the organizations: the --form files, else the repo's when --content is the default too. */
+/** The submission forms to keep in step with the organizations: the --form files, else the repo's when --content is the repo's content (given or not). */
 function formFiles(): string[] {
-  return args.form.length ? args.form.map((f) => resolve(process.env.INIT_CWD ?? process.cwd(), f)) : args.content ? [] : DEFAULT_FORMS;
+  return args.form.length ? args.form.map((f) => resolve(process.env.INIT_CWD ?? process.cwd(), f)) : contentDir === DEFAULT_CONTENT ? DEFAULT_FORMS : [];
 }
 
 function formSync(cms: Cms) {
