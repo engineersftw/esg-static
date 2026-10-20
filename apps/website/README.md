@@ -144,6 +144,7 @@ Paginated pages use the shared `Pagination` component, which always shows 7 page
 | `/search` | Video search: a static page that calls `/api/search` as you type (see "Video search") |
 | `/feed` | RSS feed of the 50 newest videos (`public/_headers` sets its content type) |
 | `/about` | About page |
+| `/contribute` | How to suggest a video or a playlist (links to the "Submit a video" and "Submit a playlist" issue forms) |
 | `404` | Served by Cloudflare for any missing path |
 
 ### Video search
@@ -241,7 +242,7 @@ YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/webs
 YOUTUBE_API_KEY=... pnpm export --channel @engineerssg --content ../../apps/website/content
 ```
 
-Videos people submit through the **Submit a video** issue form arrive as pull requests that add them to the Community Contributed playlist (`content/playlist/130.md`, slug `community-contributed`), with their presenters linked or created (see `.github/workflows/VIDEO_SUBMISSION.md`).
+Videos people submit through the **Submit a video** issue form arrive as pull requests that add them to the Community Contributed playlist (`content/playlist/130.md`, slug `community-contributed`), with their presenters linked or created (see `.github/workflows/VIDEO_SUBMISSION.md`). Playlists submitted through the **Submit a playlist** form arrive as pull requests that add the playlist with its public videos (see `.github/workflows/PLAYLIST_SUBMISSION.md`); their presenters are assigned during review.
 
 New videos from the YouTube sync come in with no organizations or presenters. Link them with the `cms` tool (`pnpm cms assign --video <ref> --presenter <ref> --organization <ref>` from the repo root), which writes each link where it belongs, instead of editing the frontmatter by hand. See [`packages/cms/README.md`](../../packages/cms/README.md), and [`packages/yt-export/README.md`](../../packages/yt-export/README.md) for the sync's matching rules, `--deactivate-missing` and `--exclude-video`.
 

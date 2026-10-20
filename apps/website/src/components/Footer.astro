@@ -4,6 +4,7 @@ const today = new Date();
 
 <footer>
   &copy; {today.getFullYear()} Engineers.SG.
+  <a href="/contribute" class="contribute-link">Contribute videos</a>
   <div class="social-links">
     <a href="https://x.com/engineersftw" target="_blank">
       <span class="sr-only">Follow Engineers.SG on Twitter</span>
@@ -41,6 +42,13 @@ const today = new Date();
     background: linear-gradient(var(--gray-gradient)) no-repeat;
     color: rgb(var(--gray));
     text-align: center;
+  }
+  .contribute-link {
+    margin-left: 0.75em;
+    color: rgb(var(--gray));
+  }
+  .contribute-link:hover {
+    color: rgb(var(--gray-dark));
   }
   .social-links {
     display: flex;

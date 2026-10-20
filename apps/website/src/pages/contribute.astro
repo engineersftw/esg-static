@@ -1,0 +1,110 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const REPO = 'https://github.com/engineersftw/esg-static';
+const videoForm = `${REPO}/issues/new?template=submit-video.yml`;
+const playlistForm = `${REPO}/issues/new?template=submit-playlist.yml`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead
+      title="Contribute videos"
+      description="Know a Singapore tech talk that belongs on Engineers.SG? Suggest a single YouTube video or a whole playlist."
+    />
+    <style>
+      main {
+        width: 720px;
+        max-width: calc(100% - 2em);
+      }
+      h2 {
+        margin-top: 2em;
+      }
+      .action {
+        display: inline-block;
+        margin: 0.5em 0 1em;
+        padding: 0.6em 1.2em;
+        border-radius: 8px;
+        background: var(--accent);
+        color: white;
+        font-weight: bold;
+        text-decoration: none;
+      }
+      .action:hover {
+        background: var(--accent-dark);
+      }
+    </style>
+  </head>
+  <body>
+    <Header />
+    <main>
+      <h1>Contribute videos</h1>
+      <p>
+        Engineers.SG documents the Singapore tech community, and the community
+        helps keep it going. If you know a talk that belongs here, whether it's
+        one video or a whole conference, you can suggest it.
+      </p>
+
+      <h2>Suggest a single video</h2>
+      <p>The video must be public on YouTube. You'll need a free GitHub account.</p>
+      <ol>
+        <li>
+          Open the <a href={videoForm} target="_blank" rel="noopener noreferrer">Submit a video</a> form.
+        </li>
+        <li>Paste the YouTube link.</li>
+        <li>
+          Add the presenters, one per line. You can add their links after a{' '}
+          <code>|</code>: an X handle such as <code>@janedoe</code>, or a link to
+          X, LinkedIn, Instagram, TikTok or their website. Someone who already
+          has a page on Engineers.SG is matched by name.
+        </li>
+        <li>
+          Pick the meetup, conference or organization where it was given, if
+          there is one. If it isn't listed, tell us under "Others (not in list)".
+        </li>
+      </ol>
+      <a class="action" href={videoForm} target="_blank" rel="noopener noreferrer">Submit a video</a>
+      <p>
+        We read the title, description and thumbnail from YouTube, so you don't
+        need to type them. A maintainer then reviews it, and once it's approved
+        the video appears in the{' '}
+        <a href="/playlist/community-contributed">Community Contributed</a>{' '}
+        playlist. If something is wrong (a private video, or one that's already
+        on the site), the issue gets a comment saying so, and you can edit it
+        to fix it.
+      </p>
+
+      <h2>Suggest a whole playlist</h2>
+      <p>
+        For a conference, a meetup series or any other YouTube playlist. The
+        playlist must be public on YouTube; videos in it that aren't public
+        are left out.
+      </p>
+      <ol>
+        <li>
+          Open the <a href={playlistForm} target="_blank" rel="noopener noreferrer">Submit a playlist</a> form.
+        </li>
+        <li>Paste the playlist's link. It has <code>list=</code> in it.</li>
+        <li>
+          If you know them, add the category, the conference, meetup or group
+          that organized it, the event date and its website.
+        </li>
+      </ol>
+      <a class="action" href={playlistForm} target="_blank" rel="noopener noreferrer">Submit a playlist</a>
+      <p>
+        A pull request adding the playlist and its videos is made
+        automatically. Videos already on Engineers.SG are reused, and the new
+        ones get their titles, descriptions and thumbnails from YouTube. A
+        maintainer then reviews it and adds the presenters.
+      </p>
+      <p>
+        Playlists on the Engineers.SG YouTube channel are picked up
+        automatically, so those don't need a suggestion.
+      </p>
+    </main>
+    <Footer />
+  </body>
+</html>
