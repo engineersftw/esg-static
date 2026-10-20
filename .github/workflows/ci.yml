@@ -24,7 +24,11 @@ jobs:
         task: [lint, typecheck, test, content]
 
     steps:
+      # The job runs the pull request's code and only reads the repo, so don't leave the token in
+      # the checkout's git config.
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       # Version comes from "packageManager" in package.json.
       - uses: pnpm/action-setup@v6
