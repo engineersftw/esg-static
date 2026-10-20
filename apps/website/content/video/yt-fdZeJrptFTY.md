@@ -8,7 +8,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/fdZeJrptFTY/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/fdZeJrptFTY/hqdefault.jpg"
 slug: "lightningtalks2020-graphql-in-10-minutes-by-manoj-kumar"
 organizations: ["198"]
-presenters: []
+presenters: ["vj71m2k4wp"]
 active: true
 videoSite: "youtube"
 ---

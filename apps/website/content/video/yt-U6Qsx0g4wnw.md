@@ -8,7 +8,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/U6Qsx0g4wnw/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/U6Qsx0g4wnw/hqdefault.jpg"
 slug: "lightningtalks2020-building-an-awesome-developer-experience-dx-by-unmesh-gundecha"
 organizations: ["198"]
-presenters: []
+presenters: ["glg4yl9sba"]
 active: true
 videoSite: "youtube"
 ---
