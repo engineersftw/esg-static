@@ -2,7 +2,7 @@
 /**
  * Command line editor for the Astro content collections (apps/website/content): create presenters and
  * organizations, edit their links, link videos to presenters, organizations and playlists (writing
- * both sides of each link), and add videos submitted through the GitHub issue form.
+ * both sides of each link), and add videos and playlists submitted through the GitHub issue forms.
  */
 import { randomUUID } from "node:crypto";
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
@@ -13,6 +13,7 @@ import { PROFILE_LINK_TYPES, readEntries, VIDEO_LINKS, writeEntryFiles, type Vid
 import { Collection, type Organization, type Presenter, type ProfileLinkType } from "@esg/db-types/content";
 import { YouTubeClient } from "@esg/yt-export/youtube";
 import { Cms, CmsError, expandVideoRefs, PLAYLIST_CATEGORIES, titleOf, type Change } from "./cms.js";
+import { applyPlaylistSubmission, assertNewPlaylist, parsePlaylistSubmission, playlistAddedReport, playlistPath, videosToFetch } from "./playlistSubmission.js";
 import { addedReport, applySubmission, assertNewVideo, COMMUNITY_PLAYLIST, createVideoFromYouTube, groupOptionProblems, parseSubmission, rejectedReport, SubmissionError, withGroupOptions, youtubeVideoId } from "./submission.js";
 
 const HELP = `
@@ -61,6 +62,15 @@ Commands:
                         Description (the Markdown body)
       --slug, --inactive, --allow-duplicate, --video
                         As for presenter create
+
+  playlist submission <issue-body-file>
+                        Add the playlist a "Submit a playlist" issue names: fetch it and its
+                        videos from YouTube (needs YOUTUBE_API_KEY), create the playlist with
+                        its YouTube ID, reuse the videos already on the site and create the
+                        new public ones, and report what was done
+      --issue, --report As for submission
+                        Rejections work as for submission; the step outputs are status,
+                        title, playlist and videos (how many)
 
   video add <youtube-id-or-url> [options]
                         Add a YouTube video: its title, description, date and thumbnails are
@@ -384,20 +394,30 @@ function output(name: string, value: string) {
   appendFileSync(file, `${name}<<${delimiter}\n${value}\n${delimiter}\n`);
 }
 
+/** The --issue number, if given. */
+function issueArg(): number | undefined {
+  const issue = args.issue ? Number(args.issue) : undefined;
+  if (issue !== undefined && !Number.isInteger(issue)) fail(`--issue must be a number, not "${args.issue}"`);
+  return issue;
+}
+
+/** Print the report, and write it to --report too. */
+function report(text: string) {
+  console.log(text);
+  if (args.report) writeFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), args.report), text);
+}
+
+const readIssueBody = (file: string) => readFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), file), "utf8");
+
 async function submission(cms: Cms) {
   const [, file] = positionals;
   if (!file) fail("submission needs the file holding the issue body");
-  const issue = args.issue ? Number(args.issue) : undefined;
-  if (issue !== undefined && !Number.isInteger(issue)) fail(`--issue must be a number, not "${args.issue}"`);
+  const issue = issueArg();
   const playlist = args.playlist.at(-1) ?? COMMUNITY_PLAYLIST;
   cms.find("playlist", playlist); // fail early on a bad --playlist
 
-  const report = (text: string) => {
-    console.log(text);
-    if (args.report) writeFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), args.report), text);
-  };
   try {
-    const sub = parseSubmission(readFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), file), "utf8"));
+    const sub = parseSubmission(readIssueBody(file));
     assertNewVideo(cms, sub.videoId);
     const video = await fetchYouTubeVideo(sub.videoId, "submission");
     const result = applySubmission(cms, sub, video, playlist);
@@ -406,6 +426,35 @@ async function submission(cms: Cms) {
     output("status", "added");
     output("title", result.video.videoTitle.replace(/\s+/g, " "));
     output("video", result.video.id);
+  } catch (e) {
+    if (!(e instanceof SubmissionError)) throw e;
+    report(rejectedReport(e.message));
+    output("status", "rejected");
+  }
+}
+
+async function playlistSubmission(cms: Cms) {
+  const file = positionals[2];
+  if (!file) fail("playlist submission needs the file holding the issue body");
+  const issue = issueArg();
+
+  try {
+    const sub = parsePlaylistSubmission(readIssueBody(file));
+    assertNewPlaylist(cms, sub.playlistId);
+    const key = process.env.YOUTUBE_API_KEY;
+    if (!key) fail("playlist submission needs YOUTUBE_API_KEY to fetch the playlist from YouTube");
+    const client = new YouTubeClient(key);
+    const [playlist] = await client.getPlaylists([sub.playlistId]);
+    const items = playlist ? await client.getPlaylistItems(sub.playlistId) : [];
+    const videos = items.length ? await client.getVideos(videosToFetch(cms, items)) : [];
+    const result = applyPlaylistSubmission(cms, sub, { playlist, items, videos });
+    report(playlistAddedReport(result, sub, issue));
+    console.log(`Playlist ${result.playlist.id}: ${result.playlist.playlistTitle} → ${playlistPath(result.playlist)} (${client.quotaUsed} YouTube quota units)`);
+    save(cms);
+    output("status", "added");
+    output("title", result.playlist.playlistTitle.replace(/\s+/g, " "));
+    output("playlist", result.playlist.id);
+    output("videos", String(result.videos.length));
   } catch (e) {
     if (!(e instanceof SubmissionError)) throw e;
     report(rejectedReport(e.message));
@@ -428,7 +477,8 @@ async function main() {
       if (sub !== "create") fail(`unknown organization command "${sub ?? ""}"; try organization create`);
       return organizationCreate(cms);
     case "playlist":
-      if (sub !== "create") fail(`unknown playlist command "${sub ?? ""}"; try playlist create`);
+      if (sub === "submission") return playlistSubmission(cms);
+      if (sub !== "create") fail(`unknown playlist command "${sub ?? ""}"; try playlist create or playlist submission`);
       return playlistCreate(cms);
     case "video":
       if (sub !== "add") fail(`unknown video command "${sub ?? ""}"; try video add`);

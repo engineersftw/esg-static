@@ -29,6 +29,7 @@ export interface YtPlaylist {
     description: string;
     publishedAt: string;
     channelId: string;
+    channelTitle?: string;
     thumbnails: YtThumbnails;
   };
   status?: { privacyStatus: YtPrivacyStatus };

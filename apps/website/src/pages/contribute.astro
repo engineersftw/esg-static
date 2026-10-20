@@ -5,20 +5,7 @@ import Footer from '../components/Footer.astro';
 
 const REPO = 'https://github.com/engineersftw/esg-static';
 const videoForm = `${REPO}/issues/new?template=submit-video.yml`;
-// Playlists have no form: a prefilled issue that a maintainer follows up.
-const playlistIssue = `${REPO}/issues/new?${new URLSearchParams({
-  title: 'Playlist suggestion: ',
-  body: [
-    '**YouTube playlist URL**',
-    '',
-    '',
-    '**Conference, meetup or group it belongs to**',
-    '',
-    '',
-    '**Anything else we should know** (year, organizers, presenters)',
-    '',
-  ].join('\n'),
-})}`;
+const playlistForm = `${REPO}/issues/new?template=submit-playlist.yml`;
 ---
 
 <!doctype html>
@@ -92,12 +79,27 @@ const playlistIssue = `${REPO}/issues/new?${new URLSearchParams({
 
       <h2>Suggest a whole playlist</h2>
       <p>
-        For a conference, a meetup series or any other YouTube playlist, open an
-        issue with the playlist's link and the group it belongs to. A
-        maintainer adds the playlist with its videos, and links the
-        presenters and organization.
+        For a conference, a meetup series or any other YouTube playlist. The
+        playlist must be public on YouTube; videos in it that aren't public
+        are left out.
       </p>
-      <a class="action" href={playlistIssue} target="_blank" rel="noopener noreferrer">Suggest a playlist</a>
+      <ol>
+        <li>
+          Open the <a href={playlistForm} target="_blank" rel="noopener noreferrer">Submit a playlist</a> form.
+        </li>
+        <li>Paste the playlist's link. It has <code>list=</code> in it.</li>
+        <li>
+          If you know them, add the category, the conference, meetup or group
+          that organized it, the event date and its website.
+        </li>
+      </ol>
+      <a class="action" href={playlistForm} target="_blank" rel="noopener noreferrer">Submit a playlist</a>
+      <p>
+        A pull request adding the playlist and its videos is made
+        automatically. Videos already on Engineers.SG are reused, and the new
+        ones get their titles, descriptions and thumbnails from YouTube. A
+        maintainer then reviews it and adds the presenters.
+      </p>
       <p>
         Playlists on the Engineers.SG YouTube channel are picked up
         automatically, so those don't need a suggestion.

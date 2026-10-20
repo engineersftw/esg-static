@@ -23,6 +23,7 @@ pnpm cms links organization 42 --instagram @golangsg --remove x
 pnpm cms check                               # also `pnpm content`; CI runs it
 YOUTUBE_API_KEY=... pnpm cms video add dQw4w9WgXcQ --presenter jane-doe --playlist pyconsg-2019 --dry-run
 YOUTUBE_API_KEY=... pnpm cms submission issue-body.md --issue 12 --report report.md --dry-run
+YOUTUBE_API_KEY=... pnpm cms playlist submission issue-body.md --issue 13 --report report.md --dry-run
 
 pnpm cms --help                              # every option
 ```
@@ -66,6 +67,19 @@ It exits 1 if it finds any, so CI fails.
 
 A submission it can't add is reported with the reason and exits 0 with step output `status=rejected`. In GitHub Actions, success sets `status=added`, `title` and `video`.
 
+## playlist submission
+
+`playlist submission <issue-body-file>` is what the playlist submission workflow (`.github/workflows/playlist-submission.yml`, see `PLAYLIST_SUBMISSION.md` there) runs on an issue made from the **Submit a playlist** form. It:
+
+1. reads the playlist URL (any YouTube link with `list=`, or a bare ID; generated mixes are refused), the category, the group (free text), the event date (YYYY-MM-DD), the website and notes;
+2. rejects a playlist already in the content before calling YouTube, then fetches the playlist, its items and the videos not yet in the content (needs `YOUTUBE_API_KEY`), and rejects one that is missing, not public, has no public videos or more than 300;
+3. creates the playlist with its YouTube ID (`yt-<playlist ID>`), so the daily sync keeps it up to date, with the event date or else YouTube's creation date;
+4. fills its `videos` in YouTube's order, reusing videos already on the site and creating the new public ones; private, deleted and unlisted ones are left out and listed;
+5. links the new videos to the active organization named by the group, if there is one; existing videos keep their organizations;
+6. prints the report (`--report <file>` also writes it), escaping everything from the issue and YouTube.
+
+Rejections work as for `submission`. In GitHub Actions, success sets `status=added`, `title`, `playlist` and `videos` (how many). Presenters aren't part of the form; the reviewer assigns them.
+
 ## Code
 
 | File | What it holds |
@@ -73,9 +87,10 @@ A submission it can't add is reported with the reason and exits 0 with step outp
 | `src/cli.ts` | Argument parsing and I/O |
 | `src/cms.ts` | The `Cms` class: pure edits on an in-memory copy; `changes()` returns the files to write |
 | `src/submission.ts` | Parsing the issue form, applying a submission, the reports |
+| `src/playlistSubmission.ts` | The same for playlist submissions |
 | `src/testContent.ts` | Test fixtures |
 
 ```bash
-pnpm test        # Vitest: cms.test.ts and submission.test.ts
+pnpm test        # Vitest: cms.test.ts, submission.test.ts and playlistSubmission.test.ts
 pnpm typecheck
 ```
