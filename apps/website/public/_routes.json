@@ -10,6 +10,8 @@
     "/images/*",
     "/about",
     "/about/",
+    "/contribute",
+    "/contribute/",
     "/404.html",
     "/feed",
     "/robots.txt",
