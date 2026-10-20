@@ -2,7 +2,7 @@
 import type { RawExport } from "./transform.js";
 import type { YtPlaylist, YtPlaylistItem, YtPrivacyStatus, YtVideo } from "./youtube.js";
 
-export function video(id: string, publishedAt: string, opts: { privacy?: YtPrivacyStatus; viewCount?: string | null } = {}): YtVideo {
+export function video(id: string, publishedAt: string, opts: { privacy?: YtPrivacyStatus; viewCount?: string | null; duration?: string } = {}): YtVideo {
   return {
     id,
     snippet: {
@@ -17,6 +17,7 @@ export function video(id: string, publishedAt: string, opts: { privacy?: YtPriva
       },
     },
     ...(opts.viewCount === null ? {} : { statistics: { viewCount: opts.viewCount ?? "100" } }),
+    ...(opts.duration ? { contentDetails: { duration: opts.duration } } : {}),
     status: { privacyStatus: opts.privacy ?? "public" },
   };
 }

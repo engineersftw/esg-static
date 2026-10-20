@@ -15,6 +15,8 @@ export interface SearchEntry {
   /** ISO 8601 publish time. */
   date: string;
   thumbnail: string | null;
+  /** The length as shown on the card (`27:13`), if known. */
+  duration?: string | null;
   presenters: string[];
   organizations: string[];
   playlists: string[];

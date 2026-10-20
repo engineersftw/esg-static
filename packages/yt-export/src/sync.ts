@@ -2,7 +2,7 @@
  * Pure planner that syncs YouTube data into the Astro content collections (`video` and `playlist`).
  *
  * - A video or playlist that already has a file (matched by `videoId` / `playlistId`) gets its title,
- *   description (the Markdown body) and thumbnails refreshed. Everything else in the file is kept.
+ *   description (the Markdown body), thumbnails and duration refreshed. Everything else in the file is kept.
  * - One that has no file gets a new entry named after its YouTube ID (`yt-<id>`, see @esg/content's
  *   ids.ts) with a unique slug.
  * - Playlist membership is additive: a video YouTube lists in a playlist is appended to the
@@ -12,7 +12,7 @@
  * No I/O here, so it can be unit tested and run from a saved raw.json.
  */
 import type { Playlist as PlaylistEntry, Video as VideoEntry } from "@esg/db-types/content";
-import { caseClashes, playlistEntryId as newPlaylistId, serializeEntry, slugAllocator, toBody, videoEntryId as newVideoId, type Entry } from "@esg/content";
+import { caseClashes, playlistEntryId as newPlaylistId, serializeEntry, slugAllocator, toBody, videoEntryId as newVideoId, withDuration, type Entry } from "@esg/content";
 import { thumb, type RawExport } from "./transform.js";
 import type { YtPlaylist, YtVideo } from "./youtube.js";
 
@@ -176,13 +176,16 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
       before: e,
       path: e.path,
       outcome: "refresh",
-      data: {
-        ...e.data,
-        videoTitle: v.snippet.title,
-        thumbnailDefault: thumb(t, "default") ?? e.data.thumbnailDefault,
-        thumbnailMedium: thumb(t, "medium") ?? e.data.thumbnailMedium,
-        thumbnailHigh: thumb(t, "high") ?? e.data.thumbnailHigh,
-      },
+      data: withDuration(
+        {
+          ...e.data,
+          videoTitle: v.snippet.title,
+          thumbnailDefault: thumb(t, "default") ?? e.data.thumbnailDefault,
+          thumbnailMedium: thumb(t, "medium") ?? e.data.thumbnailMedium,
+          thumbnailHigh: thumb(t, "high") ?? e.data.thumbnailHigh,
+        },
+        v.contentDetails?.duration,
+      ),
       body: toBody(v.snippet.description),
     });
   }
@@ -195,20 +198,23 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
       id,
       path: `video/${id}.md`,
       outcome: "create",
-      data: {
-        id,
-        videoId: v.id,
-        videoTitle: v.snippet.title,
-        publishedAt: v.snippet.publishedAt,
-        thumbnailDefault: thumb(t, "default"),
-        thumbnailMedium: thumb(t, "medium"),
-        thumbnailHigh: thumb(t, "high"),
-        slug: videoSlug(v.snippet.title, `video-${id}`),
-        organizations: [],
-        presenters: [],
-        active: v.status.privacyStatus === "public",
-        videoSite: "youtube",
-      },
+      data: withDuration(
+        {
+          id,
+          videoId: v.id,
+          videoTitle: v.snippet.title,
+          publishedAt: v.snippet.publishedAt,
+          thumbnailDefault: thumb(t, "default"),
+          thumbnailMedium: thumb(t, "medium"),
+          thumbnailHigh: thumb(t, "high"),
+          slug: videoSlug(v.snippet.title, `video-${id}`),
+          organizations: [],
+          presenters: [],
+          active: v.status.privacyStatus === "public",
+          videoSite: "youtube" as const,
+        },
+        v.contentDetails?.duration,
+      ),
       body: toBody(v.snippet.description),
     });
   }

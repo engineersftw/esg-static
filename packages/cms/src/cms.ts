@@ -23,6 +23,7 @@ import {
   VIDEO_LINKS,
   videoEntryId,
   without,
+  withDuration,
   type Entry,
   type VideoLinkField,
 } from "@esg/content";
@@ -117,6 +118,8 @@ export interface NewVideo {
   title: string;
   /** ISO 8601 UTC, as YouTube gives it. */
   publishedAt: string;
+  /** ISO 8601 duration as YouTube gives it (`PT27M13S`); left out if it is missing or zero. */
+  duration?: string | null;
   thumbnails: { default?: string | null; medium?: string | null; high?: string | null };
   /** The description, the Markdown body. */
   description?: string | null;
@@ -293,20 +296,23 @@ export class Cms {
     const id = this.newId("video", () => videoEntryId("youtube", input.videoId), `a video whose ID differs from ${videoEntryId("youtube", input.videoId)} only in case`);
     const slug = slugAllocator([...this.items.video.values()].map((i) => i.data.slug))(input.title, `video-${id}`);
     // Field order as yt-export's sync writes it.
-    const data: Video = {
-      id,
-      videoId: input.videoId,
-      videoTitle: input.title,
-      publishedAt: input.publishedAt,
-      thumbnailDefault: blank(input.thumbnails.default),
-      thumbnailMedium: blank(input.thumbnails.medium),
-      thumbnailHigh: blank(input.thumbnails.high),
-      slug,
-      organizations: [],
-      presenters: [],
-      active: input.active ?? true,
-      videoSite: "youtube",
-    };
+    const data: Video = withDuration(
+      {
+        id,
+        videoId: input.videoId,
+        videoTitle: input.title,
+        publishedAt: input.publishedAt,
+        thumbnailDefault: blank(input.thumbnails.default),
+        thumbnailMedium: blank(input.thumbnails.medium),
+        thumbnailHigh: blank(input.thumbnails.high),
+        slug,
+        organizations: [],
+        presenters: [],
+        active: input.active ?? true,
+        videoSite: "youtube",
+      } satisfies Video,
+      input.duration,
+    );
     this.items.video.set(id, { data, body: toBody(input.description ?? null) });
     return data;
   }

@@ -2,6 +2,7 @@
 import type { CollectionEntry } from 'astro:content';
 import FormattedDate from './FormattedDate.astro';
 import { getVideoByline } from '../helpers/collections';
+import { formatDuration } from '../helpers/duration';
 import { CARD_SIZES, FEATURED_SIZES, thumbnailSource } from '../helpers/thumbnails';
 
 // One video in a list: a 16:9 thumbnail, the title, and the date with the presenters' and
@@ -25,27 +26,31 @@ const thumbnail = thumbnailSource({
   default: video.data.thumbnailDefault,
 });
 const byline = await getVideoByline(video, without);
+const duration = formatDuration(video.data.duration);
 ---
 
 <li class:list={['video-card', { featured }]}>
   <a href={`/video/${video.data.slug}`}>
-    {
-      thumbnail ? (
-        <img
-          class="video-card-image"
-          src={thumbnail.src}
-          srcset={thumbnail.srcset}
-          sizes={thumbnail.srcset ? (featured ? FEATURED_SIZES : CARD_SIZES) : undefined}
-          data-fallback={thumbnail.src}
-          alt=""
-          width={480}
-          height={270}
-          loading={featured ? 'eager' : 'lazy'}
-        />
-      ) : (
-        <div class="video-card-image"></div>
-      )
-    }
+    <span class="video-card-thumb">
+      {
+        thumbnail ? (
+          <img
+            class="video-card-image"
+            src={thumbnail.src}
+            srcset={thumbnail.srcset}
+            sizes={thumbnail.srcset ? (featured ? FEATURED_SIZES : CARD_SIZES) : undefined}
+            data-fallback={thumbnail.src}
+            alt=""
+            width={480}
+            height={270}
+            loading={featured ? 'eager' : 'lazy'}
+          />
+        ) : (
+          <div class="video-card-image"></div>
+        )
+      }
+      {duration && <span class="video-card-duration">{duration}</span>}
+    </span>
     <h4 class="video-card-title">{video.data.videoTitle}</h4>
     <p class="video-card-meta">
       <FormattedDate date={video.data.publishedAt} />{byline && ` · ${byline}`}

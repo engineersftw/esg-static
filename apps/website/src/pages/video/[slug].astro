@@ -39,6 +39,7 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
         title: video.data.videoTitle,
         description: video.body,
         publishedAt: video.data.publishedAt,
+        duration: video.data.duration,
         thumbnails: [video.data.thumbnailHigh, video.data.thumbnailMedium, video.data.thumbnailDefault],
         videoId: video.data.videoId,
         videoSite: video.data.videoSite,
