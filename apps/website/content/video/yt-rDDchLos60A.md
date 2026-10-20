@@ -8,7 +8,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/rDDchLos60A/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/rDDchLos60A/hqdefault.jpg"
 slug: "lightningtalks2020-using-corr-for-automating-test-data-creation-by-atmaram-raghunath-naik"
 organizations: ["198"]
-presenters: []
+presenters: ["bifv0pda45"]
 active: true
 videoSite: "youtube"
 ---

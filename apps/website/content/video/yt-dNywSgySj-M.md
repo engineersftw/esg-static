@@ -8,7 +8,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/dNywSgySj-M/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/dNywSgySj-M/hqdefault.jpg"
 slug: "lightningtalks2020-selenium-beyond-testing-by-sudharsan-selvaraj"
 organizations: ["198"]
-presenters: []
+presenters: ["yx5jfvcw6d"]
 active: true
 videoSite: "youtube"
 ---

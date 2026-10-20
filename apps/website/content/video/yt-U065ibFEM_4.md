@@ -8,7 +8,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/U065ibFEM_4/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/U065ibFEM_4/hqdefault.jpg"
 slug: "lightningtalks2020-struggles-of-being-a-qa-manager-by-poorva-aamod-gokhale"
 organizations: ["198"]
-presenters: []
+presenters: ["o8jkjvs31i"]
 active: true
 videoSite: "youtube"
 ---
