@@ -2,7 +2,8 @@
 // also what schema.org's VideoObject.duration takes. It is stored in the video's frontmatter as
 // `duration`, right after `publishedAt`.
 
-const ISO_DURATION = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/;
+// A `T` must be followed by a time part, so `P1DT` and `PT` are malformed.
+const ISO_DURATION = /^P(?:(\d+)D)?(?:T(?=\d)(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/;
 
 /**
  * The duration if it is a real length, else null. YouTube sends `P0D` for a live stream or premiere
