@@ -1,2 +1,5 @@
 /feed
   Content-Type: application/rss+xml; charset=utf-8
+
+/cal
+  Content-Type: text/calendar; charset=utf-8
