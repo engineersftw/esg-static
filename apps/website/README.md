@@ -39,6 +39,7 @@ Both are read at **build time**, from `.env` locally or `.env.production` for pr
 | Variable | Used for |
 |---|---|
 | `HOSTNAME` | The site's public URL (e.g. `https://engineers.sg`). It is used for canonical URLs, the sitemap and the `/feed` links. If it isn't set, they point at `http://localhost:4321`, so **always set it for a deploy build.** |
+| `EVENTS_FEED_URL` | Where `/cal` gets its events: DevsGoWhere's JSON feed, `https://devsgowhere.com/events.json` by default. Read at build time; if it can't be read, the build warns and leaves `/cal` out (it 404s) rather than publishing an empty calendar. |
 | `PUBLIC_GTM_ID` | Google Tag Manager container ID (`GTM-…`). If it isn't set, no tracking code is added, which is what you want for dev and preview builds. A malformed ID fails the build. |
 | `PUBLIC_ALLOW_INDEXING` | Set to exactly `true` in the **production** build to let search engines in. Otherwise `/robots.txt` says `Disallow: /`, which is what you want for preview and staging deployments. When it is `true`, `robots.txt` also points at `/sitemap-index.xml` (built from `HOSTNAME`) and keeps crawlers out of `/api/` and `/search`. |
 
@@ -197,6 +198,16 @@ Organization logos and presenter photos always go through `EntityImage`. It show
 
 Photos we host ourselves are in `public/images/presenters/<id>.jpg` (400×400), and the presenter's `imageUrl` is `/images/presenters/<id>.jpg`.
 
+### Events calendar (`/cal`)
+
+`/cal` is an iCalendar (`.ics`) of every upcoming tech event in Singapore, for people to subscribe to in Google Calendar, Apple Calendar or Outlook. It is the old Rails URL, rebuilt on [DevsGoWhere](https://devsgowhere.com)'s events.
+
+- `src/pages/[cal].ts` reads DevsGoWhere's feed (`https://devsgowhere.com/events.json`, or `EVENTS_FEED_URL`) when the site is built. `src/helpers/events.ts` checks it and `src/helpers/ical.ts` writes the calendar; both are tested.
+- Each event keeps DevsGoWhere's event ID as its calendar ID, so rescheduling an event moves it instead of adding a copy. Times are UTC, so every calendar shows them in the viewer's own zone. An event with no end time lasts two hours. The event's page on DevsGoWhere is its link, and the sign-up link is in the description.
+- It is a static file, so it is only as fresh as the last deploy. The site needs a rebuild every day for the calendar to follow new events.
+- If the feed can't be read, the build warns and **leaves `/cal` out**: a 404 makes calendar apps keep the events they have, where an empty calendar would make them delete them all.
+- Test it with `pnpm build` (add `EVENTS_FEED_URL=http://localhost:8793/events.json` to try a local file) and open `dist/cal`.
+
 ### Video cards
 
 Every list of videos (the home page, `/videos`, and the organization, presenter and playlist pages) and the search results show the same card: a 16:9 thumbnail with the video's length (`27:13`, `1:02:03`) as a badge in its corner, the title, and the date with the presenters' and organizations' names. The badge comes from the video's `duration` (an ISO 8601 string such as `PT27M13S`, written by the YouTube sync and formatted by `helpers/duration.ts`); a video without one gets no badge. The video's own page shows the length in words after its date (`Sep 7, 2020 · 13 min`, `1 hr 2 min`; the exact `12:37` is its tooltip). `VideoCard.astro` renders it inside `<ul class="video-grid">`. The first video of a list is `featured`: full width with a larger title. An organization or presenter page leaves its own name out of the byline (`without`). The styles are global in `src/styles/global.css`, because `search.astro` builds the same card in the browser; if you change the card, change both.
@@ -260,4 +271,4 @@ After any change, run `pnpm content` from the repo root (`pnpm cms check`, which
 
 - **Template remnants:** `about.astro` still uses the template's `BlogPost.astro` layout, and `public/blog-placeholder-*.jpg` are unused.
 - **Unused files:** `check_query.js` is an old Supabase scratch script whose dependency isn't installed, and `project.json` is an unused Nx config.
-- **Not ported from the old site yet:** the static pages (`/events`, `/cal`, `/bookings`, `/live`, `/fb_live`, `/support_us`, `/screenshots`, `/terms`), the old search URLs (`/episodes/search`, `/presenters/search`; search is now `/search` and the list pages' name filters), newsletter signup, `/videos/:tag` and the `/api/*` JSON endpoints.
+- **Not ported from the old site yet:** the static pages (`/events`, `/bookings`, `/live`, `/fb_live`, `/support_us`, `/screenshots`, `/terms`), the old search URLs (`/episodes/search`, `/presenters/search`; search is now `/search` and the list pages' name filters), newsletter signup, `/videos/:tag` and the `/api/*` JSON endpoints.
