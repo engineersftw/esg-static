@@ -2,7 +2,8 @@
 // reports (`PT27M13S`, see @esg/content's duration.ts); this turns it into `27:13` or `1:02:03`.
 // The website doesn't depend on @esg/content, so the pattern is repeated here.
 
-export const ISO_DURATION = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/;
+// A `T` must be followed by a time part, so `P1DT` and `PT` are malformed.
+export const ISO_DURATION = /^P(?:(\d+)D)?(?:T(?=\d)(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/;
 
 /** The length in whole seconds, or null for a missing, zero or malformed duration. */
 export function durationSeconds(iso: string | null | undefined): number | null {

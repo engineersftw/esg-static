@@ -20,7 +20,7 @@ describe('formatDuration', () => {
   });
 
   it('gives null when there is no length to show', () => {
-    for (const value of [undefined, null, '', 'P0D', 'PT0S', 'PT', '27:13', 'PT1.5S']) expect(formatDuration(value)).toBeNull();
+    for (const value of [undefined, null, '', 'P0D', 'PT0S', 'PT', 'P1DT', '27:13', 'PT1.5S']) expect(formatDuration(value)).toBeNull();
   });
 });
 
@@ -59,6 +59,6 @@ describe('describeDuration', () => {
   });
 
   it('gives null when there is no length to show', () => {
-    for (const value of [undefined, null, '', 'P0D', 'PT0S', 'PT', '12:37']) expect(describeDuration(value)).toBeNull();
+    for (const value of [undefined, null, '', 'P0D', 'PT0S', 'PT', 'P1DT', '12:37']) expect(describeDuration(value)).toBeNull();
   });
 });

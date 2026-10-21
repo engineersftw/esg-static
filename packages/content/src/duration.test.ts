@@ -8,7 +8,7 @@ describe("normalizeDuration", () => {
   });
 
   it("drops zero, empty and malformed values", () => {
-    for (const d of ["P0D", "PT0S", "PT0M0S", "PT", "P", "", "  ", "27:13", "PT1.5S", "1H", null, undefined]) {
+    for (const d of ["P0D", "PT0S", "PT0M0S", "PT", "P", "P1DT", "P2DT", "", "  ", "27:13", "PT1.5S", "1H", null, undefined]) {
       expect(normalizeDuration(d)).toBeNull();
     }
   });
