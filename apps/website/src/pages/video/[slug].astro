@@ -121,7 +121,11 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
     <main>
       <article>
         <div class="hero-image">
-          <YouTube id={video.data.videoId} posterQuality="max" />
+          <YouTube
+            id={video.data.videoId}
+            posterQuality="default"
+            data-poster-max={`https://i.ytimg.com/vi/${video.data.videoId}/maxresdefault.jpg`}
+          />
         </div>
         <div class="prose">
           <div class="title">
@@ -184,3 +188,9 @@ const presenters = listedPresenters(await getEntries(video.data.presenters));
     <Footer />
   </body>
 </html>
+
+<script>
+  import { upgradePosters } from '../../helpers/posterUpgrade';
+
+  upgradePosters();
+</script>
