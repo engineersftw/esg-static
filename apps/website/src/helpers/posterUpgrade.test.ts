@@ -5,6 +5,7 @@ import { upgradePosters } from './posterUpgrade';
 class FakeImage {
   static all: FakeImage[] = [];
   onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
   naturalWidth = 0;
   naturalHeight = 0;
   src = '';
@@ -16,6 +17,10 @@ class FakeImage {
     this.naturalWidth = width;
     this.naturalHeight = height;
     this.onload?.();
+  }
+  /** What the browser does when the request fails (a network error, or a blocked image). */
+  fail() {
+    this.onerror?.();
   }
 }
 
@@ -59,7 +64,7 @@ describe('upgradePosters', () => {
     vi.stubGlobal('Image', FakeImage);
     const p = player();
     upgradePosters(rootOf(p));
-    // A failed request never calls onload.
+    FakeImage.all[0].fail();
     expect(p.style.backgroundImage).toBe(HQ);
   });
 
