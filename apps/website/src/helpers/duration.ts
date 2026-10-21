@@ -23,3 +23,19 @@ export function formatDuration(iso: string | null | undefined): string | null {
   const two = (n: number) => String(n).padStart(2, '0');
   return hours > 0 ? `${hours}:${two(minutes)}:${two(seconds)}` : `${minutes}:${two(seconds)}`;
 }
+
+/**
+ * The length in words for running text, next to a date: `45 sec`, `13 min`, `1 hr 2 min`, `2 hr`. From a
+ * minute up it rounds to the nearest minute, since the seconds don't help anyone plan their time;
+ * `formatDuration` keeps the exact `12:37` for the thumbnail badge.
+ */
+export function describeDuration(iso: string | null | undefined): string | null {
+  const total = durationSeconds(iso);
+  if (total === null) return null;
+  if (total < 60) return `${total} sec`;
+  const minutes = Math.round(total / 60);
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${minutes} min`;
+  return rest === 0 ? `${hours} hr` : `${hours} hr ${rest} min`;
+}

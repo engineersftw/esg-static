@@ -8,7 +8,7 @@ import EntityImage from '../../components/EntityImage.astro';
 import LinkedText from '../../components/LinkedText.astro';
 import { YouTube } from 'astro-embed';
 import { getActiveVideos, listedOrganizations, listedPresenters } from '../../helpers/collections';
-import { formatDuration } from '../../helpers/duration';
+import { describeDuration, formatDuration } from '../../helpers/duration';
 import { videoJsonLd } from '../../helpers/jsonLd';
 
 export async function getStaticPaths() {
@@ -23,7 +23,8 @@ type Props = CollectionEntry<'video'>;
 const video = Astro.props;
 const organizations = listedOrganizations(await getEntries(video.data.organizations));
 const presenters = listedPresenters(await getEntries(video.data.presenters));
-const duration = formatDuration(video.data.duration);
+const duration = describeDuration(video.data.duration);
+const exactDuration = formatDuration(video.data.duration);
 ---
 
 <html lang="en">
@@ -132,7 +133,7 @@ const duration = formatDuration(video.data.duration);
               {duration && (
                 <>
                   {' · '}
-                  <time datetime={video.data.duration} title="Video length">{duration}</time>
+                  <time datetime={video.data.duration} title={`Video length ${exactDuration}`}>{duration}</time>
                 </>
               )}
             </div>
