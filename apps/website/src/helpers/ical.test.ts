@@ -123,10 +123,12 @@ describe('icalCalendar', () => {
     expect(lines(icalCalendar([event({ url: null })], options))).toContain('URL:https://luma.com/i8iy0fzc');
   });
 
-  it('writes the location without repeating the venue or a bare "Singapore"', () => {
+  it('writes the location with the street address, without repeating the venue or adding a bare "Singapore"', () => {
     const at = (venue: string | null, venueAddress: string | null) =>
       lines(icalCalendar([event({ venue, venueAddress })], options)).find((line) => line.startsWith('LOCATION:'));
-    expect(at('Matrix', '30 Biopolis Rd, Matrix, Singapore')).toBe('LOCATION:Matrix');
+    expect(at('Matrix', '30 Biopolis Rd, Matrix, Singapore')).toBe('LOCATION:30 Biopolis Rd\\, Matrix\\, Singapore');
+    expect(at('Matrix', 'matrix')).toBe('LOCATION:matrix');
+    expect(at('SGInnovate', '32 Carpenter St')).toBe('LOCATION:SGInnovate\\, 32 Carpenter St');
     expect(at('Zenika Singapore', 'Singapore')).toBe('LOCATION:Zenika Singapore');
     expect(at(null, '1 Fusionopolis Way')).toBe('LOCATION:1 Fusionopolis Way');
     expect(at('GovTech HQ', null)).toBe('LOCATION:GovTech HQ');

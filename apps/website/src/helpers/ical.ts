@@ -59,13 +59,17 @@ export function foldLine(line: string): string {
 /** `20261022T103000Z`. */
 export const icalTime = (date: Date): string => date.toISOString().replace(/[-:]|\.\d{3}/g, '');
 
-/** The venue and its address, leaving out an address that only repeats the venue or says just "Singapore". */
+/**
+ * The venue and its address. An address that already names the venue is used alone (it has the street
+ * for directions), and one that says just "Singapore" adds nothing, so the venue stands alone.
+ */
 function location(event: CalendarEvent): string | null {
   const { venue, venueAddress } = event;
   if (!venue) return venueAddress;
   if (!venueAddress) return venue;
   const address = venueAddress.toLowerCase();
-  return address.includes(venue.toLowerCase()) || address === 'singapore' ? venue : `${venue}, ${venueAddress}`;
+  if (address === 'singapore') return venue;
+  return address.includes(venue.toLowerCase()) ? venueAddress : `${venue}, ${venueAddress}`;
 }
 
 function description(event: CalendarEvent): string | null {
