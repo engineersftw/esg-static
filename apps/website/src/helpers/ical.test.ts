@@ -104,6 +104,12 @@ describe('icalCalendar', () => {
     );
   });
 
+  it('escapes the UID as TEXT, and leaves an ordinary ID as it is', () => {
+    const uid = (id: string) => lines(icalCalendar([event({ id })], options)).find((line) => line.startsWith('UID:'));
+    expect(uid('techies/20261022-new-dev-roles')).toBe('UID:techies/20261022-new-dev-roles@devsgowhere.com');
+    expect(uid('org/20261022-a,b;c\\d')).toBe('UID:org/20261022-a\\,b\\;c\\\\d@devsgowhere.com');
+  });
+
   it('gives an event with no end, or an end before its start, the default two hours', () => {
     for (const end of [null, new Date('2026-10-22T17:00:00+08:00'), new Date('2026-10-22T18:30:00+08:00')]) {
       expect(lines(icalCalendar([event({ end })], options))).toContain('DTEND:20261022T123000Z');

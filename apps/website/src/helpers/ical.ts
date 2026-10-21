@@ -29,7 +29,7 @@ const encoder = new TextEncoder();
 /** Control characters other than a tab (a stray CR or LF would start a new line in the file). */
 const isControl = (code: number) => (code < 0x20 && code !== 0x09) || code === 0x7f;
 
-/** The value without its control characters: for the ones written as they are, a UID and a URL. */
+/** The value without its control characters: for the one written as it is, a URL (a UID is TEXT, so `escapeText` covers it). */
 export function stripControl(value: string): string {
   return Array.from(value)
     .filter((char) => !isControl(char.charCodeAt(0)))
@@ -104,7 +104,7 @@ function vevent(event: CalendarEvent, options: Required<Pick<IcalOptions, 'now' 
   const url = event.url ?? event.rsvpUrl;
   return [
     'BEGIN:VEVENT',
-    `UID:${stripControl(event.id)}@${options.uidDomain}`,
+    `UID:${escapeText(event.id)}@${options.uidDomain}`,
     `DTSTAMP:${icalTime(options.now)}`,
     `DTSTART:${icalTime(event.start)}`,
     `DTEND:${icalTime(end)}`,
