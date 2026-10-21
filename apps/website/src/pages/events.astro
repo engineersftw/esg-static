@@ -12,6 +12,8 @@ const REPO = 'https://github.com/devsgowhere/devsgowhere';
   <head>
     <BaseHead
       title="Upcoming events with DevsGoWhere"
+      image="/images/devsgowhere-lion.png"
+      card="summary"
       description="Looking for what's on next? DevsGoWhere lists developer events in Singapore in one place, and you can subscribe to them in your calendar."
     />
     <style>
@@ -21,6 +23,13 @@ const REPO = 'https://github.com/devsgowhere/devsgowhere';
       }
       h2 {
         margin-top: 2em;
+      }
+      .logo {
+        display: block;
+        width: 240px;
+        max-width: 60%;
+        height: auto;
+        margin: 1em 0;
       }
       .action {
         display: inline-block;
@@ -41,6 +50,9 @@ const REPO = 'https://github.com/devsgowhere/devsgowhere';
     <Header />
     <main>
       <h1>Upcoming events with DevsGoWhere</h1>
+      <a href={DGW} target="_blank" rel="noopener noreferrer">
+        <img class="logo" src="/images/devsgowhere-lion.png" width="640" height="480" alt="DevsGoWhere lion logo" />
+      </a>
       <p>
         Engineers.SG is the archive of past talks. To find out what's on next,
         head to <a href={DGW} target="_blank" rel="noopener noreferrer">DevsGoWhere</a>.
