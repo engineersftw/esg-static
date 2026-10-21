@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CalendarEvent } from './events';
-import { escapeText, foldLine, icalCalendar, icalTime } from './ical';
+import { escapeText, foldLine, icalCalendar, icalTime, stripControl } from './ical';
 
 const now = new Date('2026-10-21T16:00:00Z');
 const options = { name: 'Engineers.SG Events', prodId: '-//Engineers.SG//Events//EN', now };
@@ -29,6 +29,12 @@ describe('escapeText', () => {
   it('escapes backslash, semicolon and comma, and turns line breaks into \\n', () => {
     expect(escapeText('a, b; c\\d')).toBe('a\\, b\\; c\\\\d');
     expect(escapeText('one\ntwo\r\nthree\rfour')).toBe('one\\ntwo\\nthree\\nfour');
+  });
+});
+
+describe('stripControl', () => {
+  it('drops control characters but keeps a tab, accents and emoji', () => {
+    expect(stripControl('a\r\nb\u0000c\u007fd\te é 🎉')).toBe('abcd\te é 🎉');
   });
 });
 
@@ -128,6 +134,13 @@ describe('icalCalendar', () => {
       lines(icalCalendar([event({ venue, venueAddress })], options)).find((line) => line.startsWith('LOCATION:'));
     expect(at('Matrix', '30 Biopolis Rd, Matrix, Singapore')).toBe('LOCATION:30 Biopolis Rd\\, Matrix\\, Singapore');
     expect(at('Matrix', 'matrix')).toBe('LOCATION:matrix');
+    // The venue has to be named, not just spelled inside another word.
+    expect(at('ACE', 'Race Course Road')).toBe('LOCATION:ACE\\, Race Course Road');
+    expect(at('Matrix', '1 Matrixx Lane')).toBe('LOCATION:Matrix\\, 1 Matrixx Lane');
+    expect(at('Lorong AI @ One-North', 'Lorong AI @ One-North, 1 Fusionopolis Way')).toBe('LOCATION:Lorong AI @ One-North\\, 1 Fusionopolis Way');
+    expect(at('Café', '1 Rue, Café Lane')).toBe('LOCATION:1 Rue\\, Café Lane');
+    expect(at('CAFÉ', '1 Rue du Cafés')).toBe('LOCATION:CAFÉ\\, 1 Rue du Cafés');
+    expect(at('The (Old) Hall', '5 High St, The (Old) Hall')).toBe('LOCATION:5 High St\\, The (Old) Hall');
     expect(at('SGInnovate', '32 Carpenter St')).toBe('LOCATION:SGInnovate\\, 32 Carpenter St');
     expect(at('Zenika Singapore', 'Singapore')).toBe('LOCATION:Zenika Singapore');
     expect(at(null, '1 Fusionopolis Way')).toBe('LOCATION:1 Fusionopolis Way');
@@ -141,6 +154,31 @@ describe('icalCalendar', () => {
     const l = lines(ics);
     expect(l).toContain('SUMMARY:AI\\, ML\\; and more 🎉\\\\o/');
     expect(l.find((line) => line.startsWith('DESCRIPTION:'))).toContain('Line one\\nLine two long');
+  });
+
+  it('cannot be made to start a new line, whatever the feed puts in a value', () => {
+    const evil = event({
+      id: 'x/1\r\nBEGIN:VEVENT\r\nSUMMARY:evil',
+      url: 'https://a.test/\r\nATTACH:https://evil.test',
+      title: 'Title\r\nX-EVIL:1',
+      description: 'Text\nBEGIN:VALARM\nACTION:DISPLAY',
+      venue: 'Hall\rX-EVIL:2',
+      venueAddress: '1 Road\u0000',
+      org: { id: 'o', title: 'Org\nX-EVIL:3', url: null },
+      tags: ['tag\r\nX-EVIL:4'],
+    });
+    const ics = icalCalendar([evil], options);
+    const l = lines(ics);
+    expect(l.filter((line) => line === 'BEGIN:VEVENT')).toHaveLength(1);
+    expect(l.filter((line) => line === 'END:VEVENT')).toHaveLength(1);
+    for (const prefix of ['X-EVIL', 'ATTACH', 'BEGIN:VALARM', 'ACTION', 'SUMMARY:evil']) {
+      expect(l.some((line) => line.startsWith(prefix)), prefix).toBe(false);
+    }
+    // Every line is one the generator wrote itself.
+    const names = l.filter(Boolean).map((line) => line.split(/[:;]/)[0]);
+    const allowed = new Set(['BEGIN', 'END', 'VERSION', 'PRODID', 'CALSCALE', 'METHOD', 'X-WR-CALNAME', 'X-WR-CALDESC', 'X-WR-TIMEZONE', 'REFRESH-INTERVAL', 'X-PUBLISHED-TTL', 'UID', 'DTSTAMP', 'DTSTART', 'DTEND', 'SUMMARY', 'LOCATION', 'DESCRIPTION', 'URL', 'CATEGORIES', 'LAST-MODIFIED', 'STATUS']);
+    expect(names.filter((name) => !allowed.has(name))).toEqual([]);
+    expect(ics.includes('\u0000')).toBe(false);
   });
 
   it('lists events by start time, then ID, whatever order they came in', () => {

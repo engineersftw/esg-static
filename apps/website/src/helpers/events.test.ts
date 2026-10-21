@@ -65,6 +65,43 @@ describe('parseEventsFeed', () => {
     expect(parsed.skipped).toBe(bad.length);
   });
 
+  it('skips a start on a day that does not exist, instead of moving the event to another day', () => {
+    const impossible = ['2026-02-30T10:00:00+08:00', '2026-04-31T09:00:00+08:00', '2027-02-29T10:00:00+08:00', '2026-00-10T10:00:00+08:00', '2026-06-00T10:00:00Z'];
+    const parsed = parseEventsFeed(feed(impossible.map((start, i) => event({ id: `x/${i}`, start }))))!;
+    expect(parsed.events).toEqual([]);
+    expect(parsed.skipped).toBe(impossible.length);
+    // A leap day is a day.
+    const [leap] = parseEventsFeed(feed([event({ start: '2028-02-29T10:00:00+08:00', end: null })]))!.events;
+    expect(leap.start.toISOString()).toBe('2028-02-29T02:00:00.000Z');
+  });
+
+  it('ignores an end or an update date that does not exist', () => {
+    const [e] = parseEventsFeed(feed([event({ end: '2026-10-32T20:30:00+08:00', updatedAt: '2026-02-30' })]))!.events;
+    expect(e.end).toBeNull();
+    expect(e.updatedAt).toBeNull();
+    const [ok] = parseEventsFeed(feed([event({ updatedAt: '2028-02-29' })]))!.events;
+    expect(ok.updatedAt?.toISOString()).toBe('2028-02-29T00:00:00.000Z');
+  });
+
+  it('skips an event whose id has a control character, which could start a new line in the calendar', () => {
+    const bad = ['x/1\r\nBEGIN:VEVENT', 'x/1\nSUMMARY:evil', 'x/\u00001', 'x/\t1'];
+    const parsed = parseEventsFeed(feed([event(), ...bad.map((id) => event({ id }))]))!;
+    expect(parsed.events.map((e) => e.id)).toEqual(['techies/20261022-new-dev-roles']);
+    expect(parsed.skipped).toBe(bad.length);
+  });
+
+  it('keeps only http(s) links without spaces or control characters', () => {
+    const good = ['https://luma.com/i8iy0fzc', 'http://example.com/a?b=c&d=e#f'];
+    for (const link of good) expect(parseEventsFeed(feed([event({ url: link, rsvpUrl: link, org: { id: 'o', title: 'O', url: link } })]))!.events[0]).toMatchObject({ url: link, rsvpUrl: link, org: { url: link } });
+    const bad = ['javascript:alert(1)', 'data:text/calendar,x', 'ftp://example.com/x', '//example.com/x', '/events/x', 'not a url', 'https://example.com/a b', 'https://example.com/\r\nATTACH:https://evil.test', 'https://example.com/\u0000'];
+    for (const link of bad) {
+      const [e] = parseEventsFeed(feed([event({ url: link, rsvpUrl: link, org: { id: 'o', title: 'O', url: link } })]))!.events;
+      expect(e.url, link).toBeNull();
+      expect(e.rsvpUrl, link).toBeNull();
+      expect(e.org?.url, link).toBeNull();
+    }
+  });
+
   it('ignores a bad end time, a tag that is not text, and an org with no title', () => {
     const [e] = parseEventsFeed(feed([event({ end: 'late', tags: ['ok', 3, '', null], org: { id: 'x' } })]))!.events;
     expect(e.end).toBeNull();

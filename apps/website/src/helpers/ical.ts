@@ -26,9 +26,19 @@ export interface IcalOptions {
 const MAX_LINE_BYTES = 75;
 const encoder = new TextEncoder();
 
-/** TEXT values: backslash, semicolon and comma are escaped, and a line break is `\n`. */
+/** Control characters other than a tab (a stray CR or LF would start a new line in the file). */
+const isControl = (code: number) => (code < 0x20 && code !== 0x09) || code === 0x7f;
+
+/** The value without its control characters: for the ones written as they are, a UID and a URL. */
+export function stripControl(value: string): string {
+  return Array.from(value)
+    .filter((char) => !isControl(char.charCodeAt(0)))
+    .join('');
+}
+
+/** TEXT values: backslash, semicolon and comma are escaped, a line break is `\n`, other control characters are dropped. */
 export function escapeText(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n');
+  return stripControl(value.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n'));
 }
 
 /**
@@ -59,6 +69,12 @@ export function foldLine(line: string): string {
 /** `20261022T103000Z`. */
 export const icalTime = (date: Date): string => date.toISOString().replace(/[-:]|\.\d{3}/g, '');
 
+/** Whether `text` has `name` in it as a name: not as part of a longer word (`ACE` is not in `Race Course Road`). */
+function mentions(text: string, name: string): boolean {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu').test(text);
+}
+
 /**
  * The venue and its address. An address that already names the venue is used alone (it has the street
  * for directions), and one that says just "Singapore" adds nothing, so the venue stands alone.
@@ -69,7 +85,7 @@ function location(event: CalendarEvent): string | null {
   if (!venueAddress) return venue;
   const address = venueAddress.toLowerCase();
   if (address === 'singapore') return venue;
-  return address.includes(venue.toLowerCase()) ? venueAddress : `${venue}, ${venueAddress}`;
+  return mentions(venueAddress, venue) ? venueAddress : `${venue}, ${venueAddress}`;
 }
 
 function description(event: CalendarEvent): string | null {
@@ -88,14 +104,14 @@ function vevent(event: CalendarEvent, options: Required<Pick<IcalOptions, 'now' 
   const url = event.url ?? event.rsvpUrl;
   return [
     'BEGIN:VEVENT',
-    `UID:${event.id}@${options.uidDomain}`,
+    `UID:${stripControl(event.id)}@${options.uidDomain}`,
     `DTSTAMP:${icalTime(options.now)}`,
     `DTSTART:${icalTime(event.start)}`,
     `DTEND:${icalTime(end)}`,
     `SUMMARY:${escapeText(event.title)}`,
     ...(where ? [`LOCATION:${escapeText(where)}`] : []),
     ...(about ? [`DESCRIPTION:${escapeText(about)}`] : []),
-    ...(url ? [`URL:${url}`] : []),
+    ...(url ? [`URL:${stripControl(url)}`] : []),
     ...(categories.length > 0 ? [`CATEGORIES:${categories.map(escapeText).join(',')}`] : []),
     ...(event.updatedAt ? [`LAST-MODIFIED:${icalTime(event.updatedAt)}`] : []),
     'STATUS:CONFIRMED',

@@ -6,7 +6,8 @@
 // The feed is a JSON object: `{ "version": 1, "generatedAt", "events": [ … ] }`. Every event has an
 // `id` (stable, even when the event is rescheduled: it becomes the calendar UID), a `title` and a
 // `start` as full ISO 8601 with its offset; everything else may be null. An event that doesn't meet
-// that is skipped, so one bad entry can't take the calendar down.
+// that is skipped, so one bad entry can't take the calendar down. Links must be http(s) with no
+// spaces or control characters, and an impossible date (`2026-02-30`) is not a date.
 
 export interface CalendarEvent {
   /** DevsGoWhere's event ID, `<org_id>/<YYYYMMDD-slug>`. Stable, so calendars update an event in place. */
@@ -47,9 +48,21 @@ const record = (value: unknown): Record<string, unknown> | null =>
 /** A non-empty string, trimmed, else null. */
 const text = (value: unknown): string | null => (typeof value === 'string' && value.trim() ? value.trim() : null);
 
+/**
+ * True when the `YYYY-MM-DD` at the start of `s` is a real calendar date. `new Date` quietly moves
+ * `2026-02-30` to March 2, which would put an event on the wrong day. `setUTCFullYear` rather than
+ * `Date.UTC`, which reads the years 0 to 99 as 1900 to 1999.
+ */
+function realDate(s: string): boolean {
+  const [year, month, day] = s.slice(0, 10).split('-').map(Number);
+  const check = new Date(0);
+  check.setUTCFullYear(year, month - 1, day);
+  return check.getUTCFullYear() === year && check.getUTCMonth() === month - 1 && check.getUTCDate() === day;
+}
+
 function instant(value: unknown): Date | null {
   const s = text(value);
-  if (!s || !INSTANT.test(s)) return null;
+  if (!s || !INSTANT.test(s) || !realDate(s)) return null;
   const date = new Date(s);
   return Number.isNaN(date.getTime()) ? null : date;
 }
@@ -58,18 +71,35 @@ function instant(value: unknown): Date | null {
 function when(value: unknown): Date | null {
   const s = text(value);
   if (s && DATE_ONLY.test(s)) {
+    if (!realDate(s)) return null;
     const date = new Date(`${s}T00:00:00Z`);
     return Number.isNaN(date.getTime()) ? null : date;
   }
   return instant(value);
 }
 
+/** Whether a string has a control character (a tab, a line break, ...). */
+const hasControl = (s: string): boolean => Array.from(s).some((c) => c.charCodeAt(0) < 0x20 || c.charCodeAt(0) === 0x7f);
+
+/** An `http` or `https` link with no spaces or control characters, else null: it ends up in a calendar line as it is. */
+function link(value: unknown): string | null {
+  const s = text(value);
+  if (!s || hasControl(s) || /\s/.test(s)) return null;
+  try {
+    const { protocol } = new URL(s);
+    return protocol === 'http:' || protocol === 'https:' ? s : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseEvent(value: unknown): CalendarEvent | null {
   const e = record(value);
+  // An ID with a control character could start a new line in the calendar, so such an event is skipped.
   const id = text(e?.id);
   const title = text(e?.title);
   const start = instant(e?.start);
-  if (!e || !id || !title || !start) return null;
+  if (!e || !id || hasControl(id) || !title || !start) return null;
   const org = record(e.org);
   const orgId = text(org?.id);
   const orgTitle = text(org?.title);
@@ -77,13 +107,13 @@ function parseEvent(value: unknown): CalendarEvent | null {
     id,
     title,
     description: text(e.description),
-    url: text(e.url),
-    rsvpUrl: text(e.rsvpUrl),
+    url: link(e.url),
+    rsvpUrl: link(e.rsvpUrl),
     start,
     end: instant(e.end),
     venue: text(e.venue),
     venueAddress: text(e.venueAddress),
-    org: orgId && orgTitle ? { id: orgId, title: orgTitle, url: text(org?.url) } : null,
+    org: orgId && orgTitle ? { id: orgId, title: orgTitle, url: link(org?.url) } : null,
     tags: Array.isArray(e.tags) ? e.tags.flatMap((tag) => text(tag) ?? []) : [],
     updatedAt: when(e.updatedAt),
   };
