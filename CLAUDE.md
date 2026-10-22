@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
+**Names:** the GitHub repository is `engineersftw/esg-static` and the Cloudflare Pages project is `esg-static` too. `esg-next` is only the name of one local checkout folder, so don't use it for the repo or the project (in `gh api repos/...` paths, docs or PRs).
+
 This is the rebuild of Engineers.SG. The repo holds the new Astro site (`apps/website`), the data from the existing site (a Rails app on Heroku Postgres, with ActiveAdmin and Devise, going by its tables) and the tools used to export it.
 
 It is a pnpm workspace (`pnpm-workspace.yaml` → `apps/*` and `packages/*`, pnpm 10, Node 24: `.nvmrc` pins 24.21.0 and every `engines` field says `>=24`). Shared compiler options live in `tsconfig.base.json` (target ES2024), which each package's `tsconfig.json` extends. `@types/node` is `^24` to match the runtime, so don't bump it to a newer major until the Node version moves. `apps/website/.nvmrc` is a copy of the root `.nvmrc` for the Cloudflare Pages build, which reads it from the site's root directory; CI and the sync workflow read the root one.
