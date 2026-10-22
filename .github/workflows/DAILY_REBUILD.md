@@ -6,7 +6,7 @@ It runs at **16:30 UTC (00:30 SGT)**, half an hour after DevsGoWhere's own rebui
 
 ## Setup
 
-1. In Cloudflare, open the Pages project (`esg-static`) → **Settings** → **Builds & deployments** → **Deploy hooks** → **Add deploy hook**. Name it (e.g. `daily-rebuild`) and choose the **production** branch (`main`).
+1. In Cloudflare, open the Pages project (`esg-static`) → **Settings** → **Builds & deployments** → **Deploy hooks** → **Add deploy hook**. Name it (e.g. `daily-rebuild`) and choose the project's **production branch**: the one shown under **Settings** → **Builds & deployments** → **Branch control**. The site builds from GitHub, and `promote.yml` merges into `main`, so that is normally `main`.
 2. Copy the hook URL.
 3. In the GitHub repository, go to **Settings** → **Secrets and variables** → **Actions** and add a secret named `CF_PAGES_DEPLOY_HOOK` with that URL.
 
@@ -16,6 +16,7 @@ Until the secret is set, the workflow succeeds without doing anything and says s
 
 ## Notes
 
+- A hook rebuilds from Git, so it doesn't replace a manual upload: `pnpm deploy:production` uploads `dist/` straight to a Pages branch named `production` (a name Wrangler uses for the upload, not necessarily the project's production branch), and the hook knows nothing about it. If the live site is served from such an upload, the hook won't refresh it; check which one serves engineers.sg.
 - The hook builds the branch it was created for, with the project's environment variables (`HOSTNAME`, `PUBLIC_ALLOW_INDEXING`, ...). It doesn't touch `staging` previews, which have no daily rebuild.
 - If DevsGoWhere's feed can't be read during the build, the build warns and leaves out `/cal` (see `apps/website/README.md`), so the calendar URL returns 404 until the next good build. Check the build log if a subscribed calendar goes missing.
 - The workflow only calls the hook; it doesn't wait for the build or report its result. Look in the Cloudflare dashboard for failed builds.
