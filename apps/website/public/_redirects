@@ -7,3 +7,6 @@
 /contact/ /about/ 301
 /terms /about/ 301
 /terms/ /about/ 301
+# Crawlers guess these sitemap names; ours is sitemap-index.xml.
+/sitemap.xml /sitemap-index.xml 301
+/sitemap_index.xml /sitemap-index.xml 301
