@@ -1,0 +1,29 @@
+name: Daily Rebuild
+
+on:
+  schedule:
+    # 16:30 UTC (00:30 SGT), half an hour after DevsGoWhere's 00:01 SGT rebuild publishes its events feed
+    - cron: '30 16 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions: {}
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      # The site's /cal calendar is built from DevsGoWhere's events feed, so it is only as fresh as the
+      # last deploy. A Cloudflare Pages deploy hook starts a new build of the production branch.
+      - name: Trigger the Cloudflare Pages build
+        env:
+          DEPLOY_HOOK: ${{ secrets.CF_PAGES_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "CF_PAGES_DEPLOY_HOOK is not set, so there is nothing to rebuild." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # The hook URL is a secret; --fail makes an error response fail the job, and -sS hides the progress bar.
+          curl --fail -sS --retry 3 --retry-delay 10 -X POST "$DEPLOY_HOOK" > /dev/null
+          echo "Started a Cloudflare Pages build." >> "$GITHUB_STEP_SUMMARY"
