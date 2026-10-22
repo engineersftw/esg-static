@@ -205,7 +205,7 @@ Photos we host ourselves are in `public/images/presenters/<id>.jpg` (400×400), 
 
 - `src/pages/[cal].ts` reads DevsGoWhere's feed (`https://devsgowhere.com/events.json`, or `EVENTS_FEED_URL`) when the site is built. `src/helpers/events.ts` checks it and `src/helpers/ical.ts` writes the calendar; both are tested.
 - Each event keeps DevsGoWhere's event ID as its calendar ID, so rescheduling an event moves it instead of adding a copy. Times are UTC, so every calendar shows them in the viewer's own zone. An event with no end time lasts two hours. The event's page on DevsGoWhere is its link, and the sign-up link is in the description.
-- It is a static file, so it is only as fresh as the last deploy. The site needs a rebuild every day for the calendar to follow new events.
+- It is a static file, so it is only as fresh as the last deploy. The site needs a rebuild every day for the calendar to follow new events: `.github/workflows/daily-rebuild.yml` calls a Cloudflare Pages deploy hook at 00:30 SGT (setup in `DAILY_REBUILD.md`; it does nothing until the `CF_PAGES_DEPLOY_HOOK` secret is set).
 - If the feed can't be read, the build warns and **leaves `/cal` out**: a 404 makes calendar apps keep the events they have, where an empty calendar would make them delete them all.
 - Test it with `pnpm build` (add `EVENTS_FEED_URL=http://localhost:8793/events.json` to try a local file) and open `dist/cal`.
 
