@@ -43,7 +43,7 @@ An Astro 7 static site (MDX, sitemap and RSS integrations, `astro-embed` for the
 pnpm dev                 # astro dev, http://localhost:4321
 pnpm build               # astro build → dist/
 pnpm preview
-pnpm run deploy          # wrangler pages deploy ./dist --project-name esg-remake (Cloudflare Pages)
+pnpm run deploy          # wrangler pages deploy ./dist --project-name esg-static (Cloudflare Pages)
 pnpm deploy:production   # same, with --branch production
 ```
 

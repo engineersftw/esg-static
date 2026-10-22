@@ -6,7 +6,7 @@ It runs at **16:30 UTC (00:30 SGT)**, half an hour after DevsGoWhere's own rebui
 
 ## Setup
 
-1. In Cloudflare, open the Pages project (`esg-remake`) → **Settings** → **Builds & deployments** → **Deploy hooks** → **Add deploy hook**. Name it (e.g. `daily-rebuild`) and choose the **production** branch (`main`).
+1. In Cloudflare, open the Pages project (`esg-static`) → **Settings** → **Builds & deployments** → **Deploy hooks** → **Add deploy hook**. Name it (e.g. `daily-rebuild`) and choose the **production** branch (`main`).
 2. Copy the hook URL.
 3. In the GitHub repository, go to **Settings** → **Secrets and variables** → **Actions** and add a secret named `CF_PAGES_DEPLOY_HOOK` with that URL.
 
