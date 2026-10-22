@@ -145,6 +145,7 @@ Paginated pages use the shared `Pagination` component, which always shows 7 page
 | `/search` | Video search: a static page that calls `/api/search` as you type (see "Video search") |
 | `/feed` | RSS feed of the 50 newest videos (`public/_headers` sets its content type) |
 | `/about` | About page |
+| `/events` | Introduces DevsGoWhere (upcoming events listing) and links to `/cal` and its event submission forms |
 | `/contribute` | How to suggest a video or a playlist (links to the "Submit a video" and "Submit a playlist" issue forms) |
 | `404` | Served by Cloudflare for any missing path |
 
