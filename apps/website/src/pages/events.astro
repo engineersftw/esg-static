@@ -1,0 +1,112 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const DGW = 'https://devsgowhere.com';
+const REPO = 'https://github.com/devsgowhere/devsgowhere';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead
+      title="Upcoming events with DevsGoWhere"
+      image="/images/devsgowhere-lion.png"
+      card="summary"
+      description="Looking for what's on next? DevsGoWhere lists developer events in Singapore in one place, and you can subscribe to them in your calendar."
+    />
+    <style>
+      main {
+        width: 720px;
+        max-width: calc(100% - 2em);
+      }
+      h2 {
+        margin-top: 2em;
+      }
+      .logo-link {
+        display: block;
+        text-align: center;
+      }
+      .logo {
+        display: block;
+        width: 240px;
+        max-width: 60%;
+        height: auto;
+        margin: 1em auto;
+      }
+      .action {
+        display: inline-block;
+        margin: 0.5em 0 1em;
+        padding: 0.6em 1.2em;
+        border-radius: 8px;
+        background: var(--accent);
+        color: white;
+        font-weight: bold;
+        text-decoration: none;
+      }
+      .action:hover {
+        background: var(--accent-dark);
+      }
+    </style>
+  </head>
+  <body>
+    <Header />
+    <main>
+      <h1>Upcoming events with DevsGoWhere</h1>
+      <a class="logo-link" href={DGW} target="_blank" rel="noopener noreferrer">
+        <img class="logo" src="/images/devsgowhere-lion.png" width="640" height="480" alt="DevsGoWhere lion logo" />
+      </a>
+      <p>
+        Engineers.SG is the archive of past talks. To find out what's on next,
+        head to <a href={DGW} target="_blank" rel="noopener noreferrer">DevsGoWhere</a>.
+      </p>
+
+      <h2>What is DevsGoWhere?</h2>
+      <p>
+        DevsGoWhere is a volunteer-run community in Singapore that curates a
+        single listing of developer events. Organisers publish on different
+        platforms (Meetup, Luma, Telegram, Discord), which makes events hard to
+        find. DevsGoWhere gathers them in one place so people can discover,
+        share and attend dev events in Singapore. It is run by volunteers
+        outside their full-time jobs, and it is open source.
+      </p>
+      <a class="action" href={`${DGW}/events/`} target="_blank" rel="noopener noreferrer">Browse upcoming events</a>
+
+      <h2>What you'll find there</h2>
+      <ul>
+        <li><a href={`${DGW}/events/`} target="_blank" rel="noopener noreferrer">Upcoming events</a>, searchable</li>
+        <li><a href={`${DGW}/events/past/`} target="_blank" rel="noopener noreferrer">Past events</a></li>
+        <li><a href={`${DGW}/orgs/`} target="_blank" rel="noopener noreferrer">Communities</a>, with a page for each organiser</li>
+        <li><a href={`${DGW}/rss.xml`} target="_blank" rel="noopener noreferrer">An RSS feed</a> of new events</li>
+      </ul>
+      <p>
+        Details can change and listings come from organisers and automated
+        pickup, so check an event's own page before you go.
+      </p>
+
+      <h2>Add the events to your calendar</h2>
+      <p>
+        Engineers.SG publishes an iCalendar feed of the upcoming events,
+        synced from DevsGoWhere once a day:
+        <a href="/cal"><code>/cal</code></a>. Subscribe to it in Google
+        Calendar, Apple Calendar or Outlook. Each entry links to its
+        DevsGoWhere page for details and RSVP.
+      </p>
+
+      <h2>Organising an event?</h2>
+      <p>
+        Submit it through one of the forms on GitHub: one for a Meetup, Luma or
+        Eventbrite link, and one for other websites. Each opens a pull request
+        automatically. Please submit 5 to 7 days ahead, because volunteers
+        review the listings.
+      </p>
+      <a class="action" href={`${REPO}/issues/new/choose`} target="_blank" rel="noopener noreferrer">Submit an event</a>
+      <p>
+        You can also give feedback or contribute code in the{' '}
+        <a href={REPO} target="_blank" rel="noopener noreferrer">DevsGoWhere repository</a>.
+      </p>
+    </main>
+    <Footer />
+  </body>
+</html>
