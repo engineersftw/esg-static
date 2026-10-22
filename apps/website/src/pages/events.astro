@@ -24,12 +24,16 @@ const REPO = 'https://github.com/devsgowhere/devsgowhere';
       h2 {
         margin-top: 2em;
       }
+      .logo-link {
+        display: block;
+        text-align: center;
+      }
       .logo {
         display: block;
         width: 240px;
         max-width: 60%;
         height: auto;
-        margin: 1em 0;
+        margin: 1em auto;
       }
       .action {
         display: inline-block;
@@ -50,7 +54,7 @@ const REPO = 'https://github.com/devsgowhere/devsgowhere';
     <Header />
     <main>
       <h1>Upcoming events with DevsGoWhere</h1>
-      <a href={DGW} target="_blank" rel="noopener noreferrer">
+      <a class="logo-link" href={DGW} target="_blank" rel="noopener noreferrer">
         <img class="logo" src="/images/devsgowhere-lion.png" width="640" height="480" alt="DevsGoWhere lion logo" />
       </a>
       <p>
@@ -99,7 +103,7 @@ const REPO = 'https://github.com/devsgowhere/devsgowhere';
       </p>
       <a class="action" href={`${REPO}/issues/new/choose`} target="_blank" rel="noopener noreferrer">Submit an event</a>
       <p>
-        You can also give feedback or contribute code in the
+        You can also give feedback or contribute code in the{' '}
         <a href={REPO} target="_blank" rel="noopener noreferrer">DevsGoWhere repository</a>.
       </p>
     </main>
