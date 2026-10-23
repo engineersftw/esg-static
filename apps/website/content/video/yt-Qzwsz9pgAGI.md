@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/Qzwsz9pgAGI/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/Qzwsz9pgAGI/hqdefault.jpg"
 slug: "day-1-ignites-devopsdays-2018"
 organizations: ["1"]
-presenters: []
+presenters: ["j7srjsj197","1215","772","j24w6bh35r","cm8rdyk8w8"]
 active: true
 videoSite: "youtube"
 ---

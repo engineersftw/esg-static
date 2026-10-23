@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/GYYWMSvzCdo/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/GYYWMSvzCdo/hqdefault.jpg"
 slug: "ai-generated-code-unmasking-the-security-pitfalls-by-lawrence-crowther"
 organizations: ["1"]
-presenters: []
+presenters: ["io5336wpaf"]
 active: true
 videoSite: "youtube"
 ---

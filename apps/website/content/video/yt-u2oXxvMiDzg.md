@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/u2oXxvMiDzg/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/u2oXxvMiDzg/hqdefault.jpg"
 slug: "schema-as-code-developer-platforms-and-database-schema-changes-by-rotem-tamir"
 organizations: ["1"]
-presenters: []
+presenters: ["ea91yu0z7h"]
 active: true
 videoSite: "youtube"
 ---

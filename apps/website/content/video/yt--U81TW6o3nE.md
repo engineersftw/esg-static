@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/-U81TW6o3nE/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/-U81TW6o3nE/hqdefault.jpg"
 slug: "driving-devops-at-petronas-by-ahmad-syafiq-aizat-mohd"
 organizations: ["1"]
-presenters: []
+presenters: ["wacjjjj11b"]
 active: true
 videoSite: "youtube"
 ---

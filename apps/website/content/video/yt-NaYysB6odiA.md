@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/NaYysB6odiA/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/NaYysB6odiA/hqdefault.jpg"
 slug: "day-2-ignites-devopsdays-singapore-2024"
 organizations: ["1"]
-presenters: []
+presenters: ["dvlqfzn4ep","c7dzqk1ylp","git9u9d8ey","221","329","c8f08xt3gi"]
 active: true
 videoSite: "youtube"
 ---
