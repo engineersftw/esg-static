@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/r4qkHOn3OQc/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/r4qkHOn3OQc/hqdefault.jpg"
 slug: "you-only-have-to-change-one-thing-to-do-the-devops-everything-devops-days-2018"
 organizations: ["1"]
-presenters: []
+presenters: ["wh6bsy6hyc"]
 active: true
 videoSite: "youtube"
 ---

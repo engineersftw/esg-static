@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/-_jPrkQexgU/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/-_jPrkQexgU/hqdefault.jpg"
 slug: "data-driven-devops-devopsdays-singapore-2018"
 organizations: ["1"]
-presenters: []
+presenters: ["rbfccbyqy9"]
 active: true
 videoSite: "youtube"
 ---

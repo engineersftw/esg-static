@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/Chahs0EqosE/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/Chahs0EqosE/hqdefault.jpg"
 slug: "vendor-agnostic-cloud-native-apps"
 organizations: ["1"]
-presenters: []
+presenters: ["r99kkdoqx0"]
 active: true
 videoSite: "youtube"
 ---

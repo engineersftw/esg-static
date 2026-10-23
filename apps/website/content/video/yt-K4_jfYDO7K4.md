@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/K4_jfYDO7K4/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/K4_jfYDO7K4/hqdefault.jpg"
 slug: "concept-to-code-to-runtime-simplify-enable-exploit-by-srivatsan-ta"
 organizations: ["1"]
-presenters: []
+presenters: ["o5he7dhtbu"]
 active: true
 videoSite: "youtube"
 ---

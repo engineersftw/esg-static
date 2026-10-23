@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/vknxjy-U2ac/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/vknxjy-U2ac/hqdefault.jpg"
 slug: "less-yak-shaving-with-more-dev-and-sec-in-your-ops-devopsdays-singapore-2018"
 organizations: ["1"]
-presenters: []
+presenters: ["rsrpeu3x6u"]
 active: true
 videoSite: "youtube"
 ---

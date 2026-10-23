@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/g0xQv-l4p80/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/g0xQv-l4p80/hqdefault.jpg"
 slug: "keynote-the-state-of-devops-2018-devopsdays-singapore-2018"
 organizations: ["1"]
-presenters: []
+presenters: ["j7srjsj197"]
 active: true
 videoSite: "youtube"
 ---

@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/ckSdRv3ww1g/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/ckSdRv3ww1g/hqdefault.jpg"
 slug: "it-s-down-simulating-incidents-in-production-devopsdays-singapore-2018"
 organizations: ["1"]
-presenters: []
+presenters: ["suiqrfasxb"]
 active: true
 videoSite: "youtube"
 ---

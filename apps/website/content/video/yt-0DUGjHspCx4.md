@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/0DUGjHspCx4/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/0DUGjHspCx4/hqdefault.jpg"
 slug: "influxdb-downsampling-a-devops-tale-devopsdays-singapore-2018"
 organizations: ["1"]
-presenters: []
+presenters: ["a8dkurjhet","di7aqgq9p7"]
 active: true
 videoSite: "youtube"
 ---
