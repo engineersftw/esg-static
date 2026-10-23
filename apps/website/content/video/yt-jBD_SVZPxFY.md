@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/jBD_SVZPxFY/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/jBD_SVZPxFY/hqdefault.jpg"
 slug: "observability-3-ways-logging-metrics-and-distributed-tracing-devopsdays-singapore-2018"
 organizations: ["1"]
-presenters: []
+presenters: ["660"]
 active: true
 videoSite: "youtube"
 ---

@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/MMPsdaIWz-Y/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/MMPsdaIWz-Y/hqdefault.jpg"
 slug: "airasia-devops-journey-by-danial-hui"
 organizations: ["1"]
-presenters: []
+presenters: ["p8d99h264v"]
 active: true
 videoSite: "youtube"
 ---

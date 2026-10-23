@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/b9O4BvUfOic/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/b9O4BvUfOic/hqdefault.jpg"
 slug: "engineering-platforms-evolved-by-scott-shaw"
 organizations: ["1"]
-presenters: []
+presenters: ["h3alv1gecf"]
 active: true
 videoSite: "youtube"
 ---

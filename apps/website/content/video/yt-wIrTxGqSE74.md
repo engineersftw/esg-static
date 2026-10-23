@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/wIrTxGqSE74/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/wIrTxGqSE74/hqdefault.jpg"
 slug: "day-2-ignites-devopsdays-singapore-2018"
 organizations: ["1"]
-presenters: []
+presenters: ["1668","rn1h03bxo7","nf513u7t3s","rbfccbyqy9","1110"]
 active: true
 videoSite: "youtube"
 ---

@@ -9,7 +9,7 @@ thumbnailMedium: "https://i.ytimg.com/vi/VHG_VQMdbuc/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/VHG_VQMdbuc/hqdefault.jpg"
 slug: "consul-connect-devopsdays-singapore-2018"
 organizations: ["1"]
-presenters: []
+presenters: ["zn9jahroi6"]
 active: true
 videoSite: "youtube"
 ---
