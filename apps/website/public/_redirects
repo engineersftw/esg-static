@@ -10,3 +10,5 @@
 # Crawlers guess these sitemap names; ours is sitemap-index.xml.
 /sitemap.xml /sitemap-index.xml 301
 /sitemap_index.xml /sitemap-index.xml 301
+# The old Rails search page.
+/episodes/search /search 301
