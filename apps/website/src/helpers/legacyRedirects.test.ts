@@ -53,6 +53,12 @@ describe('cleanLegacyPath', () => {
     expect(cleanLegacyPath('/organization/rubysg/null/')).toBe('/organization/rubysg');
   });
 
+  it('drops a stray /true the same way', () => {
+    expect(cleanLegacyPath('/organization/aws-user-group-singapore/true')).toBe('/organization/aws-user-group-singapore');
+    expect(cleanLegacyPath('/presenter/jane-doe/true/')).toBe('/presenter/jane-doe');
+    expect(cleanLegacyPath('/video/some-talk/true')).toBe('/video/some-talk');
+  });
+
   it('drops trailing backslashes', () => {
     expect(cleanLegacyPath('/video/css-code-splitting-talk-css--3273\\')).toBe('/video/css-code-splitting-talk-css--3273');
     expect(cleanLegacyPath('/presenter/ken-lee--1229\\\\\\')).toBe('/presenter/ken-lee--1229');
@@ -68,7 +74,7 @@ describe('cleanLegacyPath', () => {
   });
 
   it('leaves every other path alone', () => {
-    for (const path of ['/video/some-talk', '/video/null', '/video/a/b/null', '/playlist/x/null', '/', '/v/601']) {
+    for (const path of ['/video/some-talk', '/video/null', '/video/true', '/playlist/x/true', '/video/a/b/null', '/playlist/x/null', '/', '/v/601']) {
       expect(cleanLegacyPath(path)).toBe(path);
     }
   });

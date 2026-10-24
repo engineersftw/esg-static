@@ -6,7 +6,7 @@
  * (only the ID matters, as in Rails), so links made before a rename still work. The old
  * `/presenter/<twitter_id>` and `/s/<twitter_id>` look the X handle up (case-insensitively), and
  * `/conference/<id>` redirects a conference or track, and `/playlist/<id>` the same or any other playlist. `cleanLegacyPath` first strips a search-engine
- * `&sa=U` tail and a stray `/null` segment.
+ * `&sa=U` tail and a stray `/null` or `/true` segment.
  *
  * The ID → slug map is dist/legacy-redirects.json (src/pages/legacy-redirects.json.ts), bundled in
  * when wrangler builds this function, so build the site before `wrangler pages deploy`/`dev`.
