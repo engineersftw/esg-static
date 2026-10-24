@@ -45,6 +45,7 @@ An Astro 7 static site (MDX, sitemap and RSS integrations, `astro-embed` for the
 pnpm dev                 # astro dev, http://localhost:4321
 pnpm build               # astro build → dist/
 pnpm preview
+pnpm dev:functions        # astro build, then wrangler pages dev ./dist (port 8788): the Pages Functions and _redirects work
 pnpm run deploy          # wrangler pages deploy ./dist --project-name esg-static (Cloudflare Pages)
 pnpm deploy:production   # same, with --branch production
 ```
@@ -68,7 +69,7 @@ The only tests are Vitest ones for pure helpers, such as `src/helpers/linkify.te
   - `/organization/<slug>/<n>` and `/presenter/<slug>/<n>` are real pages, so the function lets the static site answer first and only when that is a 404 (a page past the last one, such as the old Rails pagination) redirects to the entry's first page, if the slug exists (`pastLastPage`).
   - The ID → slug map is `src/pages/legacy-redirects.json.ts` (active entries with numeric IDs only, since only those came from Rails), built to `dist/legacy-redirects.json` and **imported by the function**. Wrangler bundles it when it builds the function, so always run `astro build` before `wrangler pages deploy`/`dev`. A path that doesn't match, or names an unknown or inactive ID, falls through to the static site (and so the 404 page).
   - `public/_routes.json` includes `/*` (needed for the top-level `/:id` shortcut) and excludes paths that can never match (assets, lists, the feed; not `/conference/*` or `/playlist/*`, which the numeric `/conference/:id` and `/playlist/:id` need, and `/playlist/*/*` would match `/playlist/37` too). The excludes only save function invocations: a path missing from them still works. Function requests count against the Workers quota (100k/day on the free plan), while static asset requests are free.
-  - Test locally with `pnpm build && pnpm exec wrangler pages dev ./dist` (port 8788). `pnpm preview` doesn't run functions. `.wrangler/` is its git-ignored local state.
+  - Test locally with `pnpm dev:functions` (port 8788; it builds first, and wrangler runs from `apps/website`, so it is not available from the repo root). `pnpm preview` doesn't run functions. `.wrangler/` is its git-ignored local state.
 - **Video search** is the static page `src/pages/search.astro` plus a second Pages Function, `functions/api/search.ts` (`GET /api/search?q=<words>&page=<n>`, JSON, 20 results a page, `Cache-Control: max-age=300`). The header's search icon links to `/search`.
   - The index is `src/pages/search-index.json.ts`, built to `dist/search-index.json` (every active video, newest first, with its active presenters', organizations' and playlists' names, its formatted `duration` and its description) and **imported by the function**, like `legacy-redirects.json`: build before deploying.
   - The matching and ranking are in `src/helpers/search.ts`, which is pure and tested (`search.test.ts`). Every word must match somewhere, ignoring case and accents, as a substring; title matches rank highest, then presenter and organization names, then playlists, then descriptions, with bonuses for word-start matches and for the whole query in the title; ties stay newest first. Queries take 0.5 to 2 ms on the ~4k videos (the free plan allows 10 ms of CPU), and building the searcher takes ~25 ms once per Worker instance.

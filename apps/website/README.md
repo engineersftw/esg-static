@@ -25,7 +25,7 @@ Run these from `apps/website/`:
 | `pnpm dev` | Dev server at http://localhost:4321, reloading on changes |
 | `pnpm build` | Builds the static site into `dist/` (about 7k pages, roughly 10 seconds) |
 | `pnpm preview` | Serves `dist/` locally, without the Pages Function (so no legacy redirects) |
-| `pnpm exec wrangler pages dev ./dist` | Serves `dist/` the way Cloudflare does, including the Pages Function, at http://localhost:8788 |
+| `pnpm dev:functions` | Builds, then serves `dist/` the way Cloudflare does, including the Pages Functions (legacy redirects, search), at http://localhost:8788. Use it to test anything in `functions/` or `public/_redirects`. Skip the build with `pnpm exec wrangler pages dev ./dist` |
 | `pnpm run deploy` | Uploads `dist/` to Cloudflare Pages as a preview deployment (not `pnpm deploy`, which is a pnpm built-in) |
 | `pnpm deploy:production` | Uploads `dist/` to the production branch |
 | `pnpm astro …` | The Astro CLI, e.g. `pnpm astro sync` to regenerate content types |
