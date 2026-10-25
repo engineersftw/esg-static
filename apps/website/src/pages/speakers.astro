@@ -1,0 +1,127 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import EntityImage from '../components/EntityImage.astro';
+import { getActivePresenters, getListedVideos } from '../helpers/collections';
+
+// The speakers of the newest talks, each once, with the recent talks they gave (newest first).
+const RECENT_TALKS = 12;
+const videos = (await getListedVideos()).slice(0, RECENT_TALKS);
+const presenters = new Map((await getActivePresenters()).map((presenter) => [presenter.id, presenter]));
+
+const speakers = new Map<string, { presenter: CollectionEntry<'presenter'>; talks: CollectionEntry<'video'>[] }>();
+for (const video of videos) {
+  for (const { id } of video.data.presenters) {
+    const presenter = presenters.get(id);
+    if (!presenter) continue;
+    const speaker = speakers.get(id) ?? { presenter, talks: [] };
+    speaker.talks.push(video);
+    speakers.set(id, speaker);
+  }
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead
+      title="Speakers"
+      description="The speakers of the newest talks recorded by Engineers.SG."
+    />
+    <style>
+      main {
+        width: 960px;
+      }
+      ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+      li {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 1.5rem;
+        padding: 1.5rem 0;
+        border-top: 1px solid rgb(var(--gray-light));
+      }
+      .photo {
+        display: block;
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 12px;
+      }
+      .name {
+        margin: 0;
+      }
+      .name a {
+        color: rgb(var(--black));
+        text-decoration: none;
+      }
+      .name a:hover {
+        color: rgb(var(--accent));
+      }
+      .byline {
+        margin: 0.25rem 0 0.75rem;
+        color: rgb(var(--gray));
+      }
+      .talks {
+        margin: 0;
+        padding-left: 1.25rem;
+        list-style-type: disc;
+      }
+      .talks li {
+        display: list-item;
+        padding: 0;
+        border: 0;
+      }
+      .talks a {
+        color: rgb(var(--accent));
+      }
+      @media (max-width: 720px) {
+        li {
+          grid-template-columns: 80px 1fr;
+          gap: 1rem;
+        }
+        .photo {
+          width: 80px;
+          height: 80px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <Header />
+    <main>
+      <h1>Speakers</h1>
+      <p>Speakers of the {RECENT_TALKS} newest talks.</p>
+      <ul>
+        {
+          [...speakers.values()].map(({ presenter, talks }) => (
+            <li>
+              <div>
+                <EntityImage kind="presenter" src={presenter.data.imageUrl} alt="" class="photo" loading="lazy" />
+              </div>
+              <div>
+                <h2 class="name">
+                  <a href={`/presenter/${presenter.data.slug}`}>{presenter.data.presenterName}</a>
+                </h2>
+                {presenter.data.presenterByline && <p class="byline">{presenter.data.presenterByline}</p>}
+                <ul class="talks">
+                  {talks.map((video) => (
+                    <li>
+                      <a href={`/video/${video.data.slug}`}>{video.data.videoTitle}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </main>
+    <Footer />
+  </body>
+</html>

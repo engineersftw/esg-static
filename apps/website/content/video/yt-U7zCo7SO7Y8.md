@@ -8,8 +8,8 @@ thumbnailDefault: "https://i.ytimg.com/vi/U7zCo7SO7Y8/default.jpg"
 thumbnailMedium: "https://i.ytimg.com/vi/U7zCo7SO7Y8/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/U7zCo7SO7Y8/hqdefault.jpg"
 slug: "open-source-for-everyone-why-and-how-to-take-the-leap-hackoberfest-2026"
-organizations: []
-presenters: []
+organizations: ["199"]
+presenters: ["lllf5q24hr"]
 active: true
 videoSite: "youtube"
 ---
