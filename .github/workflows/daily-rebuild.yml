@@ -2,8 +2,9 @@ name: Daily Rebuild
 
 on:
   schedule:
-    # 16:30 UTC (00:30 SGT), half an hour after DevsGoWhere's 00:01 SGT rebuild publishes its events feed
-    - cron: '30 16 * * *'
+    # 00:30 Singapore time, half an hour after DevsGoWhere's 00:01 SGT rebuild publishes its events feed
+    - cron: '30 0 * * *'
+      timezone: 'Asia/Singapore'
   workflow_dispatch: # Allow manual trigger
 
 permissions: {}

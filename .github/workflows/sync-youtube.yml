@@ -2,8 +2,9 @@ name: Sync YouTube Channel
 
 on:
   schedule:
-    # Run daily at 2 AM UTC (10 AM SGT)
-    - cron: '0 2 * * *'
+    # Run daily at 10 AM Singapore time
+    - cron: '0 10 * * *'
+      timezone: 'Asia/Singapore'
   workflow_dispatch: # Allow manual trigger
 
 permissions:

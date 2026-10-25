@@ -2,7 +2,7 @@
 
 The site is static, and `/cal` (the iCalendar of upcoming events) is built from DevsGoWhere's events feed, so it is only as fresh as the last deploy. This workflow starts a new Cloudflare Pages build every day, so the calendar follows the feed.
 
-It runs at **16:30 UTC (00:30 SGT)**, half an hour after DevsGoWhere's own rebuild at 00:01 SGT. GitHub can start a scheduled run a few minutes late, which that margin covers. You can also run it by hand from the **Actions** tab (**Run workflow**).
+It runs at **00:30 Singapore time** (the schedule sets `timezone: 'Asia/Singapore'`), half an hour after DevsGoWhere's own rebuild at 00:01 SGT. GitHub can start a scheduled run a few minutes late, which that margin covers. You can also run it by hand from the **Actions** tab (**Run workflow**).
 
 ## Setup
 
