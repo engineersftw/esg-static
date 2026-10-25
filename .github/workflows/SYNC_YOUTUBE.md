@@ -32,14 +32,15 @@ To receive a Telegram notification when a PR is created:
 
 ### 3. Optional: Configure Schedule
 
-The workflow runs daily at **2 AM UTC** (10 AM Singapore Time). To change this:
+The workflow runs daily at **10 AM Singapore time**: the schedule sets `timezone: 'Asia/Singapore'`, so the cron time is Singapore time, not UTC. To change this:
 
 Edit `.github/workflows/sync-youtube.yml` and modify the cron schedule:
 
 ```yaml
 on:
   schedule:
-    - cron: '0 2 * * *'  # Change this line
+    - cron: '0 10 * * *'  # Change this line
+      timezone: 'Asia/Singapore'
 ```
 
 Use [crontab guru](https://crontab.guru/) to help format the cron expression.
