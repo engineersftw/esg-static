@@ -13,7 +13,7 @@ This workflow automatically syncs videos and playlists from the YouTube channel 
 
 ### 2. Optional: Configure Telegram Notifications
 
-To receive a Telegram notification when a PR is created:
+To receive a Telegram notification when the sync creates or updates its PR:
 
 1. Create a Telegram bot:
    - Chat with [@BotFather](https://t.me/botfather) on Telegram

@@ -71,6 +71,8 @@ interface ApiError {
 
 const RETRYABLE_REASONS = new Set(["rateLimitExceeded", "userRateLimitExceeded", "backendError"]);
 
+const backoff = (attempt: number) => new Promise((r) => setTimeout(r, 1000 * 2 ** (attempt - 1)));
+
 export class YouTubeClient {
   /** Every list call used here costs 1 quota unit (of 10,000/day by default). */
   quotaUsed = 0;
@@ -84,7 +86,15 @@ export class YouTubeClient {
 
     for (let attempt = 1; ; attempt++) {
       this.quotaUsed++;
-      const res = await fetch(url);
+      let res: Response;
+      try {
+        res = await fetch(url);
+      } catch (error) {
+        // A network error (DNS, a reset connection, a timeout) gets the same retries as a 5xx.
+        if (attempt >= MAX_ATTEMPTS) throw error;
+        await backoff(attempt);
+        continue;
+      }
       if (res.ok) return (await res.json()) as ListResponse<T>;
 
       const body = (await res.json().catch(() => ({}))) as ApiError;
@@ -94,7 +104,7 @@ export class YouTubeClient {
         const detail = body.error?.message ?? res.statusText;
         throw new Error(`YouTube API ${resource} failed (${res.status}${reason ? ` ${reason}` : ""}): ${detail}`);
       }
-      await new Promise((r) => setTimeout(r, 1000 * 2 ** (attempt - 1)));
+      await backoff(attempt);
     }
   }
 

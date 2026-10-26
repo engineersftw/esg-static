@@ -83,12 +83,16 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          OPERATION: ${{ steps.pr.outputs.pull-request-operation }}
         run: |
           PR_URL="${{ steps.pr.outputs.pull-request-url }}"
           PR_NUMBER="${{ steps.pr.outputs.pull-request-number }}"
 
+          # The sync reuses one branch, so most runs update the open PR rather than create one.
+          if [ "$OPERATION" = created ]; then WHAT="A new PR has been created"; else WHAT="The open PR has been updated"; fi
+
           MESSAGE="🎬 YouTube Sync Complete%0A%0A"
-          MESSAGE="${MESSAGE}A new PR has been created with synced content.%0A%0A"
+          MESSAGE="${MESSAGE}${WHAT} with synced content.%0A%0A"
           MESSAGE="${MESSAGE}📱 PR: <a href='${PR_URL}'>PR #${PR_NUMBER}</a>%0A"
           MESSAGE="${MESSAGE}📊 <b>Repository:</b> ${{ github.repository }}"
 
