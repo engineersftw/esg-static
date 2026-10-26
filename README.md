@@ -56,7 +56,7 @@ cd apps/website
 cp env.example .env      # HOSTNAME, PUBLIC_GTM_ID
 pnpm dev                 # http://localhost:4321
 pnpm build               # → dist/
-HOSTNAME=https://engineers.sg PUBLIC_GTM_ID=GTM-XXXXXXX pnpm build && pnpm deploy:production
+HOSTNAME=https://engineers.sg PUBLIC_GTM_ID=GTM-XXXXXXX PUBLIC_ALLOW_INDEXING=true pnpm build && pnpm deploy:production
 ```
 
 See **[apps/website/README.md](apps/website/README.md)** for the content format, routes, old-URL redirects, helpers, environment variables and deployment.
