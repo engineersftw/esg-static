@@ -6,7 +6,7 @@ export interface Entry {
   data: { slug: string; links?: { type: string; url: string }[] };
 }
 
-/** Rails ids were plain numbers; entries added since have no old URLs. */
+/** Rails ids were plain numbers; entries added since have no old URLs. Same as `isLegacyId` in packages/content/src/ids.ts (see `compareIds` in collections.ts for why it is copied). */
 const isLegacyId = (id: string) => /^\d+$/.test(id);
 
 /** `id` → slug for the entries that came from Rails. */
