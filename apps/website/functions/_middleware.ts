@@ -14,7 +14,7 @@
  * site. public/_routes.json keeps the function off paths that can never match.
  */
 import slugs from '../dist/legacy-redirects.json';
-import { cleanedFallback, cleanLegacyPath, handleKey, pastLastPage, redirectUrl } from '../src/helpers/legacyRedirects';
+import { cleanedFallback, cleanLegacyPath, handleKey, decodePath, pastLastPage, redirectUrl } from '../src/helpers/legacyRedirects';
 
 type Collection = Exclude<keyof typeof slugs, 'presenterHandle'>;
 
@@ -70,12 +70,8 @@ function target(pathname: string): string | null {
 
 export const onRequest = async ({ request, next }: Context): Promise<Response> => {
   const url = new URL(request.url);
-  let path: string;
-  try {
-    path = decodeURIComponent(url.pathname);
-  } catch {
-    return next(); // not valid percent-encoding (a scanner probe or a broken link): no rule can match it
-  }
+  const path = decodePath(url.pathname);
+  if (path === null) return next(); // a scanner probe or a broken link: no rule can match it
   const cleaned = cleanLegacyPath(path);
   // A path with junk removed goes to its clean form even when no ID rule matches it (that page, if
   // it exists, is a static one).

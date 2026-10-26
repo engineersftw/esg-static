@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanedFallback, cleanLegacyPath, handleKey, handleSlugs, pastLastPage, redirectUrl, slugsById, xHandle, type Entry } from './legacyRedirects';
+import { cleanedFallback, cleanLegacyPath, decodePath, handleKey, handleSlugs, pastLastPage, redirectUrl, slugsById, xHandle, type Entry } from './legacyRedirects';
 
 const presenter = (id: string, slug: string, x?: string): Entry => ({
   id,
@@ -114,6 +114,17 @@ describe('cleanedFallback', () => {
     expect(cleanedFallback('//evil.com\\', cleanLegacyPath('//evil.com\\'))).toBeNull();
     expect(cleanedFallback('/\\evil.com&sa=U', cleanLegacyPath('/\\evil.com&sa=U'))).toBeNull();
     expect(cleanedFallback('///evil.com&sa=U', cleanLegacyPath('///evil.com&sa=U'))).toBeNull();
+  });
+});
+
+describe('decodePath', () => {
+  it('decodes valid percent-encoding', () => {
+    expect(decodePath('/video/caf%C3%A9')).toBe('/video/café');
+  });
+
+  it('is null for invalid percent-encoding, which the function leaves to the static 404', () => {
+    expect(decodePath('/%c0%ae%c0%ae/')).toBeNull();
+    expect(decodePath('/video/100%-uptime--123')).toBeNull();
   });
 });
 

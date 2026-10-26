@@ -71,6 +71,15 @@ export function cleanedFallback(path: string, cleaned: string): string | null {
   return cleaned !== path && !/^[/\\]{2}/.test(cleaned) ? cleaned : null;
 }
 
+/** The percent-decoded path, or null when it isn't valid percent-encoding (`/%c0%ae`), which `decodeURIComponent` rejects. */
+export function decodePath(pathname: string): string | null {
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * The absolute URL to redirect `location` to, keeping the request's query string, or null when it
  * would leave the site. `new URL` drops tabs and newlines, so a path like `/\t/evil.com` (which
