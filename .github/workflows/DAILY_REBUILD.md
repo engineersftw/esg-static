@@ -16,7 +16,7 @@ Until the secret is set, the workflow succeeds without doing anything and says s
 
 ## Notes
 
-- A hook rebuilds from Git, so it doesn't replace a manual upload: `pnpm deploy:production` uploads `dist/` straight to a Pages branch named `production`, which isn't the project's production branch (`main`), and the hook knows nothing about it. The live site is the `main` build.
+- A hook rebuilds from Git, so it doesn't replace a manual upload: `pnpm deploy:production` uploads `dist/` straight to the production branch (`main`) from a local build, and the next hook or Git build of `main` replaces it. The live site is the latest `main` build.
 - The hook builds the branch it was created for, with the project's environment variables (`HOSTNAME`, `PUBLIC_ALLOW_INDEXING`, ...). It doesn't touch `staging` previews, which have no daily rebuild.
 - If DevsGoWhere's feed can't be read during the build, the build warns and leaves out `/cal` (see `apps/website/README.md`), so the calendar URL returns 404 until the next good build. Check the build log if a subscribed calendar goes missing.
 - The workflow only calls the hook; it doesn't wait for the build or report its result. Look in the Cloudflare dashboard for failed builds.

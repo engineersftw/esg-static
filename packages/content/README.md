@@ -10,7 +10,7 @@ import { readEntries, writeEntryFiles, videoEntryId, slugAllocator } from "@esg/
 
 ### Files (`files.ts`)
 
-`readEntries`, `parseEntry`, `serializeEntry`, `writeEntryFiles` and `toBody`. A file is frontmatter with one `key: <JSON value>` line per field, then the description as the Markdown body. Serialization matches pg-export byte for byte, so an entry that is read and written back unchanged produces identical text, and tools never rewrite files they didn't change.
+`readEntries`, `parseEntry`, `serializeEntry`, `writeEntryFiles` and `toBody`. A file is frontmatter with one `key: <JSON value>` line per field, then the description as the Markdown body. Serialization is byte-stable, so an entry that is read and written back unchanged produces identical text, and tools never rewrite files they didn't change.
 
 ### Entry IDs (`ids.ts`)
 
@@ -35,7 +35,7 @@ Each link is stored on one side only: a video lists its `organizations` and `pre
 
 ### Slugs (`slug.ts`)
 
-`slugify` (the same rules as pg-export) and `slugAllocator`, which keeps slugs unique within a collection with `-2`, `-3`, … and slugifies the fallback used for titles with no ASCII.
+`slugify` (the rules the Rails-era slugs were made with) and `slugAllocator`, which keeps slugs unique within a collection with `-2`, `-3`, … and slugifies the fallback used for titles with no ASCII.
 
 ### Profile links (`profileLinks.ts`)
 

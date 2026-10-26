@@ -1,6 +1,11 @@
 import { type CollectionEntry, getCollection, getEntries } from 'astro:content';
 
-/** Entry IDs in order: legacy numeric IDs by number, then the others (`yt-…`, random) as text. */
+/**
+ * Entry IDs in order: legacy numeric IDs by number, then the others (`yt-…`, random) as text.
+ * Same rule as `compareIds` in packages/content/src/ids.ts: change them together. It isn't imported
+ * from there: the site doesn't depend on @esg/content, and the Worker bundle (legacyRedirects.ts) can't
+ * include ids.ts, which imports node:crypto (the Pages project has no nodejs_compat).
+ */
 export function compareIds(a: string, b: string) {
   const [legacyA, legacyB] = [/^\d+$/.test(a), /^\d+$/.test(b)];
   if (legacyA && legacyB) return Number(a) - Number(b);

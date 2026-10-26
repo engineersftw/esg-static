@@ -26,7 +26,6 @@ Commands:
       --x, --website, --linkedin, --instagram, --tiktok
                         Its links (see links below)
       --image <url>     Photo URL
-      --email <email>   Not shown on the site
       --bio <text>      Biography (the Markdown body)
       --slug <slug>     Instead of one made from the name
       --inactive        Create it hidden from the site
@@ -156,7 +155,6 @@ const { values: args, positionals } = parseArgs({
     // links
     remove: { type: "string", multiple: true, default: [] },
     image: { type: "string" },
-    email: { type: "string" },
     bio: { type: "string" },
     // organization create
     logo: { type: "string" },
@@ -217,7 +215,6 @@ function presenterCreate(cms: Cms) {
     byline: args.byline,
     links: linkArgs(),
     imageUrl: args.image,
-    email: args.email,
     bio: args.bio,
     slug: args.slug,
     active: !args.inactive,

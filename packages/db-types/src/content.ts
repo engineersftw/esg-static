@@ -1,6 +1,6 @@
 /**
  * Frontmatter of the Astro content collections (`video`, `organization`, `presenter`, `playlist`) that
- * pg-export writes as Markdown, one file per entry at `<collection>/<id>.md`.
+ * are stored as Markdown, one file per entry at `<collection>/<id>.md`.
  *
  * Field names follow apps/website/src/content.config.ts (`playlist` follows the same style). The entry
  * ID is the file name: the database ID as a string for entries from the Rails site, and for newer
@@ -84,7 +84,7 @@ export interface Presenter {
   presenterByline: string | null;
   /** In display order. A `website` link is a personal site; LinkedIn profiles are `linkedin` links. */
   links: ProfileLink[];
-  /** Null unless pg-export ran with --include-emails. */
+  /** Always null in the committed content: it is public. */
   email: string | null;
   imageUrl: string | null;
   slug: string;

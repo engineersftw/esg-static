@@ -64,7 +64,7 @@ describe("createOrganization", () => {
     expect(cms.organizationNames()).toEqual(["Alpha", "beta"]);
   });
 
-  it("takes a random ID, makes a unique slug and writes the fields in pg-export order", () => {
+  it("takes a random ID, makes a unique slug and writes the fields in content-file order", () => {
     const cms = new Cms(content({ organization: [organization("5"), organization("9", { slug: "tech-circle" })] }), { randomId: counterIds() });
     const o = cms.createOrganization({
       name: " Tech Circle ",
@@ -239,7 +239,7 @@ describe("editLinks", () => {
 });
 
 describe("createPresenter", () => {
-  it("takes a random ID, makes a unique slug and writes the fields in pg-export order", () => {
+  it("takes a random ID, makes a unique slug and writes the fields in content-file order", () => {
     const cms = new Cms(content({ presenter: [presenter("7", "Jane Doe"), presenter("12", "Someone", { slug: "john-tan" })] }), { randomId: counterIds() });
     const p = cms.createPresenter({
       name: "  John Tan ",

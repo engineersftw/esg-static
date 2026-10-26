@@ -4,7 +4,7 @@ import { z } from 'astro/zod';
 import { PROFILE_LINK_TYPES } from './consts';
 import { ISO_DURATION } from './helpers/duration';
 
-// Markdown written by pg-export (`-f markdown`), one <id>.md per entry; frontmatter types are in
+// Markdown content files (the @esg/content format), one <id>.md per entry; frontmatter types are in
 // @esg/db-types/content. The glob loader would otherwise use the frontmatter `slug` as the entry
 // ID, but references between collections use the entry ID, which is the file name.
 const fromContent = (collection: string) =>

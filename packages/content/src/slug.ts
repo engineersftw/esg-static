@@ -1,4 +1,4 @@
-/** URL slugs for content entries, generated the same way as pg-export's. */
+/** URL slugs for content entries, generated the same way as the Rails-era ones. */
 
 export function slugify(title: string, fallback = "playlist"): string {
   const slug = title
