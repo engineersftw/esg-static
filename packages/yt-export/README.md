@@ -48,7 +48,7 @@ The daily GitHub Action (`.github/workflows/sync-youtube.yml`, see `SYNC_YOUTUBE
 - **New entries:** a video with no file gets `video/yt-<YouTube ID>.md`, and a playlist `playlist/yt-<playlist ID>.md`, each with a slug unique in its collection. New videos are active only if public, with no organizations or presenters; link those with `pnpm cms`. A new playlist with no available videos is skipped. The sync refuses to create an ID that differs from an existing one only in case, since those files would overwrite each other on macOS and Windows.
 - **Playlist membership** is additive and stored on the playlist: videos YouTube lists in a playlist are appended to its `videos`. Nothing is removed, so curated order survives.
 - **Nothing is deleted.** `raw.json` records which IDs were requested, so an existing entry YouTube didn't return is reported as *not returned* (private or deleted) or *not fetched* (never asked about). Only `--deactivate-missing` acts on the first kind.
-- Files are written byte-for-byte in pg-export's format, so unchanged entries are never rewritten.
+- Files are written byte-for-byte in the `@esg/content` format, so unchanged entries are never rewritten.
 
 The standalone JSON export doesn't merge with anything: IDs start at 1 (oldest first), private and deleted videos are dropped, and unlisted ones get `active: false`.
 

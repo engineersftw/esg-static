@@ -1,7 +1,7 @@
 /**
- * Read and write the Astro content collection files that pg-export produces
+ * Read and write the Astro content collection files
  * (`<collection>/<id>.md`): frontmatter with one `key: <JSON value>` line per field, then the
- * description as the Markdown body. Serialization matches pg-export byte for byte, so an entry that
+ * description as the Markdown body. Every tool writes through here, so an entry that
  * is parsed and serialized unchanged produces identical text.
  */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";

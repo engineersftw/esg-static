@@ -14,7 +14,7 @@ One interface per table in the old Rails database (`Episode`, `Organization`, `P
 - timestamps are UTC text (`"2015-05-07 15:32:29.127974"`), not `Date`;
 - `bigint` and `numeric` columns are strings.
 
-`VideoSite` holds the integer values of `episodes.video_site`. pg-export and yt-export's standalone export use these types.
+`VideoSite` holds the integer values of `episodes.video_site`. yt-export's standalone export uses these types.
 
 ## `@esg/db-types/content` (`src/content.ts`)
 
@@ -23,7 +23,7 @@ The frontmatter of the site's content files, one interface per collection: `Vide
 - The entry ID (`id`) is the file name: a numeric ID for entries from the old site, `yt-<YouTube ID>` or a random ID for newer ones (see `@esg/content`'s `ids.ts`).
 - Relations are lists of entry IDs, stored on one side only: a video's `organizations` and `presenters`, a playlist's `videos` and `subPlaylists`.
 
-If you change a content field, update `content.ts`, the zod schema in `apps/website/src/content.config.ts`, and every tool that writes the field (pg-export, yt-export's sync, cms).
+If you change a content field, update `content.ts`, the zod schema in `apps/website/src/content.config.ts`, and every tool that writes the field (yt-export's sync, cms).
 
 ```bash
 pnpm typecheck
