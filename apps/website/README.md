@@ -258,7 +258,7 @@ Videos people submit through the **Submit a video** issue form arrive as pull re
 
 New videos from the YouTube sync come in with no organizations or presenters. Link them with the `cms` tool (`pnpm cms assign --video <ref> --presenter <ref> --organization <ref>` from the repo root), which writes each link where it belongs, instead of editing the frontmatter by hand. See [`packages/cms/README.md`](../../packages/cms/README.md), and [`packages/yt-export/README.md`](../../packages/yt-export/README.md) for the sync's matching rules, `--deactivate-missing` and `--exclude-video`.
 
-Presenter emails stay `null`: `content/` is committed and published.
+Keep presenter `email` null in `content/`, which is committed and published (the site never shows it, but the files are public). `pnpm cms presenter create --email` would write one, so don't pass it.
 
 After any change, run `pnpm content` from the repo root (`pnpm cms check`, which CI also runs): it reports links to missing entries, IDs that differ only in case, and leftover reverse lists. Then `pnpm build`.
 
