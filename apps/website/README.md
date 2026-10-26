@@ -264,5 +264,4 @@ After any change, run `pnpm content` from the repo root (`pnpm cms check`, which
 
 ## Known leftovers
 
-- **Template remnant:** `about.astro` still uses the template's `BlogPost.astro` layout.
 - **Not ported from the old site yet:** the static pages (`/events`, `/bookings`, `/live`, `/fb_live`, `/support_us`, `/screenshots`, `/terms`), the old search URLs (`/episodes/search`, `/presenters/search`; search is now `/search` and the list pages' name filters), newsletter signup, `/videos/:tag` and the `/api/*` JSON endpoints.
