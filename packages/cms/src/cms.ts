@@ -58,7 +58,6 @@ export interface NewPresenter {
   byline?: string | null;
   /** A handle or URL per link type (a website is a personal site); written in `PROFILE_LINK_TYPES` order. */
   links?: Partial<Record<ProfileLinkType, string | null>>;
-  email?: string | null;
   imageUrl?: string | null;
   /** The biography, the Markdown body. */
   bio?: string | null;
@@ -361,7 +360,7 @@ export class Cms {
       presenterName: name,
       presenterByline: blank(input.byline),
       links,
-      email: blank(input.email),
+      email: null, // the content is public, so no address is ever stored
       imageUrl: blank(input.imageUrl),
       slug,
       active: input.active ?? true,
