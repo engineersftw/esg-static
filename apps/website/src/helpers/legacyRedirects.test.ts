@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanedFallback, cleanLegacyPath, handleKey, handleSlugs, pastLastPage, slugsById, xHandle, type Entry } from './legacyRedirects';
+import { cleanedFallback, cleanLegacyPath, handleKey, handleSlugs, pastLastPage, redirectUrl, slugsById, xHandle, type Entry } from './legacyRedirects';
 
 const presenter = (id: string, slug: string, x?: string): Entry => ({
   id,
@@ -114,5 +114,22 @@ describe('cleanedFallback', () => {
     expect(cleanedFallback('//evil.com\\', cleanLegacyPath('//evil.com\\'))).toBeNull();
     expect(cleanedFallback('/\\evil.com&sa=U', cleanLegacyPath('/\\evil.com&sa=U'))).toBeNull();
     expect(cleanedFallback('///evil.com&sa=U', cleanLegacyPath('///evil.com&sa=U'))).toBeNull();
+  });
+});
+
+describe('redirectUrl', () => {
+  const url = (path: string) => new URL(`https://engineers.sg${path}`);
+
+  it('keeps the query string on the site', () => {
+    expect(redirectUrl('/video/a-talk', url('/v/601?t=30'))?.href).toBe('https://engineers.sg/video/a-talk?t=30');
+  });
+
+  it('refuses a path that parses as another site', () => {
+    // `new URL` drops the tab, so "/\t/evil.com" would otherwise be https://evil.com/
+    const cleaned = cleanLegacyPath(decodeURIComponent('/%09/evil.com%5C'));
+    const location = cleanedFallback('/\t/evil.com\\', cleaned);
+    expect(location).toBe('/\t/evil.com');
+    expect(redirectUrl(location!, url('/%09/evil.com%5C'))).toBeNull();
+    expect(redirectUrl('/\n/evil.com', url('/'))).toBeNull();
   });
 });

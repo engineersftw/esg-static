@@ -14,7 +14,7 @@
  * site. public/_routes.json keeps the function off paths that can never match.
  */
 import slugs from '../dist/legacy-redirects.json';
-import { cleanedFallback, cleanLegacyPath, handleKey, pastLastPage } from '../src/helpers/legacyRedirects';
+import { cleanedFallback, cleanLegacyPath, handleKey, pastLastPage, redirectUrl } from '../src/helpers/legacyRedirects';
 
 type Collection = Exclude<keyof typeof slugs, 'presenterHandle'>;
 
@@ -70,13 +70,19 @@ function target(pathname: string): string | null {
 
 export const onRequest = async ({ request, next }: Context): Promise<Response> => {
   const url = new URL(request.url);
-  const path = decodeURIComponent(url.pathname);
+  let path: string;
+  try {
+    path = decodeURIComponent(url.pathname);
+  } catch {
+    return next(); // not valid percent-encoding (a scanner probe or a broken link): no rule can match it
+  }
   const cleaned = cleanLegacyPath(path);
   // A path with junk removed goes to its clean form even when no ID rule matches it (that page, if
   // it exists, is a static one).
   const location = target(cleaned) ?? cleanedFallback(path, cleaned);
   // A presenter whose slug is their X handle maps to their own page: no redirect to itself.
-  if (location && location !== path) return Response.redirect(new URL(location + url.search, url), 301);
+  const to = location && location !== path ? redirectUrl(location, url) : null;
+  if (to) return Response.redirect(to, 301);
   // `/organization/<slug>/<n>` and `/presenter/<slug>/<n>` are real pages up to the last one. Beyond
   // it (old Rails pagination, or a stale link), the entry's first page is the best answer.
   const past = pastLastPage(cleaned);
