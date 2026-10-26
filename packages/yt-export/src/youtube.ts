@@ -89,13 +89,14 @@ export class YouTubeClient {
       let res: Response;
       try {
         res = await fetch(url);
+        if (res.ok) return (await res.json()) as ListResponse<T>;
       } catch (error) {
-        // A network error (DNS, a reset connection, a timeout) gets the same retries as a 5xx.
+        // A network error (DNS, a reset connection, a timeout, a body cut off mid-read) gets the same
+        // retries as a 5xx.
         if (attempt >= MAX_ATTEMPTS) throw error;
         await backoff(attempt);
         continue;
       }
-      if (res.ok) return (await res.json()) as ListResponse<T>;
 
       const body = (await res.json().catch(() => ({}))) as ApiError;
       const reason = body.error?.errors?.[0]?.reason ?? "";
