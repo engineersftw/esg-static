@@ -71,6 +71,26 @@ export function cleanedFallback(path: string, cleaned: string): string | null {
   return cleaned !== path && !/^[/\\]{2}/.test(cleaned) ? cleaned : null;
 }
 
+/** The percent-decoded path, or null when it isn't valid percent-encoding (`/%c0%ae`), which `decodeURIComponent` rejects. */
+export function decodePath(pathname: string): string | null {
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The absolute URL to redirect `location` to, keeping the request's query string, or null when it
+ * would leave the site. `new URL` drops tabs and newlines, so a path like `/\t/evil.com` (which
+ * passes the `//` check in `cleanedFallback`) becomes `https://evil.com/`; comparing origins catches
+ * that and anything like it.
+ */
+export function redirectUrl(location: string, url: URL): URL | null {
+  const target = new URL(location + url.search, url);
+  return target.origin === url.origin ? target : null;
+}
+
 /** The key in `presenterHandle` for the handle in an old URL: lowercase, without a leading `@` (`/s/@Jane`). */
 export const handleKey = (handle: string): string => handle.replace(/^@/, '').toLowerCase();
 
