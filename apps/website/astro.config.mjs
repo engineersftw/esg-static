@@ -1,13 +1,11 @@
 // @ts-check
 import { defineConfig } from "astro/config";
-import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 
 // https://astro.build/config
 export default defineConfig({
   site: process.env.HOSTNAME ? process.env.HOSTNAME : "http://localhost:4321",
   integrations: [
-    mdx(),
     // The search page is a tool, not content.
     sitemap({ filter: (page) => new URL(page).pathname !== "/search/" }),
   ],
