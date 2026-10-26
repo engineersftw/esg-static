@@ -27,7 +27,7 @@ Run these from `apps/website/`:
 | `pnpm preview` | Serves `dist/` locally, without the Pages Function (so no legacy redirects) |
 | `pnpm dev:functions` | Builds, then serves `dist/` the way Cloudflare does, including the Pages Functions (legacy redirects, search), at http://localhost:8788. Use it to test anything in `functions/` or `public/_redirects`. Skip the build with `pnpm exec wrangler pages dev ./dist` |
 | `pnpm run deploy` | Uploads `dist/` to Cloudflare Pages as a preview deployment (not `pnpm deploy`, which is a pnpm built-in) |
-| `pnpm deploy:production` | Uploads `dist/` to the production branch |
+| `pnpm deploy:production` | Uploads `dist/` to the project's production branch (`main`), replacing the live site until the next Git build. Prefer promoting `staging` |
 | `pnpm astro …` | The Astro CLI, e.g. `pnpm astro sync` to regenerate content types |
 
 The site has Vitest tests for its pure helpers (`pnpm test`), such as the one that finds links in descriptions. The tools that produce its data have their own (`pnpm test` at the repo root runs all of them).
@@ -47,10 +47,10 @@ Both are read at **build time**, from `.env` locally or `.env.production` for pr
 
 The Cloudflare Pages project builds from GitHub. Its build settings must use **`apps/website` as the root directory**, with `dist` as the output directory. The build picks its Node version from `apps/website/.nvmrc`, a copy of the repo's `.nvmrc`; update both together. Cloudflare only looks for `functions/` in the root directory, so with the repo root there, the site deploys but the legacy-URL redirects don't. Set `HOSTNAME`, `PUBLIC_GTM_ID` and (production only) `PUBLIC_ALLOW_INDEXING` as environment variables in the project settings, because they are read at build time.
 
-To deploy by hand instead, `pnpm run deploy` (preview) and `pnpm deploy:production` upload whatever is in `dist/`, so build with the production settings first:
+To deploy by hand instead, `pnpm run deploy` (preview) and `pnpm deploy:production` upload whatever is in `dist/`, so build with the production settings first (without `PUBLIC_ALLOW_INDEXING=true`, `robots.txt` blocks search engines, and `deploy:production` publishes that to the live site):
 
 ```bash
-HOSTNAME=https://engineers.sg PUBLIC_GTM_ID=GTM-XXXXXXX pnpm build
+HOSTNAME=https://engineers.sg PUBLIC_GTM_ID=GTM-XXXXXXX PUBLIC_ALLOW_INDEXING=true pnpm build
 pnpm deploy:production
 ```
 
@@ -264,6 +264,5 @@ After any change, run `pnpm content` from the repo root (`pnpm cms check`, which
 
 ## Known leftovers
 
-- **Template remnants:** `about.astro` still uses the template's `BlogPost.astro` layout, and `public/blog-placeholder-*.jpg` are unused.
-- **Unused files:** `check_query.js` is an old Supabase scratch script whose dependency isn't installed, and `project.json` is an unused Nx config.
+- **Template remnant:** `about.astro` still uses the template's `BlogPost.astro` layout.
 - **Not ported from the old site yet:** the static pages (`/events`, `/bookings`, `/live`, `/fb_live`, `/support_us`, `/screenshots`, `/terms`), the old search URLs (`/episodes/search`, `/presenters/search`; search is now `/search` and the list pages' name filters), newsletter signup, `/videos/:tag` and the `/api/*` JSON endpoints.

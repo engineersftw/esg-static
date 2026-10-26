@@ -38,7 +38,7 @@ pnpm cms --help    # the content editor (see "cms" below)
 
 ## apps/website
 
-An Astro 7 static site (MDX, sitemap and RSS integrations, `astro-embed` for the YouTube player) that was started from the Astro blog template. Run these from inside `apps/website/`:
+An Astro 7 static site (sitemap and RSS integrations, `astro-embed` for the YouTube player) that was started from the Astro blog template. Run these from inside `apps/website/`:
 
 ```bash
 pnpm dev                 # astro dev, http://localhost:4321
@@ -46,7 +46,7 @@ pnpm build               # astro build → dist/
 pnpm preview
 pnpm dev:functions        # astro build, then wrangler pages dev ./dist (port 8788): the Pages Functions and _redirects work
 pnpm run deploy          # wrangler pages deploy ./dist --project-name esg-static (Cloudflare Pages)
-pnpm deploy:production   # same, with --branch production
+pnpm deploy:production   # same, with --branch main: replaces the live site until the next Git build
 ```
 
 The Cloudflare Pages project builds from GitHub, with root directory `apps/website` and output directory `dist`. The root directory matters: Cloudflare only finds `functions/` (the legacy redirects) in the root directory. Wrangler likewise compiles `functions/` from its working directory, so deploy by hand from `apps/website`. `pnpm deploy` is a pnpm built-in, so use `pnpm run deploy` for the preview script. `HOSTNAME`, `PUBLIC_GTM_ID` and `PUBLIC_ALLOW_INDEXING` are build-time variables, so they belong in the Pages project's environment settings.
@@ -96,9 +96,7 @@ The only tests are Vitest ones for pure helpers, such as `src/helpers/linkify.te
 - `tsconfig.json` extends the root `tsconfig.base.json` and then `astro/tsconfigs/strict`. Keep that order: the later one wins, and the base's `NodeNext` module settings would otherwise replace Astro's `Bundler` resolution (making every extensionless relative import an error).
 
 Known problems as of this scan:
-- `check_query.js` is a leftover scratch script (`pnpm check_query`) that queries Supabase, but `@supabase/supabase-js` is not a dependency and it needs `SUPABASE_URL`/`SUPABASE_KEY`. It does show the old table relationships (`episodes` ← `video_organizations`/`video_presenters`).
-- `project.json` is a leftover Nx config. It isn't used.
-- Template leftovers are still in use: `about.astro` uses the `BlogPost.astro` layout, and `public/blog-placeholder-*.jpg` are unused.
+- A template leftover is still in use: `about.astro` uses the `BlogPost.astro` layout.
 
 ## yt-export
 
