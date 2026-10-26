@@ -14,7 +14,7 @@ describe("append / without", () => {
 });
 
 describe("slugs", () => {
-  it("slugifies like pg-export and keeps them unique", () => {
+  it("slugifies the fallback and keeps them unique", () => {
     expect(slugify("Ünïcode & Friends!")).toBe("unicode-friends");
     expect(slugify("日本語", "presenter-1")).toBe("presenter-1");
     const next = slugAllocator(["jane-doe"]);

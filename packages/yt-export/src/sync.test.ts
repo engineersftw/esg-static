@@ -5,7 +5,7 @@ import { item, playlist, raw, video } from "./fixtures.js";
 import { planSync, type ExistingContent, type SyncWrite } from "./sync.js";
 
 // ---------------------------------------------------------------------------
-// Existing content, built the way pg-export writes it
+// Existing content, built the way the content files are written
 // ---------------------------------------------------------------------------
 function videoEntry(id: string, videoId: string, over: Partial<VideoEntry> = {}, body = "Old description"): Entry<VideoEntry> {
   const data: VideoEntry = {
@@ -205,7 +205,7 @@ describe("planSync: new videos", () => {
     expect(plan.videos).toMatchObject({ created: 2 });
   });
 
-  it("fills the frontmatter like pg-export and uses the description as the body", () => {
+  it("fills the frontmatter in content-file order and uses the description as the body", () => {
     const v = video("abc", "2023-11-03T06:41:58Z");
     v.snippet.title = "Hackware v7.9: HDMI!";
     v.snippet.description = "Speaker: Someone\r\n\r\nProduced by Engineers.SG\r\n";

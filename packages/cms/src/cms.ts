@@ -58,7 +58,6 @@ export interface NewPresenter {
   byline?: string | null;
   /** A handle or URL per link type (a website is a personal site); written in `PROFILE_LINK_TYPES` order. */
   links?: Partial<Record<ProfileLinkType, string | null>>;
-  email?: string | null;
   imageUrl?: string | null;
   /** The biography, the Markdown body. */
   bio?: string | null;
@@ -82,7 +81,7 @@ export interface NewOrganization {
   allowDuplicate?: boolean;
 }
 
-/** The categories a playlist can have, as the site's pages and pg-export know them. */
+/** The categories a playlist can have, as the site's pages know them. */
 export const PLAYLIST_CATEGORIES = ["Conference", "Conference Track", "Meetup", "Tutorial", "Training", "Shows"] as const;
 
 export interface NewPlaylist {
@@ -355,13 +354,13 @@ export class Cms {
 
   createPresenter(input: NewPresenter): Presenter {
     const { name, id, slug, links } = this.prepareNew("presenter", input);
-    // Field order as pg-export writes it.
+    // Field order as the content files have it.
     const data: Presenter = {
       id,
       presenterName: name,
       presenterByline: blank(input.byline),
       links,
-      email: blank(input.email),
+      email: null, // the content is public, so no address is ever stored
       imageUrl: blank(input.imageUrl),
       slug,
       active: input.active ?? true,
@@ -372,7 +371,7 @@ export class Cms {
 
   createOrganization(input: NewOrganization): Organization {
     const { name, id, slug, links } = this.prepareNew("organization", input);
-    // Field order as pg-export writes it.
+    // Field order as the content files have it.
     const data: Organization = {
       id,
       orgTitle: name,

@@ -41,7 +41,7 @@ Commands that write take `--dry-run` (show what would change, write nothing), an
 
 - **IDs:** new presenters, organizations and hand-made playlists get a random 10-character ID (`presenter/k3v9qz2m7d.md`). A playlist made with `--playlist-id` is `playlist/yt-<id>.md`, and a submitted video `video/yt-<YouTube ID>.md`. These can't clash with another contributor's new entries on another branch. Entries from the old site keep their numeric IDs.
 - **Links are stored on one side only:** `assign` adds to a video's `presenters` and `organizations`, and to a playlist's `videos`. Presenters' and organizations' files aren't touched, so adding a talk doesn't edit them. Linking to an inactive entry warns, since the site won't show it.
-- **Only changed files are written,** in the same format as pg-export, so they diff cleanly.
+- **Only changed files are written,** in the same format as every other tool (`@esg/content`), so they diff cleanly.
 
 ## check
 

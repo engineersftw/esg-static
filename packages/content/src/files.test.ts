@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseEntry, readEntries, serializeEntry, toBody, writeEntryFiles } from "./files.js";
 
-// A file exactly as pg-export writes it.
+// A file exactly as the tools write it.
 const FILE = `---
 id: "4442"
 videoId: "r_GiEIe_oZk"

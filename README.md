@@ -7,7 +7,6 @@ This repo holds the new site and the tools that moved the old site's data into i
 | Package | Path | What it does |
 |---|---|---|
 | `@esg/static-website` | [`apps/website`](apps/website/README.md) | The Astro site, built from Markdown content files |
-| `@esg/pg-export` | [`packages/pg-export`](packages/pg-export/README.md) | Dumps a Postgres database to JSON, CSV or NDJSON, or writes the Engineers.SG data as the site's Markdown content |
 | `@esg/yt-export` | [`packages/yt-export`](packages/yt-export/README.md) | Pulls videos and playlists from the YouTube Data API and syncs them into the site's content |
 | `@esg/cms` | [`packages/cms`](packages/cms/README.md) | Command-line editor for the content: create presenters and organizations, edit their links, link videos to presenters, organizations and playlists, add community-submitted videos |
 | `@esg/content` | [`packages/content`](packages/content/README.md) | Shared code for the content files: reading and writing them, entry IDs, slugs, links and profile links |
@@ -16,11 +15,9 @@ This repo holds the new site and the tools that moved the old site's data into i
 ## How the pieces fit
 
 ```
-old Rails DB (Heroku Postgres)
-   │  pg-export -f json                       YouTube channel
-   ▼                                              │
-output/backup/*.json  ── pg-export -f markdown ─┐ │ yt-export --content
-                                                ▼ ▼
+                       YouTube channel        cms, issue forms
+                              │ yt-export --content │
+                              ▼                     ▼
                            apps/website/content/{video,organization,presenter,playlist}/<id>.md
                                                 │
                                                 │ astro build
@@ -28,7 +25,7 @@ output/backup/*.json  ── pg-export -f markdown ─┐ │ yt-export --conten
                                     apps/website/dist/  ──  wrangler  ──▶  Cloudflare Pages
 ```
 
-The old database was exported once to `output/backup/`. `pg-export` turned that into the site's Markdown content, which is committed in `apps/website/content/`. From here on, `yt-export` keeps the content up to date with the YouTube channel (daily, through a GitHub Action), `cms` is used to curate it (presenters, organizations, playlists) and adds the videos people submit through a GitHub issue form, and the site is built from the content alone. Nothing talks to a database at build or run time.
+The old Rails database (Heroku Postgres, now retired) was exported once to `output/backup/` and turned into the site's Markdown content, which is committed in `apps/website/content/`. The tool that did it, `pg-export`, has been removed. From here on, `yt-export` keeps the content up to date with the YouTube channel (daily, through a GitHub Action), `cms` is used to curate it (presenters, organizations, playlists) and adds the videos people submit through a GitHub issue form, and the site is built from the content alone. Nothing talks to a database at build or run time.
 
 ## Getting started
 
@@ -42,7 +39,7 @@ pnpm test           # every package's tests
 pnpm typecheck      # every package's type-check (the website's is `astro check`)
 pnpm lint           # ESLint over the whole repo (pnpm lint:fix to autofix)
 pnpm content        # check the content: links to missing entries, case clashes, leftover reverse lists
-pnpm build          # builds the website and pg-export
+pnpm build          # builds the website
 pnpm cms --help     # the content editor
 ```
 
@@ -90,18 +87,7 @@ Every command, refs, IDs and the submission flow: **[packages/cms/README.md](pac
 
 ## packages/content
 
-Shared code behind yt-export and cms: reading and writing the content files (byte-identical to pg-export's output, so unchanged files are never rewritten), entry IDs (numeric for the old site's entries, `yt-<YouTube ID>` or random for new ones), one-sided links, slugs and profile links. See **[packages/content/README.md](packages/content/README.md)**.
-
-## packages/pg-export
-
-A general-purpose Postgres export CLI (one file per table plus `schema.json`, in one consistent snapshot), with an Engineers.SG-specific Markdown mode that produced the site's content from the old database. It was used once to make `output/backup/` and the first `apps/website/content/`.
-
-```bash
-cd packages/pg-export
-node dist/export.js --app <heroku-app> -f json -o ../../output/backup
-```
-
-The Markdown mode **overwrites** files in its output directory, so never point it at `apps/website/content` unless you mean to start over. Options and output format: **[packages/pg-export/README.md](packages/pg-export/README.md)**.
+Shared code behind yt-export and cms: reading and writing the content files (one fixed format, so unchanged files are never rewritten), entry IDs (numeric for the old site's entries, `yt-<YouTube ID>` or random for new ones), one-sided links, slugs and profile links. See **[packages/content/README.md](packages/content/README.md)**.
 
 ## packages/db-types
 
@@ -125,7 +111,6 @@ apps/website/          the Astro site (content/ holds the data)
 packages/cms/          content editor CLI
 packages/content/      shared content file read/write, slugs and links
 packages/db-types/     shared types
-packages/pg-export/    Postgres export / Markdown generator
 packages/yt-export/    YouTube sync
 docs/                  design notes, e.g. content-id-migration.md (why IDs and links work as they do)
 output/                generated data, git-ignored (backup/, yt-export runs, scratch exports)
@@ -139,4 +124,4 @@ CLAUDE.md              detailed notes for AI coding agents (also handy for human
 
 `output/backup/` is a dump of the production database. It includes admin password hashes and IP addresses (`users.json`) and presenter email addresses (`presenters.json`). It is git-ignored: keep it that way, and don't publish anything from it.
 
-The site's content is public. pg-export writes presenter emails as `null` unless you pass `--include-emails`, so don't pass it when writing into `apps/website/content`.
+The site's content is public, so presenter emails stay `null` in `apps/website/content`.
