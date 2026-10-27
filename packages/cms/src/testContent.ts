@@ -29,7 +29,6 @@ export function presenter(id: string, name: string, over: Partial<Presenter> = {
     presenterName: name,
     presenterByline: null,
     links: [],
-    email: null,
     imageUrl: null,
     slug: name.toLowerCase().replace(/ /g, "-"),
     active: true,
