@@ -259,7 +259,6 @@ id: "new1"
 presenterName: "John Tan"
 presenterByline: null
 links: [{"type":"x","url":"https://x.com/jtan"},{"type":"website","url":"https://jtan.dev"},{"type":"tiktok","url":"https://www.tiktok.com/@jtan.dev"}]
-email: null
 imageUrl: null
 slug: "john-tan-2"
 active: true

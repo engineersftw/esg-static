@@ -360,7 +360,6 @@ export class Cms {
       presenterName: name,
       presenterByline: blank(input.byline),
       links,
-      email: null, // the content is public, so no address is ever stored
       imageUrl: blank(input.imageUrl),
       slug,
       active: input.active ?? true,
