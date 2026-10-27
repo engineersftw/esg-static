@@ -84,8 +84,6 @@ export interface Presenter {
   presenterByline: string | null;
   /** In display order. A `website` link is a personal site; LinkedIn profiles are `linkedin` links. */
   links: ProfileLink[];
-  /** Always null in the committed content: it is public. */
-  email: string | null;
   imageUrl: string | null;
   slug: string;
   /** False for presenters hidden on the old site; the site leaves them out. */

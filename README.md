@@ -124,4 +124,4 @@ CLAUDE.md              detailed notes for AI coding agents (also handy for human
 
 `output/backup/` is a dump of the production database. It includes admin password hashes and IP addresses (`users.json`) and presenter email addresses (`presenters.json`). It is git-ignored: keep it that way, and don't publish anything from it.
 
-The site's content is public, so presenter emails stay `null` in `apps/website/content`.
+The site's content is public and has no email field: presenters have no email address in `apps/website/content`.

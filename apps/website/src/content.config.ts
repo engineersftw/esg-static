@@ -62,7 +62,6 @@ const presenter = defineCollection({
     presenterName: z.string(),
     presenterByline: z.string().nullable(),
     links,
-    email: z.string().nullable(),
     imageUrl: z.string().nullable(),
     slug: z.string(),
     active: z.boolean(),
