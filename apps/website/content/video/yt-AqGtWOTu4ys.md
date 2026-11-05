@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/AqGtWOTu4ys/hqdefault.jpg"
 slug: "setting-up-your-first-taqwright-test"
 organizations: ["198"]
 presenters: []
+topics: ["java-and-jvm","mobile-development"]
 active: true
 videoSite: "youtube"
 ---

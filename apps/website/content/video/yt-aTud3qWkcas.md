@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/aTud3qWkcas/hqdefault.jpg"
 slug: "quality-without-compromise-ai-powered-testing-from-figma-to-production-by-anand-bagmar"
 organizations: ["198"]
 presenters: []
+topics: ["mobile-development","machine-learning-and-ai","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

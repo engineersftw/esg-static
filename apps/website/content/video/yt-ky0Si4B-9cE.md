@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/ky0Si4B-9cE/hqdefault.jpg"
 slug: "lightningtalks2020-building-a-remote-testing-career-by-michelle-chua-lagare"
 organizations: ["198"]
 presenters: ["irz09iqvwj"]
+topics: ["software-architecture-and-practice","careers-and-learning"]
 active: true
 videoSite: "youtube"
 ---

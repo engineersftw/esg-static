@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/U7zCo7SO7Y8/hqdefault.jpg"
 slug: "open-source-for-everyone-why-and-how-to-take-the-leap-hackoberfest-2026"
 organizations: ["199"]
 presenters: ["lllf5q24hr"]
+topics: ["frontend-and-ui-frameworks","open-source-and-community"]
 active: true
 videoSite: "youtube"
 ---

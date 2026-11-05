@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/PEGvDWtjy5c/hqdefault.jpg"
 slug: "beyond-the-script-practical-test-automation-by-nikhil-bhandari"
 organizations: ["198"]
 presenters: []
+topics: ["apis-and-backend","devops-and-reliability","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

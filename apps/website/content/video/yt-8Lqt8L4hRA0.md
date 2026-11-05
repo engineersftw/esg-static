@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/8Lqt8L4hRA0/hqdefault.jpg"
 slug: "testing-ai-based-systems-why-traditional-qa-fails-by-tran-thuy-nha-truc"
 organizations: ["198"]
 presenters: []
+topics: ["machine-learning-and-ai","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

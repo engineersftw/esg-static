@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/FBxFg1XbuKE/hqdefault.jpg"
 slug: "playwright-style-codegen-for-mobile-taqwright-codegen"
 organizations: ["198"]
 presenters: []
+topics: ["mobile-development","cloud-platforms"]
 active: true
 videoSite: "youtube"
 ---

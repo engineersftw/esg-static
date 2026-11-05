@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/wIrTxGqSE74/hqdefault.jpg"
 slug: "day-2-ignites-devopsdays-singapore-2018"
 organizations: ["1"]
 presenters: ["1668","rn1h03bxo7","nf513u7t3s","rbfccbyqy9","1110"]
+topics: ["cloud-platforms","devops-and-reliability","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

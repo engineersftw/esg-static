@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/HMx7h2nNyXM/hqdefault.jpg"
 slug: "rag-n8n-context-aware-test-case-generation-by-priyank-shah"
 organizations: ["198"]
 presenters: []
+topics: ["software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

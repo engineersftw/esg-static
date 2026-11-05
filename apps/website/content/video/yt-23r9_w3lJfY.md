@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/23r9_w3lJfY/hqdefault.jpg"
 slug: "lightningtalks2020-practical-contract-testing-with-spring-cloud-contract-by-oleksandr-romanov"
 organizations: ["198"]
 presenters: ["rysht32i68"]
+topics: ["cloud-platforms","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

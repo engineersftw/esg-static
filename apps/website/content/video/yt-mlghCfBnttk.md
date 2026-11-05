@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/mlghCfBnttk/hqdefault.jpg"
 slug: "future-of-qa-in-an-ai-world-by-ashutosh-bhatawadekar"
 organizations: ["198"]
 presenters: []
+topics: ["devops-and-reliability","machine-learning-and-ai","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

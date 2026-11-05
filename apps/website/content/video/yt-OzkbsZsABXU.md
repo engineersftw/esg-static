@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/OzkbsZsABXU/hqdefault.jpg"
 slug: "supercharging-appium-with-mcp-by-srini-and-sai"
 organizations: ["198"]
 presenters: []
+topics: ["mobile-development","machine-learning-and-ai"]
 active: true
 videoSite: "youtube"
 ---

@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/3cjaNi1eQmE/hqdefault.jpg"
 slug: "using-mutation-testing-to-expose-your-tests-hidden-weaknesses-by-mesut-durukal"
 organizations: ["198"]
 presenters: []
+topics: ["software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

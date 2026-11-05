@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/QzqiuXRHTbw/hqdefault.jpg"
 slug: "the-next-gen-tester-navigating-the-era-of-artificial-intelligence-by-unmesh-gundecha"
 organizations: ["198"]
 presenters: []
+topics: ["machine-learning-and-ai"]
 active: true
 videoSite: "youtube"
 ---

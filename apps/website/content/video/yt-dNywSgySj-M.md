@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/dNywSgySj-M/hqdefault.jpg"
 slug: "lightningtalks2020-selenium-beyond-testing-by-sudharsan-selvaraj"
 organizations: ["198"]
 presenters: ["yx5jfvcw6d"]
+topics: ["software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

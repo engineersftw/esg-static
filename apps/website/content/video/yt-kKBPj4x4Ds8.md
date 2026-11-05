@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/kKBPj4x4Ds8/hqdefault.jpg"
 slug: "test-analytics-without-decisions-is-just-reporting-by-ujjwal-kumar"
 organizations: ["198"]
 presenters: []
+topics: ["data-science-and-analytics","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

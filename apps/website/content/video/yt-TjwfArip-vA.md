@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/TjwfArip-vA/hqdefault.jpg"
 slug: "building-with-ai-agents-223-pull-requests-in-11-days-hacktoberfest-2026"
 organizations: ["199"]
 presenters: ["1406"]
+topics: ["machine-learning-and-ai"]
 active: true
 videoSite: "youtube"
 ---

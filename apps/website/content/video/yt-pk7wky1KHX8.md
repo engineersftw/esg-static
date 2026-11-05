@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/pk7wky1KHX8/hqdefault.jpg"
 slug: "taqwright-in-3-minutes-install-scaffold-and-run-your-first-android-test"
 organizations: ["198"]
 presenters: []
+topics: ["frontend-and-ui-frameworks","apis-and-backend","mobile-development"]
 active: true
 videoSite: "youtube"
 ---

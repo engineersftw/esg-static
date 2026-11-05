@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/3VL4X_BaEH0/hqdefault.jpg"
 slug: "testing-reimagined-the-age-of-intelligence-by-jency-stella"
 organizations: ["198"]
 presenters: []
+topics: ["frontend-and-ui-frameworks","machine-learning-and-ai","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

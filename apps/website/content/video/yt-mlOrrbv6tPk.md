@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/mlOrrbv6tPk/hqdefault.jpg"
 slug: "lightningtalks2020-visual-testing-toolbox-by-martin-schneider"
 organizations: ["198"]
 presenters: ["avymarjbc6"]
+topics: ["software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

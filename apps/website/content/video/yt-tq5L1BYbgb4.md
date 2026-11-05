@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/tq5L1BYbgb4/hqdefault.jpg"
 slug: "performance-testing-via-simulation-by-goh-chun-lin"
 organizations: ["198"]
 presenters: []
+topics: ["frontend-and-ui-frameworks","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

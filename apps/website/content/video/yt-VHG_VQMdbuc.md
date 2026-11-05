@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/VHG_VQMdbuc/hqdefault.jpg"
 slug: "consul-connect-devopsdays-singapore-2018"
 organizations: ["1"]
 presenters: ["zn9jahroi6"]
+topics: ["apis-and-backend","cloud-platforms","devops-and-reliability","security-and-hacking"]
 active: true
 videoSite: "youtube"
 ---

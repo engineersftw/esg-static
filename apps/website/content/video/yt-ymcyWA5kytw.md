@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/ymcyWA5kytw/hqdefault.jpg"
 slug: "productize-yourself-as-a-tester-by-rahul-parwal"
 organizations: ["198"]
 presenters: []
+topics: ["machine-learning-and-ai","software-architecture-and-practice","careers-and-learning"]
 active: true
 videoSite: "youtube"
 ---
