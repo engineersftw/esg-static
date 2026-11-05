@@ -39,7 +39,7 @@ import GoogleTagManager from "./GoogleTagManager.astro";
           <path d="M15.5 15.5 21 21"></path>
         </svg>
       </a>
-      <button type="button" class="theme-toggle" aria-label="Switch between light and dark mode" title="Switch between light and dark mode">
+      <button type="button" class="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">
         <svg class="moon" viewBox="0 0 24 24" aria-hidden="true" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path>
         </svg>
@@ -87,11 +87,20 @@ import GoogleTagManager from "./GoogleTagManager.astro";
   </nav>
 </header>
 <script>
-  // The theme itself is set in BaseHead's inline script; this saves the visitor's choice.
-  document.querySelector(".theme-toggle")?.addEventListener("click", () => {
+  // The theme itself is set in BaseHead's inline script; this saves the visitor's choice. The label
+  // names what the button does next, so screen readers can tell which mode is on.
+  const themeButton = document.querySelector<HTMLButtonElement>(".theme-toggle");
+  const labelTheme = () => {
+    const label = `Switch to ${document.documentElement.dataset.theme === "dark" ? "light" : "dark"} mode`;
+    themeButton?.setAttribute("aria-label", label);
+    themeButton?.setAttribute("title", label);
+  };
+  labelTheme();
+  themeButton?.addEventListener("click", () => {
     const root = document.documentElement;
     const theme = root.dataset.theme === "dark" ? "light" : "dark";
     root.dataset.theme = theme;
+    labelTheme();
     try {
       localStorage.setItem("theme", theme);
     } catch {
