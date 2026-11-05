@@ -7,6 +7,7 @@ import FormattedDate from '../../components/FormattedDate.astro';
 import EntityImage from '../../components/EntityImage.astro';
 import LinkedText from '../../components/LinkedText.astro';
 import { YouTube } from 'astro-embed';
+import { TOPICS } from '@esg/content/topics';
 import { getActiveVideos, listedOrganizations, listedPresenters } from '../../helpers/collections';
 import { describeDuration, formatDuration } from '../../helpers/duration';
 import { videoJsonLd } from '../../helpers/jsonLd';
@@ -23,6 +24,7 @@ type Props = CollectionEntry<'video'>;
 const video = Astro.props;
 const organizations = listedOrganizations(await getEntries(video.data.organizations));
 const presenters = listedPresenters(await getEntries(video.data.presenters));
+const topics = TOPICS.filter((topic) => video.data.topics.includes(topic.slug));
 const duration = describeDuration(video.data.duration);
 const exactDuration = formatDuration(video.data.duration);
 ---
@@ -90,6 +92,28 @@ const exactDuration = formatDuration(video.data.duration);
         font-style: italic;
       }
 
+      .topics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        list-style: none;
+        margin: 0 0 1rem;
+        padding: 0;
+      }
+      .topics a {
+        display: block;
+        padding: 0.1rem 0.75rem;
+        border: 1px solid rgb(var(--gray-light));
+        border-radius: 999px;
+        background: rgb(var(--gray-light));
+        color: rgb(var(--gray-dark));
+        font-size: 0.8rem;
+        text-decoration: none;
+      }
+      .topics a:hover {
+        border-color: var(--orange);
+        color: var(--orange);
+      }
       .videoDescr {
         white-space: pre-line;
         overflow-wrap: anywhere;
@@ -144,6 +168,13 @@ const exactDuration = formatDuration(video.data.duration);
             <h1>{video.data.videoTitle}</h1>
             <hr />
           </div>
+          {topics.length > 0 && (
+            <ul class="topics" aria-label="Topics">
+              {topics.map((topic) => (
+                <li><a href={`/category/${topic.slug}`}>{topic.title}</a></li>
+              ))}
+            </ul>
+          )}
           <p class="videoDescr"><LinkedText text={video.body} /></p>
 
           {organizations.length > 0 && <h4>Organizations</h4>}
