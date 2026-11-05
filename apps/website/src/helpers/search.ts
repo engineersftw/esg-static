@@ -77,7 +77,7 @@ function matchStrength(text: string, term: string): number {
 const WEIGHTS = [
   ['title', 15, 10],
   ['people', 10, 7],
-  ['topics', 8, 6],
+  ['topics', 6, 5],
   ['playlists', 5, 4],
   ['description', 2, 1],
 ] as const;
