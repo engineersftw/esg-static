@@ -11,10 +11,53 @@
 	--gray: 96, 115, 159;
 	--gray-light: 229, 233, 240;
 	--gray-dark: 34, 41, 57;
-	--gray-gradient: rgba(var(--gray-light), 50%), #fff;
+	--orange: #f26a1b;
+	--bg: #fff;
+	--on-accent: #fff;
+	--gray-gradient: rgba(var(--gray-light), 50%), var(--bg);
 	--box-shadow:
 		0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%),
 		0 16px 32px rgba(var(--gray), 33%);
+	color-scheme: light dark;
+}
+/* --orange is the secondary accent: hover states, the active nav underline and the header stripe. It is
+   used on text only on hover, since it is too light for body text on white. */
+/* Dark mode: the same variables, flipped (the RGB triplets keep their roles: --black is the heading
+   color, --gray-light the card background), with a lighter --accent so links and buttons keep their
+   contrast on a dark page. It follows the browser's setting until the header's toggle sets
+   `data-theme` on <html> (BaseHead's inline script does, from the saved choice or the browser's
+   setting); a saved `light` or `dark` wins. The two blocks below must stay identical. */
+:root[data-theme='light'] {
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--accent: #8c9aff;
+		--accent-dark: #b3bcff;
+		--orange: #ff9a4d;
+		--on-accent: #0f1219;
+		--black: 241, 243, 247;
+		--gray: 148, 163, 196;
+		--gray-light: 38, 44, 58;
+		--gray-dark: 214, 219, 230;
+		--bg: #0f1219;
+		--box-shadow:
+			0 2px 6px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 40%), 0 16px 32px rgb(0 0 0 / 40%);
+	}
+}
+:root[data-theme='dark'] {
+	color-scheme: dark;
+	--accent: #8c9aff;
+	--accent-dark: #b3bcff;
+	--orange: #ff9a4d;
+	--on-accent: #0f1219;
+	--black: 241, 243, 247;
+	--gray: 148, 163, 196;
+	--gray-light: 38, 44, 58;
+	--gray-dark: 214, 219, 230;
+	--bg: #0f1219;
+	--box-shadow:
+		0 2px 6px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 40%), 0 16px 32px rgb(0 0 0 / 40%);
 }
 @font-face {
 	font-family: 'Atkinson';
@@ -35,7 +78,7 @@ body {
 	margin: 0;
 	padding: 0;
 	text-align: left;
-	background: linear-gradient(var(--gray-gradient)) no-repeat;
+	background: var(--bg) linear-gradient(var(--gray-gradient)) no-repeat;
 	background-size: 100% 600px;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
@@ -82,7 +125,11 @@ a {
 	color: var(--accent);
 }
 a:hover {
-	color: var(--accent);
+	color: var(--orange);
+}
+::selection {
+	background: var(--orange);
+	color: #0f1219;
 }
 p {
 	margin-bottom: 1em;
@@ -203,7 +250,7 @@ hr {
 	font-size: 0.9em;
 }
 .video-card a:hover .video-card-title {
-	color: var(--accent);
+	color: var(--orange);
 }
 .video-card a:hover .video-card-image {
 	box-shadow: var(--box-shadow);

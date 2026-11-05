@@ -79,7 +79,7 @@ const numbers = Array.from({ length: end - start + 1 }, (_, i) => start + i);
     padding: 0 0.75rem;
     border-radius: 8px;
     border: 1px solid rgb(var(--gray-light));
-    background: #fff;
+    background: var(--bg);
     color: rgb(var(--gray-dark));
     text-decoration: none;
     line-height: 1;
@@ -94,7 +94,7 @@ const numbers = Array.from({ length: end - start + 1 }, (_, i) => start + i);
   .current {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     font-weight: 700;
   }
   [aria-disabled='true'] {

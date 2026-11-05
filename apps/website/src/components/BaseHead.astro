@@ -54,6 +54,21 @@ const card = cardProp ?? (image ? 'summary_large_image' : 'summary');
 
 <!-- Global Metadata -->
 <meta charset="utf-8" />
+<!-- Sets the theme before the first paint, so a saved dark choice doesn't flash light. Header.astro has the toggle. -->
+<script is:inline>
+	{
+		let theme;
+		try {
+			theme = localStorage.getItem('theme');
+		} catch {
+			// Blocked storage: fall back to the browser's setting.
+		}
+		if (theme !== 'light' && theme !== 'dark') {
+			theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+		}
+		document.documentElement.dataset.theme = theme;
+	}
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <GoogleTagManager part="head" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
