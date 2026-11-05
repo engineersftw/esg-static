@@ -29,6 +29,8 @@ const video = defineCollection({
     slug: z.string(),
     organizations: z.array(reference('organization')),
     presenters: z.array(reference('presenter')),
+    // Topic slugs from @esg/content's TOPIC_GROUPS; the /categories pages group videos by them.
+    topics: z.array(z.string()).default([]),
     active: z.boolean(),
     videoSite: z.enum(['youtube', 'vimeo']),
   }),

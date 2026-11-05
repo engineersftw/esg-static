@@ -1,0 +1,60 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
+import { GROUP_OF_TOPIC, TOPICS } from '@esg/content/topics';
+
+import BaseHead from '../../../components/BaseHead.astro';
+import Header from '../../../components/Header.astro';
+import Footer from '../../../components/Footer.astro';
+import Pagination from '../../../components/Pagination.astro';
+import VideoCard from '../../../components/VideoCard.astro';
+import { getTopicVideos } from '../../../helpers/collections';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const pages = await Promise.all(
+    TOPICS.map(async (topic) => {
+      const videos = await getTopicVideos(topic.slug);
+      return videos.length
+        ? paginate(videos, { params: { slug: topic.slug }, pageSize: 25, props: { topic, group: GROUP_OF_TOPIC.get(topic.slug)! } })
+        : [];
+    }),
+  );
+  return pages.flat();
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { page, topic, group } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <BaseHead
+      title={topic.title}
+      description={`${page.total.toLocaleString('en')} ${page.total === 1 ? 'talk' : 'talks'} about ${topic.title} (${group.title}), recorded by Engineers.SG.`}
+      pageNumber={page.currentPage}
+    />
+    <style>
+      main {
+        width: 960px;
+      }
+      .crumb {
+        margin: 0;
+        color: rgb(var(--gray));
+      }
+    </style>
+  </head>
+  <body>
+    <Header />
+    <main>
+      <p class="crumb"><a href="/categories">Categories</a> · {group.title}</p>
+      <h1>{topic.title} ({page.total})</h1>
+      <section>
+        <ul class="video-grid">
+          {page.data.map((video, i) => <VideoCard video={video} featured={i === 0} />)}
+        </ul>
+      </section>
+      <Pagination page={page} />
+    </main>
+    <Footer />
+  </body>
+</html>

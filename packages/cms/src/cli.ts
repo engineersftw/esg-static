@@ -90,15 +90,19 @@ Commands:
       --tiktok <h>      TikTok handle or profile URL
       --remove <type>   Remove the link of this type (${PROFILE_LINK_TYPES.join(", ")}); repeatable
 
-  assign --video <refs> [--presenter <ref>] [--organization <ref>] [--playlist <ref>]
-                        Link each video to each presenter, organization and playlist;
-                        every option is repeatable
+  assign --video <refs> [--presenter <ref>] [--organization <ref>] [--playlist <ref>] [--topic <slug>]
+                        Link each video to each presenter, organization and playlist, and
+                        add topics (slugs from the /categories page); every option is repeatable
       --video <refs>    Video refs, repeated or comma-separated; an ID range like
                         4609-4618 means every ID in it
       --from-playlist <ref>
                         Every video of this playlist; repeatable, and can be combined
                         with --video
   unassign …            Same options; removes the links
+  topics seed [--overwrite]
+                        Set the topics of every video from the keywords in its title and
+                        description (@esg/content's TOPIC_GROUPS). Videos that already have
+                        topics are skipped unless --overwrite
 
   submission <issue-body-file>
                         Add the video a "Submit a video" issue names: fetch it from YouTube
@@ -169,6 +173,8 @@ const { values: args, positionals } = parseArgs({
     organization: { type: "string", multiple: true, default: [] },
     playlist: { type: "string", multiple: true, default: [] },
     "from-playlist": { type: "string", multiple: true, default: [] },
+    topic: { type: "string", multiple: true, default: [] },
+    overwrite: { type: "boolean", default: false },
     // playlist create
     title: { type: "string" },
     category: { type: "string" },
@@ -343,8 +349,13 @@ function assign(cms: Cms, remove: boolean) {
   const verb = remove ? "unassign" : "assign";
   const videos = [...new Set([...expandVideoRefs(args.video), ...args["from-playlist"].flatMap((p) => cms.playlistVideos(p))])];
   if (!videos.length) fail(`${verb} needs at least one --video or --from-playlist`);
-  if (!LINK_OPTIONS.some(([, refs]) => refs.length)) fail(`${verb} needs a --presenter, --organization or --playlist`);
+  if (!LINK_OPTIONS.some(([, refs]) => refs.length) && !args.topic.length) fail(`${verb} needs a --presenter, --organization, --playlist or --topic`);
   for (const videoRef of videos) {
+    if (args.topic.length) {
+      const changed = remove ? cms.editTopics(videoRef, [], args.topic) : cms.editTopics(videoRef, args.topic);
+      const video = cms.find("video", videoRef);
+      console.log(`${changed ? (remove ? "Removed" : "Added") : "No change:"} topics ${args.topic.join(", ")} (video ${video.id}, ${titleOf(video)})`);
+    }
     for (const [field, refs] of LINK_OPTIONS) {
       for (const ref of refs) {
         const changed = remove ? cms.unlink(videoRef, field, ref) : cms.link(videoRef, field, ref);
@@ -355,6 +366,12 @@ function assign(cms: Cms, remove: boolean) {
       }
     }
   }
+  save(cms);
+}
+
+function topicsCommand(cms: Cms) {
+  if (positionals[1] !== "seed") fail(`unknown topics command "${positionals[1] ?? ""}"; try topics seed`);
+  console.log(`Topics set on ${cms.seedTopics(args.overwrite)} videos`);
   save(cms);
 }
 
@@ -494,6 +511,8 @@ async function main() {
       return assign(cms, false);
     case "unassign":
       return assign(cms, true);
+    case "topics":
+      return topicsCommand(cms);
     case "find":
       return find(cms);
     case "check":

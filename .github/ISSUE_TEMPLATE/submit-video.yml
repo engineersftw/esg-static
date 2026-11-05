@@ -187,6 +187,47 @@ body:
         - "YOW! Conferences"
     validations:
       required: false
+  - type: dropdown
+    id: topics
+    attributes:
+      label: Topics
+      description: What the talk is about; pick all that apply. If you pick none, topics are chosen from the title and description. The options are the topics on the site's Categories page (packages/content/src/topics.ts).
+      multiple: true
+      options:
+        - "Python"
+        - "JavaScript & TypeScript"
+        - "Ruby & Rails"
+        - "PHP"
+        - "Go"
+        - "Rust"
+        - "Java & JVM"
+        - "Functional programming"
+        - ".NET & C#"
+        - "Frontend & UI frameworks"
+        - "APIs & backend"
+        - "Mobile development"
+        - "WordPress & CMS"
+        - "Cloud platforms"
+        - "Containers & Kubernetes"
+        - "DevOps & reliability"
+        - "Databases & data engineering"
+        - "Machine learning & AI"
+        - "Data science & analytics"
+        - "Blockchain & crypto"
+        - "Security & hacking"
+        - "Linux & operating systems"
+        - "Open source & community"
+        - "Software architecture & practice"
+        - "Electronics & IoT"
+        - "Robotics & autonomous machines"
+        - "VR, AR & games"
+        - "3D printing & maker projects"
+        - "Product management"
+        - "Design & UX"
+        - "Startups & entrepreneurship"
+        - "Careers & learning"
+    validations:
+      required: false
   - type: textarea
     id: notes
     attributes:

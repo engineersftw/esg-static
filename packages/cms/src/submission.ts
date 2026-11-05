@@ -6,7 +6,7 @@
  * No I/O here: the CLI fetches the video from YouTube and writes the files. Everything that comes
  * from the issue or from YouTube is untrusted text, so the reports escape it.
  */
-import { detectProfileLink } from "@esg/content";
+import { detectProfileLink, TOPICS } from "@esg/content";
 import type { Organization, Playlist, Presenter, ProfileLink, Video } from "@esg/db-types/content";
 import type { YtThumbnails, YtVideo } from "@esg/yt-export/youtube";
 import { type Cms } from "./cms.js";
@@ -16,6 +16,7 @@ export const FORM_FIELDS = {
   url: "YouTube URL",
   presenters: "Presenters",
   group: "Group",
+  topics: "Topics",
   notes: "Others (not in list)",
 } as const;
 
@@ -38,6 +39,8 @@ export interface Submission {
   videoId: string;
   presenters: SubmittedPresenter[];
   group: string | null;
+  /** Topic slugs the submitter picked; empty when none, and then the topics are seeded from the title and description. */
+  topics: string[];
   notes: string | null;
 }
 
@@ -98,6 +101,12 @@ export function parsePresenters(text: string): SubmittedPresenter[] {
   return presenters;
 }
 
+/** The topics in a multi-select dropdown's value ("Python, Go"): their slugs, ignoring any name that isn't a topic. */
+export function parseTopics(text: string): string[] {
+  const titles = text.split(",").map((s) => s.trim());
+  return TOPICS.filter((t) => titles.includes(t.title)).map((t) => t.slug);
+}
+
 /** The submission in an issue body. Throws a SubmissionError the submitter can act on. */
 export function parseSubmission(body: string): Submission {
   const fields = parseIssueForm(body);
@@ -109,6 +118,7 @@ export function parseSubmission(body: string): Submission {
     videoId,
     presenters: parsePresenters(fields.get(FORM_FIELDS.presenters) ?? ""),
     group: fields.get(FORM_FIELDS.group)?.slice(0, 200) || null,
+    topics: parseTopics(fields.get(FORM_FIELDS.topics) ?? ""),
     notes: fields.get(FORM_FIELDS.notes)?.slice(0, 2000) || null,
   };
 }
@@ -149,7 +159,7 @@ const url = (u: string | null | undefined) => u?.trim() || null;
 const thumbnail = (t: YtThumbnails, size: keyof YtThumbnails) => url(t[size]?.url);
 
 /** A new video entry made from what the YouTube API returned for it (what yt-export's sync writes). */
-export function createVideoFromYouTube(cms: Cms, youtube: YtVideo, active = true): Video {
+export function createVideoFromYouTube(cms: Cms, youtube: YtVideo, active = true, topics?: string[]): Video {
   const t = youtube.snippet.thumbnails;
   return cms.createVideo({
     videoId: youtube.id,
@@ -159,6 +169,7 @@ export function createVideoFromYouTube(cms: Cms, youtube: YtVideo, active = true
     thumbnails: { default: thumbnail(t, "default"), medium: thumbnail(t, "medium"), high: thumbnail(t, "high") },
     description: youtube.snippet.description,
     active,
+    topics,
   });
 }
 
@@ -175,7 +186,7 @@ export function applySubmission(cms: Cms, submission: Submission, youtube: YtVid
   }
 
   const playlist = cms.find("playlist", playlistRef) as Playlist;
-  const video = createVideoFromYouTube(cms, youtube);
+  const video = createVideoFromYouTube(cms, youtube, true, submission.topics.length ? submission.topics : undefined);
 
   const presenters = submission.presenters.map(({ name, links }): PresenterOutcome => {
     const [match, ...otherMatches] = cms.presentersNamed(name);

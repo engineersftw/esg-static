@@ -12,7 +12,7 @@
  * No I/O here, so it can be unit tested and run from a saved raw.json.
  */
 import type { Playlist as PlaylistEntry, Video as VideoEntry } from "@esg/db-types/content";
-import { caseClashes, playlistEntryId as newPlaylistId, serializeEntry, slugAllocator, toBody, videoEntryId as newVideoId, withDuration, type Entry } from "@esg/content";
+import { caseClashes, playlistEntryId as newPlaylistId, serializeEntry, slugAllocator, toBody, topicsFor, videoEntryId as newVideoId, withDuration, withTopics, type Entry } from "@esg/content";
 import { thumb, type RawExport } from "./transform.js";
 import type { YtPlaylist, YtVideo } from "./youtube.js";
 
@@ -198,7 +198,8 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
       id,
       path: `video/${id}.md`,
       outcome: "create",
-      data: withDuration(
+      // New videos get topics from their title and description, like `cms topics seed`.
+      data: withTopics(withDuration(
         {
           id,
           videoId: v.id,
@@ -214,7 +215,7 @@ export function planSync(raw: RawExport, existing: ExistingContent, opts: SyncOp
           videoSite: "youtube" as const,
         },
         v.contentDetails?.duration,
-      ),
+      ), topicsFor(v.snippet.title, v.snippet.description)),
       body: toBody(v.snippet.description),
     });
   }
