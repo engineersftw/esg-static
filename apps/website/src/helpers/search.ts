@@ -78,7 +78,7 @@ const WEIGHTS = [
   ['title', 15, 10],
   ['people', 10, 7],
   ['topics', 6, 5],
-  ['playlists', 5, 4],
+  ['playlists', 4, 3],
   ['description', 2, 1],
 ] as const;
 const WHOLE_QUERY_IN_TITLE = 20;

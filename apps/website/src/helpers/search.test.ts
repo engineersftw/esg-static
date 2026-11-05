@@ -72,6 +72,14 @@ describe("createSearch", () => {
     expect(slugs(s, "ai")).toEqual(["by-person", "by-topic"]);
   });
 
+  it("ranks a topic match inside a word above a playlist match at the start of one", () => {
+    const s = createSearch([
+      video("by-playlist", { title: "Newer talk", playlists: ["Workshop day"], date: "2024-06-01T00:00:00Z" }),
+      video("by-topic", { title: "Older talk", topics: ["Frontend & UI frameworks"], date: "2023-06-01T00:00:00Z" }),
+    ]);
+    expect(slugs(s, "work")).toEqual(["by-topic", "by-playlist"]);
+  });
+
   it("ignores case and accents", () => {
     expect(slugs(search, "CAFE")).toEqual(["cafe"]);
     expect(slugs(search, "tanjong pagar")).toEqual(["cafe"]);
