@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/JcGlFZAn8mw/hqdefault.jpg"
 slug: "the-evolution-of-site-reliability-engineering-sre-at-linkedin-com-devopsdays-singapore-2018"
 organizations: ["1"]
 presenters: ["cg4k4ljomp"]
+topics: ["devops-and-reliability"]
 active: true
 videoSite: "youtube"
 ---

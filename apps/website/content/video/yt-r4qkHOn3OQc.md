@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/r4qkHOn3OQc/hqdefault.jpg"
 slug: "you-only-have-to-change-one-thing-to-do-the-devops-everything-devops-days-2018"
 organizations: ["1"]
 presenters: ["wh6bsy6hyc"]
+topics: ["devops-and-reliability","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

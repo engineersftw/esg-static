@@ -5,7 +5,8 @@
   "description": "Read, write and link the Astro content collection files (apps/website/content)",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./topics": "./src/topics.ts"
   },
   "scripts": {
     "test": "vitest run",

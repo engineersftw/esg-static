@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/VD6D0jr6A28/hqdefault.jpg"
 slug: "shift-right-testing-production-as-test-environment-by-sparsh-shrivastava"
 organizations: ["198"]
 presenters: []
+topics: ["software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

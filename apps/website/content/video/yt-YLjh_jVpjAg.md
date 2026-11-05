@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/YLjh_jVpjAg/hqdefault.jpg"
 slug: "the-human-edge-in-testing-ai-models-by-pavan-teja"
 organizations: ["198"]
 presenters: []
+topics: ["machine-learning-and-ai","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

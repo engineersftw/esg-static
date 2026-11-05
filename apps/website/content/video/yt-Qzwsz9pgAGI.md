@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/Qzwsz9pgAGI/hqdefault.jpg"
 slug: "day-1-ignites-devopsdays-2018"
 organizations: ["1"]
 presenters: ["j7srjsj197","1215","772","j24w6bh35r","cm8rdyk8w8"]
+topics: ["devops-and-reliability"]
 active: true
 videoSite: "youtube"
 ---

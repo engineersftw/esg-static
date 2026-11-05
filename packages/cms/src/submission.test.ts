@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { TOPICS } from "@esg/content";
 import { describe, expect, it } from "vitest";
 import type { YtVideo } from "@esg/yt-export/youtube";
 import { Cms } from "./cms.js";
@@ -19,11 +21,12 @@ import {
 import { content, counterIds, data, organization, playlist, presenter, video } from "./testContent.js";
 
 /** An issue body as GitHub renders the submit-video form. */
-const issueBody = (fields: { url?: string; presenters?: string; group?: string; notes?: string }) =>
+const issueBody = (fields: { url?: string; presenters?: string; group?: string; topics?: string; notes?: string }) =>
   [
     `### YouTube URL\n\n${fields.url ?? "_No response_"}`,
     `### Presenters\n\n${fields.presenters ?? "_No response_"}`,
     `### Group\n\n${fields.group ?? "_No response_"}`,
+    `### Topics\n\n${fields.topics ?? "_No response_"}`,
     `### Others (not in list)\n\n${fields.notes ?? "_No response_"}`,
   ].join("\n\n");
 
@@ -46,7 +49,7 @@ const yt = (over: Partial<YtVideo["snippet"]> = {}, privacyStatus: YtVideo["stat
   status: { privacyStatus },
 });
 
-const submission = (over: Partial<Submission> = {}): Submission => ({ videoId: "dQw4w9WgXcQ", presenters: [], group: null, notes: null, ...over });
+const submission = (over: Partial<Submission> = {}): Submission => ({ videoId: "dQw4w9WgXcQ", presenters: [], group: null, topics: [], notes: null, ...over });
 
 const community = () =>
   content({ playlist: [playlist("4"), playlist("8", { playlistId: null, slug: "community-contributed", playlistTitle: "Community Contributed" })] });
@@ -117,8 +120,19 @@ describe("parseSubmission", () => {
       videoId: "dQw4w9WgXcQ",
       presenters: [{ name: "Jane Doe", links: [] }],
       group: "PyCon SG",
+      topics: [],
       notes: "Great talk",
     });
+  });
+
+  it("reads the picked topics by title and ignores unknown ones", () => {
+    expect(parseSubmission(issueBody({ url: "dQw4w9WgXcQ", topics: "Go, Python, Nonsense" })).topics).toEqual(["python", "go"]);
+  });
+
+  it("offers every topic in the form, in order", () => {
+    const form = readFileSync(new URL("../../../.github/ISSUE_TEMPLATE/submit-video.yml", import.meta.url), "utf8");
+    const options = form.slice(form.indexOf("id: topics")).split("validations:")[0].match(/^ +- (.+)$/gm)!.map((l) => JSON.parse(l.replace(/^ +- /, "")));
+    expect(options).toEqual(TOPICS.map((t) => t.title));
   });
 
   it("needs a YouTube video link", () => {

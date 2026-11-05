@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/p-5qo7OF-g8/hqdefault.jpg"
 slug: "devops-and-experimentation-in-a-large-it-company-devopsdays-singapore-2018"
 organizations: ["1"]
 presenters: ["nccanwdgrm"]
+topics: ["devops-and-reliability"]
 active: true
 videoSite: "youtube"
 ---

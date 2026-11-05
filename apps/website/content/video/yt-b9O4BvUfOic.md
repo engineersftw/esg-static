@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/b9O4BvUfOic/hqdefault.jpg"
 slug: "engineering-platforms-evolved-by-scott-shaw"
 organizations: ["1"]
 presenters: ["h3alv1gecf"]
+topics: ["devops-and-reliability","product-management"]
 active: true
 videoSite: "youtube"
 ---

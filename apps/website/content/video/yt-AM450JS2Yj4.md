@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/AM450JS2Yj4/hqdefault.jpg"
 slug: "web3-blockchain-testing-what-qa-needs-to-rethink-by-chitransh-shrivastava"
 organizations: ["198"]
 presenters: []
+topics: ["blockchain-and-crypto","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

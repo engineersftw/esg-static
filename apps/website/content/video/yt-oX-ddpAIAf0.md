@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/oX-ddpAIAf0/hqdefault.jpg"
 slug: "shift-everywhere-testers-hackers-gpts-team-up-by-santhosh-tuppad"
 organizations: ["198"]
 presenters: []
+topics: ["machine-learning-and-ai","security-and-hacking"]
 active: true
 videoSite: "youtube"
 ---

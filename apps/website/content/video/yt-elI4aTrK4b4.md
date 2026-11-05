@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/elI4aTrK4b4/hqdefault.jpg"
 slug: "why-building-your-ship-application-with-raw-materials-is-a-bad-idea-by-jamie-l-coleman"
 organizations: ["1"]
 presenters: ["cmafmp1hrx"]
+topics: ["security-and-hacking","open-source-and-community"]
 active: true
 videoSite: "youtube"
 ---

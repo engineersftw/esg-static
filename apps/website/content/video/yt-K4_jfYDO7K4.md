@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/K4_jfYDO7K4/hqdefault.jpg"
 slug: "concept-to-code-to-runtime-simplify-enable-exploit-by-srivatsan-ta"
 organizations: ["1"]
 presenters: ["o5he7dhtbu"]
+topics: ["security-and-hacking","open-source-and-community"]
 active: true
 videoSite: "youtube"
 ---

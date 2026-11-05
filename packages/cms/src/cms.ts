@@ -11,6 +11,7 @@ import {
   append,
   caseClashes,
   compareIds,
+  isTopicSlug,
   normalizeProfileLink,
   playlistEntryId,
   PROFILE_LINK_TYPES,
@@ -19,11 +20,13 @@ import {
   serializeEntry,
   slugAllocator,
   toBody,
+  topicsFor,
   unusedId,
   VIDEO_LINKS,
   videoEntryId,
   without,
   withDuration,
+  withTopics,
   type Entry,
   type VideoLinkField,
 } from "@esg/content";
@@ -122,6 +125,8 @@ export interface NewVideo {
   thumbnails: { default?: string | null; medium?: string | null; high?: string | null };
   /** The description, the Markdown body. */
   description?: string | null;
+  /** Topic slugs; seeded from the title and description when not given. */
+  topics?: string[];
   active?: boolean;
 }
 
@@ -312,8 +317,11 @@ export class Cms {
       } satisfies Video,
       input.duration,
     );
-    this.items.video.set(id, { data, body: toBody(input.description ?? null) });
-    return data;
+    // Seeded from the title and description unless the caller (the submission form) chose topics.
+    const topics = input.topics ?? topicsFor(input.title, input.description ?? "");
+    const withTopicsData = withTopics(data, topics);
+    this.items.video.set(id, { data: withTopicsData, body: toBody(input.description ?? null) });
+    return withTopicsData;
   }
 
   /**
@@ -498,6 +506,38 @@ export class Cms {
   }
 
   /**
+   * Add `add` to and remove `remove` from a video's topics (slugs, checked against the taxonomy).
+   * Returns false if nothing changed.
+   */
+  editTopics(videoRef: string, add: string[], remove: string[] = []): boolean {
+    for (const slug of [...add, ...remove]) if (!isTopicSlug(slug)) throw new CmsError(`unknown topic "${slug}": see TOPIC_GROUPS in packages/content/src/topics.ts`);
+    const video = this.find("video", videoRef) as Video;
+    const topics = (video.topics ?? []).filter((x) => !remove.includes(x));
+    return this.setTopics(video, [...new Set([...topics, ...add])]);
+  }
+
+  /**
+   * Set every video's topics from its title and description (`topicsFor`). Videos that already have
+   * topics are left alone unless `overwrite`. Returns how many videos changed.
+   */
+  seedTopics(overwrite = false): number {
+    let changed = 0;
+    for (const item of this.items.video.values()) {
+      const video = item.data as Video;
+      if (video.topics?.length && !overwrite) continue;
+      if (this.setTopics(video, topicsFor(video.videoTitle, item.body))) changed++;
+    }
+    return changed;
+  }
+
+  private setTopics(video: Video, topics: string[]): boolean {
+    const item = this.items.video.get(video.id)!;
+    if (JSON.stringify(video.topics ?? []) === JSON.stringify(topics)) return false;
+    item.data = withTopics(video, topics);
+    return true;
+  }
+
+  /**
    * Problems in the content: links to entries that don't exist, IDs that differ only in case (which
    * overwrite each other on macOS and Windows), and leftover reverse link lists. Empty when all is well.
    */
@@ -509,6 +549,7 @@ export class Cms {
     for (const [id, { data }] of this.items.video) {
       missing(`video ${id}`, "presenter", (data as Video).presenters);
       missing(`video ${id}`, "organization", (data as Video).organizations);
+      for (const slug of (data as Video).topics ?? []) if (!isTopicSlug(slug)) out.push(`video ${id} has the unknown topic "${slug}"`);
     }
     for (const [id, { data }] of this.items.playlist) {
       missing(`playlist ${id}`, "video", (data as Playlist).videos);

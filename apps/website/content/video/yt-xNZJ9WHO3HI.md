@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/xNZJ9WHO3HI/hqdefault.jpg"
 slug: "future-skills-for-testers-by-shashwat-nagayach"
 organizations: ["198"]
 presenters: []
+topics: ["machine-learning-and-ai","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

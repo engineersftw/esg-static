@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/thzEATpZJZU/hqdefault.jpg"
 slug: "taqwright-agent-debugs-mobile-apps-for-you-and-it-actually-works"
 organizations: ["198"]
 presenters: []
+topics: ["mobile-development","machine-learning-and-ai"]
 active: true
 videoSite: "youtube"
 ---

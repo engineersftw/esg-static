@@ -1,0 +1,13 @@
+---
+import { TOPICS } from '@esg/content/topics';
+import { getTopicVideos } from '../../../helpers/collections';
+
+export async function getStaticPaths() {
+  const topics = await Promise.all(TOPICS.map(async (topic) => ((await getTopicVideos(topic.slug)).length ? [{ params: { slug: topic.slug } }] : [])));
+  return topics.flat();
+}
+
+const { slug } = Astro.params;
+
+return Astro.rewrite(`/category/${slug}/1`);
+---

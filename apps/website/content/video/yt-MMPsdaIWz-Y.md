@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/MMPsdaIWz-Y/hqdefault.jpg"
 slug: "airasia-devops-journey-by-danial-hui"
 organizations: ["1"]
 presenters: ["p8d99h264v"]
+topics: ["devops-and-reliability"]
 active: true
 videoSite: "youtube"
 ---

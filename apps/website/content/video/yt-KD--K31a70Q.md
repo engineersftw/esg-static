@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/KD--K31a70Q/hqdefault.jpg"
 slug: "playwright-for-mobile-parallel-e2e-testing-across-emulators-taqwright"
 organizations: ["198"]
 presenters: []
+topics: ["mobile-development","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

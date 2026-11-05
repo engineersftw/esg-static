@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/qXoZ2P7t1TI/hqdefault.jpg"
 slug: "devopsdays-singapore-day-1-ignites"
 organizations: ["1"]
 presenters: ["zkwrb2txsv","dzue2vjnke","e492o0x4ul","rapdczfe1s","lypdu325p0","d5au58rrrt"]
+topics: ["cloud-platforms","containers-and-kubernetes","devops-and-reliability","machine-learning-and-ai"]
 active: true
 videoSite: "youtube"
 ---

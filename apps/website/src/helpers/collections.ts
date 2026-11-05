@@ -1,4 +1,5 @@
 import { type CollectionEntry, getCollection, getEntries } from 'astro:content';
+import { TOPIC_GROUPS } from '@esg/content/topics';
 
 /**
  * Entry IDs in order: legacy numeric IDs by number, then the others (`yt-…`, random) as text.
@@ -153,4 +154,35 @@ export async function getPlaylistPages() {
   return playlists
     .filter((playlist) => !conferenceIds.has(playlist.id))
     .map((playlist) => ({ playlist, parent: parentOf.get(playlist.id) }));
+}
+
+let videosByTopic: Promise<Map<string, CollectionEntry<'video'>[]>> | undefined;
+
+// Active videos by topic slug, newest first, once per build. Slugs that aren't in the taxonomy are ignored.
+const getVideosByTopic = () =>
+  (videosByTopic ??= getListedVideos().then((videos) => {
+    const map = new Map<string, CollectionEntry<'video'>[]>();
+    for (const video of videos) for (const slug of video.data.topics) push(map, slug, video);
+    return map;
+  }));
+
+/** A topic's active videos, newest first. */
+export const getTopicVideos = async (slug: string) => (await getVideosByTopic()).get(slug) ?? [];
+
+/**
+ * The topic groups for the categories page: each topic with its video count (topics with none are
+ * left out, and so are groups left with no topic), and the group's count of distinct videos.
+ */
+export async function getTopicGroups() {
+  const byTopic = await getVideosByTopic();
+  return TOPIC_GROUPS.map((group) => {
+    const topics = group.topics
+      .map((topic) => ({ ...topic, count: byTopic.get(topic.slug)?.length ?? 0 }))
+      .filter((topic) => topic.count)
+      .sort((a, b) => b.count - a.count || a.title.localeCompare(b.title));
+    const videos = new Set(group.topics.flatMap((topic) => byTopic.get(topic.slug) ?? []).map((v) => v.id));
+    return { slug: group.slug, title: group.title, topics, count: videos.size };
+  })
+    .filter((group) => group.topics.length)
+    .sort((a, b) => b.count - a.count);
 }

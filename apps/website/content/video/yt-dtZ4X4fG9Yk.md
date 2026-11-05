@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/dtZ4X4fG9Yk/hqdefault.jpg"
 slug: "lightningtalks2020-developing-and-working-of-an-api-by-kunal-ashar"
 organizations: ["198"]
 presenters: ["msn2mc6yft"]
+topics: ["apis-and-backend"]
 active: true
 videoSite: "youtube"
 ---

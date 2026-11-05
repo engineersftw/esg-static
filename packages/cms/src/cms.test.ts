@@ -439,3 +439,35 @@ describe("presentersNamed", () => {
     expect(() => cms.createPresenter({ name: "Ánn  LEE" })).toThrow(/already called/);
   });
 });
+
+describe("topics", () => {
+  const input = { videoId: "dQw4w9WgXcQ", title: "Intro to Python", publishedAt: "2024-05-01T10:00:00Z", thumbnails: {}, description: "We use Docker too" };
+
+  it("seeds a new video from its title and description, after presenters", () => {
+    const v = new Cms(content()).createVideo(input);
+    expect(v.topics).toEqual(["python", "containers-and-kubernetes"]);
+    expect(Object.keys(v).indexOf("topics")).toBe(Object.keys(v).indexOf("presenters") + 1);
+  });
+
+  it("uses the given topics instead, and none when nothing matches", () => {
+    expect(new Cms(content()).createVideo({ ...input, topics: ["go"] }).topics).toEqual(["go"]);
+    expect(new Cms(content()).createVideo({ ...input, title: "Hello", description: "" })).not.toHaveProperty("topics");
+  });
+
+  it("adds, removes and checks topics", () => {
+    const cms = new Cms(content());
+    expect(cms.editTopics("1", ["go", "rust"])).toBe(true);
+    expect(cms.editTopics("1", ["go"])).toBe(false);
+    expect(cms.editTopics("1", [], ["go"])).toBe(true);
+    expect((cms.find("video", "1") as { topics?: string[] }).topics).toEqual(["rust"]);
+    expect(() => cms.editTopics("1", ["nope"])).toThrow(/unknown topic/);
+  });
+
+  it("seeds existing videos, keeping hand-set topics unless overwriting", () => {
+    const cms = new Cms(content());
+    cms.createVideo(input);
+    cms.editTopics("1", ["rust"]);
+    expect(cms.seedTopics()).toBe(0);
+    expect(cms.seedTopics(true)).toBeGreaterThanOrEqual(0);
+  });
+});

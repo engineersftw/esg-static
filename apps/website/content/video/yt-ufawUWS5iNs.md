@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/ufawUWS5iNs/hqdefault.jpg"
 slug: "lightningtalks2020-api-automation-made-easy-with-karate-dsl-by-anil-prabhakar-borse"
 organizations: ["198"]
 presenters: ["kj5diw9jdx"]
+topics: ["apis-and-backend"]
 active: true
 videoSite: "youtube"
 ---

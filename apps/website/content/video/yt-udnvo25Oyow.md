@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/udnvo25Oyow/hqdefault.jpg"
 slug: "devops-in-practice-for-beginners-by-donnie-prakoso"
 organizations: ["1"]
 presenters: ["1317"]
+topics: ["devops-and-reliability"]
 active: true
 videoSite: "youtube"
 ---

@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/twkecAxoXqE/hqdefault.jpg"
 slug: "lightningtalks2020-microservices-testing-approach-by-vandana-sonakiya"
 organizations: ["198"]
 presenters: ["zx11owtp80"]
+topics: ["apis-and-backend","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

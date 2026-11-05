@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/u2oXxvMiDzg/hqdefault.jpg"
 slug: "schema-as-code-developer-platforms-and-database-schema-changes-by-rotem-tamir"
 organizations: ["1"]
 presenters: ["ea91yu0z7h"]
+topics: ["devops-and-reliability","databases-and-data-engineering"]
 active: true
 videoSite: "youtube"
 ---

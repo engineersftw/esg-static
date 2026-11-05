@@ -17,6 +17,7 @@ import GoogleTagManager from "./GoogleTagManager.astro";
       <HeaderLink href="/">Home</HeaderLink>
       <HeaderLink href="/videos">Videos</HeaderLink>
       <HeaderLink href="/conferences">Conferences</HeaderLink>
+      <HeaderLink href="/categories">Categories</HeaderLink>
       <HeaderLink href="/organizations">Organizations</HeaderLink>
       <HeaderLink href="/presenters">Presenters</HeaderLink>
       <HeaderLink href="/events">Events</HeaderLink>
@@ -124,7 +125,8 @@ import GoogleTagManager from "./GoogleTagManager.astro";
     justify-content: space-between;
   }
   nav a {
-    padding: 1em 0.5em;
+    padding: 1em 0.4em;
+    white-space: nowrap;
     color: var(--black);
     border-bottom: 4px solid transparent;
     text-decoration: none;

@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/m0jTZqDKMRA/hqdefault.jpg"
 slug: "lightningtalks2020-does-your-functional-automation-really-add-value-by-anand-bagmar"
 organizations: ["198"]
 presenters: ["uolpeviilq"]
+topics: ["functional-programming"]
 active: true
 videoSite: "youtube"
 ---

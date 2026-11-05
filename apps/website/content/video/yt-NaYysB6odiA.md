@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/NaYysB6odiA/hqdefault.jpg"
 slug: "day-2-ignites-devopsdays-singapore-2024"
 organizations: ["1"]
 presenters: ["dvlqfzn4ep","c7dzqk1ylp","git9u9d8ey","221","329","c8f08xt3gi"]
+topics: ["cloud-platforms","devops-and-reliability","machine-learning-and-ai","security-and-hacking","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

@@ -10,6 +10,7 @@ thumbnailHigh: "https://i.ytimg.com/vi/-U81TW6o3nE/hqdefault.jpg"
 slug: "driving-devops-at-petronas-by-ahmad-syafiq-aizat-mohd"
 organizations: ["1"]
 presenters: ["wacjjjj11b"]
+topics: ["cloud-platforms","devops-and-reliability","software-architecture-and-practice"]
 active: true
 videoSite: "youtube"
 ---

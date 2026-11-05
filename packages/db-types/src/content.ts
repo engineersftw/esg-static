@@ -47,6 +47,8 @@ export interface Video {
   organizations: string[];
   /** Presenter entry IDs. */
   presenters: string[];
+  /** Topic slugs (see `TOPIC_GROUPS` in @esg/content); absent when the video has none. */
+  topics?: string[];
   /** False for videos hidden on the old site (unlisted). */
   active: boolean;
   videoSite: "youtube" | "vimeo";

@@ -16,6 +16,7 @@
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
+    "@esg/content": "workspace:*",
     "astro": "^7.3.6",
     "astro-embed": "^0.14.0"
   },

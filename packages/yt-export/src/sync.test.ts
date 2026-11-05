@@ -222,10 +222,12 @@ describe("planSync: new videos", () => {
       slug: "hackware-v7-9-hdmi",
       organizations: [],
       presenters: [],
+      topics: ["electronics-and-iot"],
       active: true,
       videoSite: "youtube",
     });
-    expect(Object.keys(w.entry.data)).toEqual(Object.keys(videoEntry("1", "x").data));
+    // Topics are seeded from the title ("Hackware"), so the field order is the content files' plus `topics`.
+    expect(Object.keys(w.entry.data).filter((k) => k !== "topics")).toEqual(Object.keys(videoEntry("1", "x").data));
     expect(w.entry.body).toBe("Speaker: Someone\n\nProduced by Engineers.SG");
   });
 
