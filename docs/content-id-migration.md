@@ -17,7 +17,7 @@ Where the work differed from the plan:
 - `slugAllocator` slugifies its fallback, since a fallback built from a YouTube ID can contain capitals and underscores.
 - Union merge for playlists (step 5, optional) was not done.
 
-The rules as they stand now are in `CLAUDE.md` under "Entry IDs and links".
+The rules as they stand now are in `AGENTS.md` under "Entry IDs and links".
 
 ## The problem
 
@@ -106,7 +106,7 @@ The order keeps the site building at every step. Steps 1 and 2 change no content
 
 ### 5. Docs and leftovers (PR B, #38)
 
-- Update `CLAUDE.md`, the READMEs, `SYNC_YOUTUBE.md` and `VIDEO_SUBMISSION.md` for the ID rules and the one-sided links.
+- Update `AGENTS.md`, the READMEs, `SYNC_YOUTUBE.md` and `VIDEO_SUBMISSION.md` for the ID rules and the one-sided links.
 - `pg-export -f markdown` writes the old two-sided format. Mark that mode as legacy rather than update it. *(Updated instead; see Status.)*
 - Optional: write playlist `videos` one ID per line, and consider `merge=union` for `playlist/*.md` in `.gitattributes`. *(Not done.)*
 

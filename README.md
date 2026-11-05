@@ -117,7 +117,7 @@ output/                generated data, git-ignored (backup/, yt-export runs, scr
 .github/workflows/     CI, the daily YouTube sync, and video and playlist submissions
 eslint.config.js       ESLint config for the whole repo
 tsconfig.base.json     compiler options every package extends
-CLAUDE.md              detailed notes for AI coding agents (also handy for humans)
+AGENTS.md              detailed notes for AI coding agents (also handy for humans); CLAUDE.md imports it
 ```
 
 ## Personal data
