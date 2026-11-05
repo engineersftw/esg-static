@@ -9,6 +9,7 @@ const video = (slug: string, over: Partial<SearchEntry> = {}): SearchEntry => ({
   presenters: [],
   organizations: [],
   playlists: [],
+  topics: [],
   description: "",
   ...over,
 });
@@ -37,6 +38,7 @@ describe("createSearch", () => {
     video("go-k8s", { title: "Running Go on Kubernetes", presenters: ["Jane Tan"], organizations: ["Singapore Gophers"] }),
     video("trust", { title: "Building trust in teams" }),
     video("cafe", { title: "Notes", description: "Recorded at a café in Tanjong Pagar" }),
+    video("ml-talk", { title: "Neural nets", topics: ["Machine learning & AI"] }),
     video("gophers-talk", { title: "Talk", organizations: ["Singapore Gophers"], playlists: ["GopherCon 2019"] }),
   ]);
 
@@ -50,6 +52,32 @@ describe("createSearch", () => {
     expect(slugs(search, "gopher")).toEqual(["go-k8s", "gophers-talk"]);
     expect(slugs(search, "gophercon")).toEqual(["gophers-talk"]);
     expect(slugs(search, "borrowing")).toEqual(["rust-intro"]);
+  });
+
+  it("searches topics, below the title and people", () => {
+    expect(slugs(search, "machine learning")).toEqual(["ml-talk"]);
+    const s = createSearch([
+      video("by-topic", { title: "Intro", topics: ["Python"] }),
+      video("by-playlist", { title: "Intro 2", playlists: ["Python night"] }),
+      video("by-title", { title: "Python tips" }),
+    ]);
+    expect(slugs(s, "python")).toEqual(["by-title", "by-topic", "by-playlist"]);
+  });
+
+  it("ranks a people match inside a word above a topic match at the start of one", () => {
+    const s = createSearch([
+      video("by-topic", { title: "Neural nets", topics: ["Machine learning & AI"] }),
+      video("by-person", { title: "A talk", presenters: ["Kai Tan"] }),
+    ]);
+    expect(slugs(s, "ai")).toEqual(["by-person", "by-topic"]);
+  });
+
+  it("ranks a topic match inside a word above a playlist match at the start of one", () => {
+    const s = createSearch([
+      video("by-playlist", { title: "Newer talk", playlists: ["Workshop day"], date: "2024-06-01T00:00:00Z" }),
+      video("by-topic", { title: "Older talk", topics: ["Frontend & UI frameworks"], date: "2023-06-01T00:00:00Z" }),
+    ]);
+    expect(slugs(s, "work")).toEqual(["by-topic", "by-playlist"]);
   });
 
   it("ignores case and accents", () => {

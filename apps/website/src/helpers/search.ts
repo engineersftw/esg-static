@@ -3,9 +3,9 @@
 // the tests run it directly.
 //
 // Every word of the query must appear somewhere in a video: its title, presenters, organizations,
-// playlists or description. Matching ignores case and accents, and a word matches inside longer
+// playlists, topics or description. Matching ignores case and accents, and a word matches inside longer
 // words ("kube" finds "Kubernetes"). Results rank title matches first, then presenter and
-// organization names, then playlists, then descriptions, with a bonus for a match at the start of a
+// organization names, then topics, then playlists, then descriptions, with a bonus for a match at the start of a
 // word and for the whole query appearing in the title; ties keep the index order, newest first.
 
 /** One video in the index. */
@@ -20,11 +20,13 @@ export interface SearchEntry {
   presenters: string[];
   organizations: string[];
   playlists: string[];
+  /** The titles of the video's topics (the categories page), e.g. "Machine learning & AI". */
+  topics: string[];
   description: string;
 }
 
 /** What a result shows: everything but the text that was only there to be searched. */
-export type SearchResult = Omit<SearchEntry, 'playlists' | 'description'>;
+export type SearchResult = Omit<SearchEntry, 'playlists' | 'topics' | 'description'>;
 
 export interface SearchResponse {
   query: string;
@@ -75,7 +77,8 @@ function matchStrength(text: string, term: string): number {
 const WEIGHTS = [
   ['title', 15, 10],
   ['people', 10, 7],
-  ['playlists', 5, 4],
+  ['topics', 6, 5],
+  ['playlists', 4, 3],
   ['description', 2, 1],
 ] as const;
 const WHOLE_QUERY_IN_TITLE = 20;
@@ -84,6 +87,7 @@ interface Prepared {
   entry: SearchEntry;
   title: string;
   people: string;
+  topics: string;
   playlists: string;
   description: string;
 }
@@ -94,6 +98,7 @@ export function createSearch(entries: SearchEntry[]) {
     entry,
     title: normalize(entry.title),
     people: normalize([...entry.presenters, ...entry.organizations].join('\n')),
+    topics: normalize(entry.topics.join('\n')),
     playlists: normalize(entry.playlists.join('\n')),
     description: normalize(entry.description),
   }));
@@ -131,7 +136,7 @@ export function createSearch(entries: SearchEntry[]) {
     const current = Math.min(Math.max(1, Math.floor(page) || 1), pages);
     const results = scored
       .slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
-      .map(({ entry: { playlists: _playlists, description: _description, ...result } }) => result);
+      .map(({ entry: { playlists: _playlists, topics: _topics, description: _description, ...result } }) => result);
     return { query: trimmed, total: scored.length, page: current, pageSize: PAGE_SIZE, results };
   };
 }

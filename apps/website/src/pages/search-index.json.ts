@@ -1,6 +1,7 @@
 // The video search index: one entry per active video, with the names of its active presenters,
-// organizations and playlists, and its description. Built to dist/search-index.json and bundled
+// organizations and playlists, the titles of its topics, and its description. Built to dist/search-index.json and bundled
 // into the Pages Function functions/api/search.ts, which searches it (src/helpers/search.ts).
+import { TOPICS } from '@esg/content/topics';
 import { getActiveOrganizations, getActivePresenters, getListedVideos, getVideoPlaylists } from '../helpers/collections';
 import { formatDuration } from '../helpers/duration';
 import type { SearchEntry } from '../helpers/search';
@@ -24,6 +25,7 @@ export async function GET() {
     presenters: resolve(video.data.presenters, presenters),
     organizations: resolve(video.data.organizations, organizations),
     playlists: (await getVideoPlaylists(video.id)).map((playlist) => playlist.data.playlistTitle.trim()),
+    topics: TOPICS.filter((topic) => video.data.topics.includes(topic.slug)).map((topic) => topic.title),
     description: video.body ?? '',
   })));
   return Response.json(entries);
