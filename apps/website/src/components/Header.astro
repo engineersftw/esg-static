@@ -39,6 +39,15 @@ import GoogleTagManager from "./GoogleTagManager.astro";
           <path d="M15.5 15.5 21 21"></path>
         </svg>
       </a>
+      <button type="button" class="theme-toggle" aria-label="Switch between light and dark mode" title="Switch between light and dark mode">
+        <svg class="moon" viewBox="0 0 24 24" aria-hidden="true" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path>
+        </svg>
+        <svg class="sun" viewBox="0 0 24 24" aria-hidden="true" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+        </svg>
+      </button>
       <div class="social-links">
         <a href="https://x.com/engineersftw" target="_blank">
           <span class="sr-only">Follow Engineers.SG on Twitter</span>
@@ -78,6 +87,17 @@ import GoogleTagManager from "./GoogleTagManager.astro";
   </nav>
 </header>
 <script>
+  // The theme itself is set in BaseHead's inline script; this saves the visitor's choice.
+  document.querySelector(".theme-toggle")?.addEventListener("click", () => {
+    const root = document.documentElement;
+    const theme = root.dataset.theme === "dark" ? "light" : "dark";
+    root.dataset.theme = theme;
+    try {
+      localStorage.setItem("theme", theme);
+    } catch {
+      // Private mode or blocked storage: the choice lasts for this page only.
+    }
+  });
   document.querySelectorAll<HTMLButtonElement>(".menu-toggle").forEach((button) => {
     const nav = button.closest("nav");
     button.addEventListener("click", () => {
@@ -90,7 +110,8 @@ import GoogleTagManager from "./GoogleTagManager.astro";
   header {
     margin: 0;
     padding: 0 1em;
-    background: white;
+    background: var(--bg);
+    border-top: 4px solid var(--orange);
     box-shadow: 0 2px 8px rgba(var(--black), 5%);
   }
   h2 {
@@ -133,7 +154,7 @@ import GoogleTagManager from "./GoogleTagManager.astro";
   }
   nav a.active {
     text-decoration: none;
-    border-bottom-color: var(--accent);
+    border-bottom-color: var(--orange);
   }
   .actions,
   .social-links,
@@ -149,6 +170,24 @@ import GoogleTagManager from "./GoogleTagManager.astro";
   }
   nav a.search-link:hover {
     color: var(--accent);
+  }
+  .theme-toggle {
+    display: flex;
+    padding: 0.5em;
+    color: rgb(var(--black));
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .theme-toggle:hover {
+    color: var(--accent);
+  }
+  .sun,
+  :global(html[data-theme='dark']) .moon {
+    display: none;
+  }
+  :global(html[data-theme='dark']) .sun {
+    display: block;
   }
   .menu-toggle {
     display: none;
