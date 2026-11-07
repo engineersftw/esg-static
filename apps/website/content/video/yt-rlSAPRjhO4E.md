@@ -8,8 +8,8 @@ thumbnailDefault: "https://i.ytimg.com/vi/rlSAPRjhO4E/default.jpg"
 thumbnailMedium: "https://i.ytimg.com/vi/rlSAPRjhO4E/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/rlSAPRjhO4E/hqdefault.jpg"
 slug: "domino-sorter-hackware-nov-2026"
-organizations: []
-presenters: []
+organizations: ["111"]
+presenters: ["1278"]
 topics: ["electronics-and-iot"]
 active: true
 videoSite: "youtube"
