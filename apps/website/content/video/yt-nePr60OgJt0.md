@@ -8,8 +8,8 @@ thumbnailDefault: "https://i.ytimg.com/vi/nePr60OgJt0/default.jpg"
 thumbnailMedium: "https://i.ytimg.com/vi/nePr60OgJt0/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/nePr60OgJt0/hqdefault.jpg"
 slug: "tink-a-make-makers-marketplace-hackware-nov-2026"
-organizations: []
-presenters: []
+organizations: ["111"]
+presenters: ["j829fnhw11"]
 topics: ["electronics-and-iot","3d-printing-and-maker-projects"]
 active: true
 videoSite: "youtube"

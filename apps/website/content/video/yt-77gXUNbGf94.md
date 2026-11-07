@@ -8,8 +8,8 @@ thumbnailDefault: "https://i.ytimg.com/vi/77gXUNbGf94/default.jpg"
 thumbnailMedium: "https://i.ytimg.com/vi/77gXUNbGf94/mqdefault.jpg"
 thumbnailHigh: "https://i.ytimg.com/vi/77gXUNbGf94/hqdefault.jpg"
 slug: "blending-traditional-handicraft-techniques-with-3d-printing-hackware-nov-2026"
-organizations: []
-presenters: []
+organizations: ["111"]
+presenters: ["1161"]
 topics: ["electronics-and-iot","3d-printing-and-maker-projects"]
 active: true
 videoSite: "youtube"
